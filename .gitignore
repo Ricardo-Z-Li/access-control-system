@@ -1,0 +1,49 @@
+# ========================
+# Maven
+# ========================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# ========================
+# IDE - VSCode
+# ========================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ========================
+# Logs and databases
+# ========================
+logs/
+*.log
+*.db
+*.sqlite
+
+# ========================
+# OS generated files
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Environment variables
+# ========================
+.env
+*.env
+
+# ========================
+# Java
+# ========================
+*.class
+*.jar
+*.war
+*.ear
+
+# ========================
+# Backup files
+# ========================
+*~
+*.bak
+AGENTS.md
