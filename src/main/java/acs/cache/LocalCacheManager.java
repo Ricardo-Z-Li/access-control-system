@@ -141,7 +141,7 @@ public class LocalCacheManager {
             System.err.println("错误：尝试更新没有ID的Employee对象");
             System.err.println("Employee对象详情: " + employee);
             System.err.println("Employee名称: " + employee.getEmployeeName());
-            System.err.println("UserType: " + employee.getUserType());
+
             System.err.println("关联的Badge: " + (employee.getBadge() != null ? employee.getBadge().getBadgeId() : "null"));
             
             // 打印调用堆栈以确定问题来源

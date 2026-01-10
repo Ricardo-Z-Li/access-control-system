@@ -48,14 +48,14 @@ INSERT INTO employees (employee_id, employee_name, badge_id) VALUES
 ('E007', 'David Miller', NULL);
 
 -- 4. 插入徽章数据
-INSERT INTO badges (badge_id, status, employee_id) VALUES
-('B001', 'ACTIVE', 'E001'),
-('B002', 'ACTIVE', 'E002'),
-('B003', 'DISABLED', 'E003'),
-('B004', 'ACTIVE', 'E004'),
-('B005', 'LOST', 'E005'),
-('B006', 'ACTIVE', 'E006'),
-('B007', 'ACTIVE', 'E007');
+INSERT INTO badges (badge_id, status) VALUES
+('B001', 'ACTIVE'),
+('B002', 'ACTIVE'),
+('B003', 'DISABLED'),
+('B004', 'ACTIVE'),
+('B005', 'LOST'),
+('B006', 'ACTIVE'),
+('B007', 'ACTIVE');
 
 -- 5. 更新员工表的badge_id关联
 UPDATE employees SET badge_id = 'B001' WHERE employee_id = 'E001';

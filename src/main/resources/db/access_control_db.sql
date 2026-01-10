@@ -149,9 +149,7 @@ ADD COLUMN last_updated DATETIME;
 ALTER TABLE resources 
 ADD COLUMN is_controlled BOOLEAN DEFAULT TRUE;
 
--- 为employees表添加新字段
-ALTER TABLE employees 
-ADD COLUMN user_type ENUM('EMPLOYEE', 'CONTRACTOR', 'VISITOR', 'ADMIN', 'GUEST') NOT NULL DEFAULT 'EMPLOYEE';
+
 
 -- 创建索引（仅保留非主键的有效索引）
 CREATE INDEX idx_group_id ON group_permissions(group_id); 
