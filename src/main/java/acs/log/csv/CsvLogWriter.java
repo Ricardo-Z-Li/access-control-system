@@ -1,6 +1,9 @@
 package acs.log.csv;
 
 import acs.domain.LogEntry;
+import acs.domain.BadgeReader;
+import acs.repository.BadgeReaderRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,6 +12,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -17,7 +21,7 @@ import java.util.Locale;
  * CSV格式示例：2025,Dec,24,Wed,14:36:49,BX76Z541,BR59KA87,R7U39PL2,83746028,John:Doe,GRANTED
  * 字段顺序：年,月,日,星期几,时间,徽章ID,读卡器ID,资源ID,员工ID,员工姓名,访问决策
  * 
- * 注意：当前LogEntry未包含读卡器ID，此处暂时用资源ID占位。
+ * 注意：当前LogEntry未包含读卡器ID，此处通过资源ID查找对应的读卡器ID。
  */
 @Component
 public class CsvLogWriter {
@@ -27,13 +31,24 @@ public class CsvLogWriter {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     
     private final Path baseLogDir;
+    private final BadgeReaderRepository badgeReaderRepository;
+    
+    @Autowired
+    public CsvLogWriter(BadgeReaderRepository badgeReaderRepository) {
+        this(Paths.get("./logs"), badgeReaderRepository);
+    }
     
     public CsvLogWriter() {
-        this(Paths.get("./logs"));
+        this(Paths.get("./logs"), null);
     }
     
     public CsvLogWriter(Path baseLogDir) {
+        this(baseLogDir, null);
+    }
+    
+    public CsvLogWriter(Path baseLogDir, BadgeReaderRepository badgeReaderRepository) {
         this.baseLogDir = baseLogDir;
+        this.badgeReaderRepository = badgeReaderRepository;
         try {
             Files.createDirectories(baseLogDir);
         } catch (IOException e) {
@@ -75,6 +90,21 @@ public class CsvLogWriter {
     }
     
     /**
+     * 根据资源ID查找读卡器ID。
+     * 如果找不到读卡器，返回空字符串；如果找到多个，返回第一个读卡器ID。
+     */
+    private String findReaderIdByResourceId(String resourceId) {
+        if (badgeReaderRepository == null || resourceId == null || resourceId.isEmpty()) {
+            return "";
+        }
+        List<BadgeReader> readers = badgeReaderRepository.findByResourceId(resourceId);
+        if (readers.isEmpty()) {
+            return "";
+        }
+        return readers.get(0).getReaderId();
+    }
+    
+    /**
      * 将LogEntry格式化为CSV行。
      * 字段顺序：年,月,日,星期几,时间,徽章ID,读卡器ID,资源ID,员工ID,员工姓名,访问决策
      */
@@ -86,9 +116,15 @@ public class CsvLogWriter {
         String time = timestamp.format(TIME_FORMATTER);
         
         String badgeId = entry.getBadge() != null ? entry.getBadge().getBadgeId() : "";
-        // 读卡器ID暂缺，使用资源ID占位
-        String readerId = entry.getResource() != null ? entry.getResource().getResourceId() : "";
         String resourceId = entry.getResource() != null ? entry.getResource().getResourceId() : "";
+        // 读卡器ID：通过资源ID查找，找不到则使用资源ID占位
+        String readerId = "";
+        if (resourceId != null && !resourceId.isEmpty()) {
+            readerId = findReaderIdByResourceId(resourceId);
+        }
+        if (readerId.isEmpty()) {
+            readerId = resourceId; // 回退到资源ID占位
+        }
         String employeeId = entry.getEmployee() != null ? entry.getEmployee().getEmployeeId() : "";
         String employeeName = "";
         if (entry.getEmployee() != null && entry.getEmployee().getEmployeeName() != null) {

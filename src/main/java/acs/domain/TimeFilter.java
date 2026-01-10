@@ -47,6 +47,18 @@ public class TimeFilter {
     @Column(name = "end_time")
     private LocalTime endTime;
 
+    @Column(name = "time_ranges", length = 200)
+    private String timeRanges;
+
+    @Column(name = "excluded_months", length = 100)
+    private String excludedMonths;
+
+    @Column(name = "excluded_days_of_week", length = 50)
+    private String excludedDaysOfWeek;
+
+    @Column(name = "excluded_time_ranges", length = 200)
+    private String excludedTimeRanges;
+
     @Column(name = "is_recurring")
     private Boolean isRecurring;
 
@@ -156,6 +168,38 @@ public class TimeFilter {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getTimeRanges() {
+        return timeRanges;
+    }
+
+    public void setTimeRanges(String timeRanges) {
+        this.timeRanges = timeRanges;
+    }
+
+    public String getExcludedMonths() {
+        return excludedMonths;
+    }
+
+    public void setExcludedMonths(String excludedMonths) {
+        this.excludedMonths = excludedMonths;
+    }
+
+    public String getExcludedDaysOfWeek() {
+        return excludedDaysOfWeek;
+    }
+
+    public void setExcludedDaysOfWeek(String excludedDaysOfWeek) {
+        this.excludedDaysOfWeek = excludedDaysOfWeek;
+    }
+
+    public String getExcludedTimeRanges() {
+        return excludedTimeRanges;
+    }
+
+    public void setExcludedTimeRanges(String excludedTimeRanges) {
+        this.excludedTimeRanges = excludedTimeRanges;
     }
 
     public Set<Profile> getProfiles() {

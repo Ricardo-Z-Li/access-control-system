@@ -31,6 +31,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
     
     // 配置参数
     private static final int DAYS_BEFORE_EXPIRY_TO_NOTIFY = 30; // 过期前30天开始通知
+    private static final int UPDATE_WINDOW_DAYS = 14; // 更新窗口14天
     private static final int BADGE_CODE_LENGTH = 16; // 新徽章代码长度
     
     @Autowired
@@ -44,18 +45,51 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
         
         return badgeRepository.findById(badgeId)
                 .map(badge -> {
-                    LocalDate expiryDate = badge.getExpirationDate();
-                    if (expiryDate == null) {
+                    // 如果徽章已禁用，不需要更新
+                    if (badge.getStatus() == acs.domain.BadgeStatus.DISABLED) {
+                        return false;
+                    }
+                    
+                    // 确定代码过期日期（优先使用codeExpirationDate）
+                    LocalDate codeExpiryDate = badge.getCodeExpirationDate();
+                    if (codeExpiryDate == null) {
+                        codeExpiryDate = badge.getExpirationDate();
+                    }
+                    if (codeExpiryDate == null) {
                         return false; // 无过期日期，不需要更新
                     }
                     
-                    long daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(), expiryDate);
+                    long daysUntilCodeExpiry = ChronoUnit.DAYS.between(LocalDate.now(), codeExpiryDate);
                     
-                    // 如果已过期或即将过期（30天内），则需要更新
-                    boolean needsUpdate = daysUntilExpiry <= DAYS_BEFORE_EXPIRY_TO_NOTIFY;
+                    // 检查是否已超过更新截止日期
+                    LocalDate updateDue = badge.getUpdateDueDate();
+                    if (updateDue != null && LocalDate.now().isAfter(updateDue)) {
+                        // 更新窗口已过，禁用徽章
+                        badge.setStatus(acs.domain.BadgeStatus.DISABLED);
+                        badgeRepository.save(badge);
+                        simulateUpdateNotification(badgeId, (int) daysUntilCodeExpiry);
+                        return false; // 已禁用，不需要更新
+                    }
+                    
+                    // 如果代码已过期或即将过期（30天内），则需要更新
+                    boolean needsUpdate = daysUntilCodeExpiry <= DAYS_BEFORE_EXPIRY_TO_NOTIFY;
                     
                     if (needsUpdate) {
-                        simulateUpdateNotification(badgeId, (int) daysUntilExpiry);
+                        // 设置needsUpdate标志
+                        badge.setNeedsUpdate(true);
+                        // 如果尚未设置更新截止日期，则设置
+                        if (updateDue == null) {
+                            LocalDate dueDate = LocalDate.now().plusDays(UPDATE_WINDOW_DAYS);
+                            badge.setUpdateDueDate(dueDate);
+                        }
+                        badgeRepository.save(badge);
+                        simulateUpdateNotification(badgeId, (int) daysUntilCodeExpiry);
+                    } else {
+                        // 不需要更新，确保标志为false
+                        if (badge.isNeedsUpdate()) {
+                            badge.setNeedsUpdate(false);
+                            badgeRepository.save(badge);
+                        }
                     }
                     
                     return needsUpdate;
@@ -94,10 +128,17 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
                     // 更新徽章
                     badge.setBadgeCode(newCode);
                     badge.setLastUpdated(java.time.Instant.now());
+                    badge.setLastCodeUpdate(java.time.Instant.now());
                     
                     // 延长过期日期（模拟：延长一年）
                     LocalDate newExpiryDate = LocalDate.now().plusYears(1);
                     badge.setExpirationDate(newExpiryDate);
+                    // 同时延长代码过期日期
+                    badge.setCodeExpirationDate(newExpiryDate);
+                    
+                    // 重置更新标志和截止日期
+                    badge.setNeedsUpdate(false);
+                    badge.setUpdateDueDate(null);
                     
                     // 保存更新
                     Badge updatedBadge = badgeRepository.save(badge);

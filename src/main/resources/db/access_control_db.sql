@@ -173,3 +173,11 @@ CREATE TABLE IF NOT EXISTS resource_dependencies (
 -- 为resource_dependencies表创建索引
 CREATE INDEX idx_dep_resource ON resource_dependencies(resource_id);
 CREATE INDEX idx_dep_required ON resource_dependencies(required_resource_id);
+
+-- 性能优化：添加额外索引以支持大规模并发访问
+CREATE INDEX idx_employees_badge ON employees(badge_id);
+CREATE INDEX idx_badge_readers_resource ON badge_readers(resource_id);
+CREATE INDEX idx_log_badge_timestamp ON access_logs(badge_id, timestamp);
+CREATE INDEX idx_log_resource_timestamp ON access_logs(resource_id, timestamp);
+CREATE INDEX idx_badges_status ON badges(status);
+CREATE INDEX idx_resources_state ON resources(resource_state);

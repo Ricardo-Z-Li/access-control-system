@@ -39,6 +39,9 @@ public class BadgeReader {
     @Column(name = "badge_code_length")
     private Integer badgeCodeLength;
 
+    @Column(name = "operation_mode", length = 20)
+    private String operationMode = "SWIPE";
+
     // 无参构造器（JPA必需）
     public BadgeReader() {}
 
@@ -50,6 +53,7 @@ public class BadgeReader {
         this.status = status;
         this.resourceId = resourceId;
         this.lastSeen = Instant.now();
+        this.operationMode = "SWIPE";
     }
 
     // Getter和Setter
@@ -107,5 +111,13 @@ public class BadgeReader {
 
     public void setBadgeCodeLength(Integer badgeCodeLength) {
         this.badgeCodeLength = badgeCodeLength;
+    }
+
+    public String getOperationMode() {
+        return operationMode;
+    }
+
+    public void setOperationMode(String operationMode) {
+        this.operationMode = operationMode;
     }
 }

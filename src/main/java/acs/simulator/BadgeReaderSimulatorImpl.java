@@ -146,7 +146,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
     }
     
     private void scheduleAutoLock(String resourceId) {
-        new Thread(() -> {
+        Thread.ofVirtual().start(() -> {
             try {
                 // 模拟门保持解锁状态5秒后自动锁定
                 Thread.sleep(5000);
@@ -154,7 +154,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }).start();
+        });
     }
     
     /**

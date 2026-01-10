@@ -17,6 +17,11 @@
     <artifactId>access-control-system</artifactId>
     <version>1.0.0</version>
     
+    <!-- Java版本配置 -->
+    <properties>
+        <java.version>21</java.version>
+    </properties>
+    
     <!-- 2. 添加核心依赖 -->
     <dependencies>
         <dependency>
@@ -75,9 +80,20 @@
         </dependency>
     </dependencies>
     
-    <!-- 9. 配置Maven插件 -->
+     <!-- 9. 配置Maven插件 -->
     <build>
         <plugins>
+            <!-- Maven编译器插件，配置Java版本 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

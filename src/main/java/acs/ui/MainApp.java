@@ -12,10 +12,12 @@ import acs.service.ProfileFileService;
 import acs.service.AccessLimitService;
 import acs.service.TimeFilterService;
 import acs.service.GroupFileService;
+import acs.service.EmergencyControlService;
 import acs.cache.LocalCacheManager;
 import acs.simulator.BadgeReaderSimulator;
 import acs.simulator.EventSimulator;
 import acs.simulator.RouterSystem;
+import acs.simulator.BadgeCodeUpdateService;
 import acs.repository.EmployeeRepository;
 import acs.repository.ProfileRepository;
 import acs.repository.TimeFilterRepository;
@@ -71,6 +73,12 @@ public class MainApp extends JFrame {
     
     @Autowired
     private RouterSystem routerSystem;
+
+    @Autowired
+    private BadgeCodeUpdateService badgeCodeUpdateService;
+
+    @Autowired
+    private EmergencyControlService emergencyControlService;
     
     private AdminPanel adminPanel;
     private ScanPanel scanPanel;
@@ -79,6 +87,7 @@ public class MainApp extends JFrame {
     private AccessLimitPanel accessLimitPanel;
     private TimeFilterPanel timeFilterPanel;
     private GroupFilePanel groupFilePanel;
+    private EmergencyControlPanel emergencyControlPanel;
     @Autowired
     private SiteMapPanel siteMapPanel;
     
@@ -96,12 +105,13 @@ public class MainApp extends JFrame {
         tabbedPane = new JTabbedPane();
         
         adminPanel = new AdminPanel(adminService, profileFileService);
-        scanPanel = new ScanPanel(accessControlService);
+        scanPanel = new ScanPanel(accessControlService, badgeCodeUpdateService);
         monitorPanel = new MonitorPanel(logQueryService, siteMapPanel);
         simulatorPanel = new SimulatorPanel(badgeReaderSimulator, eventSimulator, routerSystem);
         accessLimitPanel = new AccessLimitPanel(accessLimitService, employeeRepository, profileRepository);
         timeFilterPanel = new TimeFilterPanel(timeFilterService, timeFilterRepository);
         groupFilePanel = new GroupFilePanel(groupFileService, groupRepository);
+        emergencyControlPanel = new EmergencyControlPanel(emergencyControlService);
         
         tabbedPane.addTab("管理", adminPanel);
         tabbedPane.addTab("扫描", scanPanel);
@@ -110,6 +120,7 @@ public class MainApp extends JFrame {
         tabbedPane.addTab("访问限制", accessLimitPanel);
         tabbedPane.addTab("时间过滤器", timeFilterPanel);
         tabbedPane.addTab("组文件", groupFilePanel);
+        tabbedPane.addTab("紧急控制", emergencyControlPanel);
         
         add(tabbedPane, BorderLayout.CENTER);
         
@@ -156,6 +167,10 @@ public class MainApp extends JFrame {
         JMenuItem groupViewItem = new JMenuItem("切换到组文件面板");
         groupViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(6));
         viewMenu.add(groupViewItem);
+        
+        JMenuItem emergencyViewItem = new JMenuItem("切换到紧急控制面板");
+        emergencyViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(7));
+        viewMenu.add(emergencyViewItem);
         
         JMenu toolsMenu = new JMenu("工具");
         JMenuItem reloadItem = new JMenuItem("重新加载缓存");

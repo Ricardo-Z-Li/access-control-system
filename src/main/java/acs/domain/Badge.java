@@ -34,6 +34,18 @@ public class Badge {
     @Column(name = "last_updated")
     private Instant lastUpdated;
 
+    @Column(name = "last_code_update")
+    private Instant lastCodeUpdate;
+
+    @Column(name = "code_expiration_date")
+    private LocalDate codeExpirationDate;
+
+    @Column(name = "needs_update", nullable = true)
+    private Boolean needsUpdate = false;
+
+    @Column(name = "update_due_date")
+    private LocalDate updateDueDate;
+
     @OneToOne(mappedBy = "badge")
     private Employee employee;
 
@@ -45,6 +57,9 @@ public class Badge {
         this.badgeId = badgeId;
         this.status = status;
         this.lastUpdated = Instant.now();
+        this.lastCodeUpdate = Instant.now();
+        this.needsUpdate = false;
+        this.updateDueDate = null;
     }
 
     // 扩展构造器（包含新字段）
@@ -54,6 +69,10 @@ public class Badge {
         this.expirationDate = expirationDate;
         this.badgeCode = badgeCode;
         this.lastUpdated = Instant.now();
+        this.lastCodeUpdate = Instant.now();
+        this.codeExpirationDate = expirationDate;
+        this.needsUpdate = false;
+        this.updateDueDate = null;
     }
 
     // Getter和Setter
@@ -103,5 +122,41 @@ public class Badge {
 
     public void setLastUpdated(Instant lastUpdated) {
         this.lastUpdated = lastUpdated;
+    }
+
+    public Instant getLastCodeUpdate() {
+        return lastCodeUpdate;
+    }
+
+    public void setLastCodeUpdate(Instant lastCodeUpdate) {
+        this.lastCodeUpdate = lastCodeUpdate;
+    }
+
+    public LocalDate getCodeExpirationDate() {
+        return codeExpirationDate;
+    }
+
+    public void setCodeExpirationDate(LocalDate codeExpirationDate) {
+        this.codeExpirationDate = codeExpirationDate;
+    }
+
+    public boolean isNeedsUpdate() {
+        return needsUpdate != null && needsUpdate;
+    }
+
+    public Boolean getNeedsUpdate() {
+        return needsUpdate;
+    }
+
+    public void setNeedsUpdate(Boolean needsUpdate) {
+        this.needsUpdate = needsUpdate;
+    }
+
+    public LocalDate getUpdateDueDate() {
+        return updateDueDate;
+    }
+
+    public void setUpdateDueDate(LocalDate updateDueDate) {
+        this.updateDueDate = updateDueDate;
     }
 }

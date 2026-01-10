@@ -42,7 +42,6 @@ public class EventSimulatorImpl implements EventSimulator {
     private final List<SimulationListener> listeners = new CopyOnWriteArrayList<>();
     
     // 配置参数
-    private static final int MAX_CONCURRENT_THREADS = 100; // 最大并发线程数
     private static final int DEFAULT_EVENT_DELAY_MS = 1000; // 默认事件间隔1秒
     
     @Autowired
@@ -62,9 +61,8 @@ public class EventSimulatorImpl implements EventSimulator {
         setSimulationStatus(SimulationStatus.RUNNING);
         resetSimulationStats();
         
-        // 创建线程池
-        int threadPoolSize = Math.min(concurrencyLevel, MAX_CONCURRENT_THREADS);
-        executorService = Executors.newFixedThreadPool(threadPoolSize);
+        // 创建虚拟线程执行器
+        executorService = Executors.newVirtualThreadPerTaskExecutor();
         
         // 获取可用的读卡器列表
         List<String> readerIds = getAvailableReaderIds();
