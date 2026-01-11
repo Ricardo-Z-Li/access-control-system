@@ -45,10 +45,31 @@ public class RouterSystemImpl implements RouterSystem {
 
     @Override
     public AccessResult routeRequest(AccessRequest request) {
+        return routeRequest(request, null, null, null, null, null);
+    }
+    
+    @Override
+    public AccessResult routeRequest(AccessRequest request, String eventId, String chainId, 
+                                   String readerId, String badgeId, String resourceId) {
         String selectedNode = selectNode();
         if (selectedNode == null) {
             loadBalanceStats.incrementFailedRequests();
+            // 记录执行链步骤
+            if (chainId != null && eventId != null) {
+                ExecutionChainTracker.getInstance().addStep(chainId, 
+                        ExecutionChainTracker.StepType.ROUTER_SELECT_NODE,
+                        eventId, readerId, badgeId, resourceId, null, 
+                        "无可用服务节点");
+            }
             return createErrorResult("无可用服务节点");
+        }
+        
+        // 记录执行链步骤：路由选择节点
+        if (chainId != null && eventId != null) {
+            ExecutionChainTracker.getInstance().addStep(chainId, 
+                    ExecutionChainTracker.StepType.ROUTER_SELECT_NODE,
+                    eventId, readerId, badgeId, resourceId, selectedNode, 
+                    "选择节点: " + selectedNode);
         }
         
         int attempt = 0;
@@ -60,6 +81,12 @@ public class RouterSystemImpl implements RouterSystem {
             
             if (selectedNode == null) {
                 loadBalanceStats.incrementFailedRequests();
+                if (chainId != null && eventId != null) {
+                    ExecutionChainTracker.getInstance().addStep(chainId, 
+                            ExecutionChainTracker.StepType.ROUTER_SELECT_NODE,
+                            eventId, readerId, badgeId, resourceId, null, 
+                            "重试期间无可用服务节点");
+                }
                 return createErrorResult("重试期间无可用服务节点");
             }
             
@@ -71,11 +98,33 @@ public class RouterSystemImpl implements RouterSystem {
                 loadBalanceStats.incrementRequests(selectedNode);
                 nodeStats.computeIfAbsent(selectedNode, id -> new NodeStats()).incrementRequests();
                 
+                // 记录执行链步骤：路由转发请求
+                if (chainId != null && eventId != null) {
+                    ExecutionChainTracker.getInstance().addStep(chainId, 
+                            ExecutionChainTracker.StepType.ROUTER_FORWARD_REQUEST,
+                            eventId, readerId, badgeId, resourceId, selectedNode, 
+                            "转发请求到节点: " + selectedNode + " (尝试: " + attempt + ")");
+                }
+                
                 // 调用真实服务（所有节点共享同一个服务实例，但模拟分布式环境）
                 result = accessControlService.processAccess(request);
                 
                 // 记录成功
                 nodeStats.get(selectedNode).incrementSuccesses();
+                
+                // 记录执行链步骤：访问控制决策
+                if (chainId != null && eventId != null && result != null) {
+                    ExecutionChainTracker.getInstance().addStep(chainId, 
+                            ExecutionChainTracker.StepType.ACCESS_CONTROL_DECISION,
+                            eventId, readerId, badgeId, resourceId, selectedNode, 
+                            "决策: " + result.getDecision() + ", 原因: " + result.getReasonCode());
+                    
+                    // 记录执行链步骤：路由返回响应
+                    ExecutionChainTracker.getInstance().addStep(chainId, 
+                            ExecutionChainTracker.StepType.ROUTER_RETURN_RESPONSE,
+                            eventId, readerId, badgeId, resourceId, selectedNode, 
+                            "返回响应到读卡器");
+                }
                 
                 // 如果节点之前故障，现在成功，可以考虑恢复
                 if (failedNodes.contains(selectedNode) && isResultSuccessful(result)) {
@@ -88,12 +137,26 @@ public class RouterSystemImpl implements RouterSystem {
                 // 模拟节点故障
                 nodeStats.get(selectedNode).incrementFailures();
                 
+                // 记录执行链步骤：节点故障
+                if (chainId != null && eventId != null) {
+                    ExecutionChainTracker.getInstance().addStep(chainId, 
+                            ExecutionChainTracker.StepType.ROUTER_FORWARD_REQUEST,
+                            eventId, readerId, badgeId, resourceId, selectedNode, 
+                            "节点故障: " + e.getMessage());
+                }
+                
                 if (attempt < MAX_RETRY_ATTEMPTS) {
                     loadBalanceStats.incrementReroutedRequests();
                     markNodeAsFailed(selectedNode);
                     selectedNode = null; // 强制选择新节点
                 } else {
                     loadBalanceStats.incrementFailedRequests();
+                    if (chainId != null && eventId != null) {
+                        ExecutionChainTracker.getInstance().addStep(chainId, 
+                                ExecutionChainTracker.StepType.ROUTER_RETURN_RESPONSE,
+                                eventId, readerId, badgeId, resourceId, null, 
+                                "所有重试尝试均失败");
+                    }
                     return createErrorResult("所有重试尝试均失败: " + e.getMessage());
                 }
             }

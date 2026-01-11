@@ -145,25 +145,45 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 8. 时间过滤器验证（仅当资源受控时）
             if (resource.getIsControlled() != null && resource.getIsControlled()) {
                 // 获取员工所属组关联的配置文件的时间过滤器
-                Set<TimeFilter> timeFilters = new HashSet<>();
+                // 收集所有激活的配置文件，按优先级排序（priorityLevel越小优先级越高）
+                List<Profile> activeProfiles = new ArrayList<>();
                 for (Group group : employee.getGroups()) {
                     // 查找关联此组的配置文件
                     List<Profile> profiles = profileRepository.findByGroupsContaining(group);
                     for (Profile profile : profiles) {
                         if (profile.getIsActive() != null && profile.getIsActive()) {
-                            timeFilters.addAll(profile.getTimeFilters());
+                            // 去重
+                            if (!activeProfiles.contains(profile)) {
+                                activeProfiles.add(profile);
+                            }
                         }
                     }
                 }
-                // 如果有时间过滤器规则，则检查当前时间是否匹配
-                if (!timeFilters.isEmpty()) {
-                    LocalDateTime accessTime = LocalDateTime.ofInstant(request.getTimestamp(), ZoneId.systemDefault());
-                    if (!timeFilterService.matchesAny(new ArrayList<>(timeFilters), accessTime)) {
-                        AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "当前时间不允许访问");
-                        recordLog(badge, employee, resource, result, request);
-                        return result;
+                // 按优先级排序（null视为最低优先级）
+                activeProfiles.sort((p1, p2) -> {
+                    Integer p1Level = p1.getPriorityLevel();
+                    Integer p2Level = p2.getPriorityLevel();
+                    if (p1Level == null && p2Level == null) return 0;
+                    if (p1Level == null) return 1; // null排后面
+                    if (p2Level == null) return -1;
+                    return Integer.compare(p1Level, p2Level);
+                });
+                // 选择最高优先级的配置文件（如果有）
+                if (!activeProfiles.isEmpty()) {
+                    Profile highestPriorityProfile = activeProfiles.get(0);
+                    Set<TimeFilter> timeFilters = highestPriorityProfile.getTimeFilters();
+                    // 如果有时间过滤器规则，则检查当前时间是否匹配
+                    if (timeFilters != null && !timeFilters.isEmpty()) {
+                        LocalDateTime accessTime = LocalDateTime.ofInstant(request.getTimestamp(), ZoneId.systemDefault());
+                        if (!timeFilterService.matchesAny(new ArrayList<>(timeFilters), accessTime)) {
+                            AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "当前时间不允许访问");
+                            recordLog(badge, employee, resource, result, request);
+                            return result;
+                        }
                     }
+                    // 如果没有时间过滤器，则时间不受限制
                 }
+                // 如果没有激活的配置文件，则跳过时间检查
             }
 
             // 9. 访问次数限制检查

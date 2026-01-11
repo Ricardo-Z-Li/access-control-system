@@ -5,17 +5,27 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import acs.service.AccessControlService;
+import acs.service.ClockService;
 import acs.domain.AccessRequest;
 import acs.domain.AccessResult;
+import acs.simulator.BadgeCodeUpdateService;
+import acs.domain.Badge;
 
 public class ScanPanel extends JPanel {
     private AccessControlService accessControlService;
+    private BadgeCodeUpdateService badgeCodeUpdateService;
+    private ClockService clockService;
     private JTextField badgeIdField;
     private JTextField resourceIdField;
+    private JComboBox<String> modeComboBox;
     private JTextArea resultArea;
+    private static final String MODE_SWIPE = "刷卡模式";
+    private static final String MODE_HOLD = "更新模式";
     
-    public ScanPanel(AccessControlService accessControlService) {
+    public ScanPanel(AccessControlService accessControlService, BadgeCodeUpdateService badgeCodeUpdateService, ClockService clockService) {
         this.accessControlService = accessControlService;
+        this.badgeCodeUpdateService = badgeCodeUpdateService;
+        this.clockService = clockService;
         initUI();
     }
     
@@ -49,6 +59,14 @@ public class ScanPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 2;
+        inputPanel.add(new JLabel("模式:"), gbc);
+        
+        gbc.gridx = 1;
+        modeComboBox = new JComboBox<>(new String[]{MODE_SWIPE, MODE_HOLD});
+        inputPanel.add(modeComboBox, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         JButton scanButton = new JButton("模拟扫描");
@@ -71,28 +89,63 @@ public class ScanPanel extends JPanel {
     private void simulateScan() {
         String badgeId = badgeIdField.getText().trim();
         String resourceId = resourceIdField.getText().trim();
+        String selectedMode = (String) modeComboBox.getSelectedItem();
         
-        if (badgeId.isEmpty() || resourceId.isEmpty()) {
-            resultArea.setText("错误: 请输入徽章ID和资源ID");
+        if (badgeId.isEmpty()) {
+            resultArea.setText("错误: 请输入徽章ID");
+            return;
+        }
+        
+        if (selectedMode.equals(MODE_SWIPE) && resourceId.isEmpty()) {
+            resultArea.setText("错误: 刷卡模式需要资源ID");
             return;
         }
         
         try {
-            AccessRequest request = new AccessRequest(badgeId, resourceId, java.time.LocalDateTime.now());
-            AccessResult result = accessControlService.processAccess(request);
-            
             StringBuilder sb = new StringBuilder();
             sb.append("扫描结果:\n");
             sb.append("徽章ID: ").append(badgeId).append("\n");
-            sb.append("资源ID: ").append(resourceId).append("\n");
-            sb.append("决策: ").append(result.getDecision()).append("\n");
-            sb.append("原因代码: ").append(result.getReasonCode()).append("\n");
-            sb.append("消息: ").append(result.getMessage()).append("\n");
-            sb.append("请求时间: ").append(request.getTimestamp()).append("\n");
+            sb.append("模式: ").append(selectedMode).append("\n");
+            
+            if (selectedMode.equals(MODE_SWIPE)) {
+                // 刷卡模式：正常访问控制
+                AccessRequest request = new AccessRequest(badgeId, resourceId, clockService.localNow());
+                AccessResult result = accessControlService.processAccess(request);
+                
+                sb.append("资源ID: ").append(resourceId).append("\n");
+                sb.append("决策: ").append(result.getDecision()).append("\n");
+                sb.append("原因代码: ").append(result.getReasonCode()).append("\n");
+                sb.append("消息: ").append(result.getMessage()).append("\n");
+                sb.append("请求时间: ").append(request.getTimestamp()).append("\n");
+            } else {
+                // 更新模式：徽章代码更新
+                sb.append("操作: 徽章代码更新\n");
+                
+                // 检查徽章是否需要更新
+                boolean needsUpdate = badgeCodeUpdateService.checkBadgeNeedsUpdate(badgeId);
+                if (!needsUpdate) {
+                    sb.append("状态: 徽章不需要更新\n");
+                    sb.append("提示: 徽章代码仍有效，无需更新。\n");
+                } else {
+                    sb.append("状态: 徽章需要更新，正在执行更新流程...\n");
+                    Badge updatedBadge = badgeCodeUpdateService.updateBadgeCode(badgeId);
+                    if (updatedBadge != null) {
+                        sb.append("结果: 徽章更新成功\n");
+                        sb.append("新徽章代码: ").append(updatedBadge.getBadgeCode()).append("\n");
+                        sb.append("过期日期: ").append(updatedBadge.getExpirationDate()).append("\n");
+                        sb.append("最后更新: ").append(updatedBadge.getLastCodeUpdate()).append("\n");
+                        sb.append("提示: 徽章已更新，请重新刷卡使用。\n");
+                    } else {
+                        sb.append("结果: 徽章更新失败\n");
+                        sb.append("原因: 可能徽章已禁用或更新窗口已过。\n");
+                    }
+                }
+            }
             
             resultArea.setText(sb.toString());
         } catch (Exception ex) {
             resultArea.setText("错误: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }

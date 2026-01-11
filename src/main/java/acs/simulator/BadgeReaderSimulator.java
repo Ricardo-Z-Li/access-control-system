@@ -19,6 +19,16 @@ public interface BadgeReaderSimulator {
      * @throws InterruptedException 如果模拟过程中线程被中断
      */
     AccessResult simulateBadgeSwipe(String readerId, String badgeId) throws InterruptedException;
+    
+    /**
+     * 模拟在读卡器上刷卡的操作（带事件ID，用于执行链跟踪）
+     * @param readerId 读卡器ID
+     * @param badgeId 徽章ID
+     * @param eventId 事件ID（可为null）
+     * @return 访问结果
+     * @throws InterruptedException 如果模拟过程中线程被中断
+     */
+    AccessResult simulateBadgeSwipe(String readerId, String badgeId, String eventId) throws InterruptedException;
 
     /**
      * 模拟读卡器读取徽章代码（包含读取延迟）

@@ -17,6 +17,19 @@ public interface RouterSystem {
      * @return 访问结果
      */
     AccessResult routeRequest(AccessRequest request);
+    
+    /**
+     * 路由访问请求（带执行链跟踪）
+     * @param request 访问请求
+     * @param eventId 事件ID
+     * @param chainId 执行链ID
+     * @param readerId 读卡器ID
+     * @param badgeId 徽章ID
+     * @param resourceId 资源ID
+     * @return 访问结果
+     */
+    AccessResult routeRequest(AccessRequest request, String eventId, String chainId, 
+                             String readerId, String badgeId, String resourceId);
 
     /**
      * 获取所有可用服务节点

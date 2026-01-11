@@ -15,9 +15,7 @@ public class Employee {
     @Column(name = "employee_name", nullable = false, length = 100)
     private String employeeName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_type", nullable = false)
-    private UserType userType;
+
 
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
     @JoinColumn(name = "badge_id", referencedColumnName = "badge_id")
@@ -33,22 +31,15 @@ public class Employee {
 
     // 无参构造器（JPA必需）
     public Employee() {
-        this.userType = UserType.EMPLOYEE;
     }
 
     // 全参构造器
     public Employee(String employeeId, String employeeName) {
         this.employeeId = employeeId;
         this.employeeName = employeeName;
-        this.userType = UserType.EMPLOYEE;
     }
 
-    // 扩展构造器（包含userType）
-    public Employee(String employeeId, String employeeName, UserType userType) {
-        this.employeeId = employeeId;
-        this.employeeName = employeeName;
-        this.userType = userType;
-    }
+
 
     // Getter和Setter
     public String getEmployeeId() {
@@ -83,20 +74,13 @@ public class Employee {
         this.groups = groups;
     }
 
-    public UserType getUserType() {
-        return userType;
-    }
 
-    public void setUserType(UserType userType) {
-        this.userType = userType;
-    }
 
     @Override
     public String toString() {
         return "Employee{" +
                 "employeeId='" + employeeId + '\'' +
                 ", employeeName='" + employeeName + '\'' +
-                ", userType=" + userType +
                 ", badge=" + (badge != null ? badge.getBadgeId() : "null") +
                 '}';
     }

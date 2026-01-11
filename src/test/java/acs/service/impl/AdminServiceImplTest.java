@@ -64,7 +64,7 @@ public class AdminServiceImplTest {
     @Test
     void issueBadge_success() {
         String employeeId = "E001";
-        String badgeId = "B001";
+        String badgeId = "BADGE001";
         Employee employee = new Employee(employeeId, "Test");
         
         when(employeeRepository.findById(employeeId)).thenReturn(Optional.of(employee));
@@ -82,7 +82,7 @@ public class AdminServiceImplTest {
 
     @Test
     void setBadgeStatus_success() {
-        String badgeId = "B001";
+        String badgeId = "BADGE001";
         Badge badge = new Badge(badgeId, BadgeStatus.ACTIVE);
         when(badgeRepository.findById(badgeId)).thenReturn(Optional.of(badge));
 

@@ -50,10 +50,10 @@ public class LogQueryServiceImplTest {
     @Test
     void findByBadge_shouldReturnMatchingLogs() {
         // 准备测试数据
-        LogEntry log1 = createLogEntry("B001", "E001", "R001", AccessDecision.ALLOW, baseTime);
-        LogEntry log2 = createLogEntry("B001", "E001", "R002", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
-        LogEntry log3 = createLogEntry("B002", "E002", "R001", AccessDecision.ALLOW, baseTime); // 不同徽章
-        LogEntry log4 = createLogEntry("B001", "E001", "R003", AccessDecision.ALLOW, baseTime.minus(1, ChronoUnit.HOURS)); // 时间范围外
+        LogEntry log1 = createLogEntry("BADGEMP001", "EMP001", "RES001", AccessDecision.ALLOW, baseTime);
+        LogEntry log2 = createLogEntry("BADGEMP001", "EMP001", "RES002", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
+        LogEntry log3 = createLogEntry("B002", "EMP002", "RES001", AccessDecision.ALLOW, baseTime); // 不同徽章
+        LogEntry log4 = createLogEntry("BADGEMP001", "EMP001", "RES003", AccessDecision.ALLOW, baseTime.minus(1, ChronoUnit.HOURS)); // 时间范围外
 
         List<LogEntry> allLogs = Arrays.asList(log1, log2, log3, log4);
         when(cacheManager.getLogs()).thenReturn(allLogs);
@@ -61,7 +61,7 @@ public class LogQueryServiceImplTest {
         // 执行测试
         Instant from = baseInstant;
         Instant to = baseInstant.plus(2,ChronoUnit.HOURS);
-        List<LogEntry> result = logQueryService.findByBadge("B001", from, to);
+        List<LogEntry> result = logQueryService.findByBadge("BADGEMP001", from, to);
 
         // 验证结果
         assertEquals(2, result.size());
@@ -73,9 +73,9 @@ public class LogQueryServiceImplTest {
     @Test
     void findByEmployee_shouldReturnMatchingLogs() {
         // 准备测试数据
-        LogEntry log1 = createLogEntry("B001", "E001", "R001", AccessDecision.ALLOW, baseTime);
-        LogEntry log2 = createLogEntry("B002", "E001", "R002", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
-        LogEntry log3 = createLogEntry("B001", "E002", "R001", AccessDecision.ALLOW, baseTime); // 不同员工
+        LogEntry log1 = createLogEntry("BADGEMP001", "EMP001", "RES001", AccessDecision.ALLOW, baseTime);
+        LogEntry log2 = createLogEntry("B002", "EMP001", "RES002", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
+        LogEntry log3 = createLogEntry("BADGEMP001", "EMP002", "RES001", AccessDecision.ALLOW, baseTime); // 不同员工
 
         List<LogEntry> allLogs = Arrays.asList(log1, log2, log3);
         when(cacheManager.getLogs()).thenReturn(allLogs);
@@ -83,7 +83,7 @@ public class LogQueryServiceImplTest {
         // 执行测试
         Instant from = baseInstant;
         Instant to = baseInstant.plus(2, ChronoUnit.HOURS);
-        List<LogEntry> result = logQueryService.findByEmployee("E001", from, to);
+        List<LogEntry> result = logQueryService.findByEmployee("EMP001", from, to);
 
         // 验证结果
         assertEquals(2, result.size());
@@ -93,9 +93,9 @@ public class LogQueryServiceImplTest {
     @Test
     void findByResource_shouldReturnMatchingLogs() {
         // 准备测试数据
-        LogEntry log1 = createLogEntry("B001", "E001", "R001", AccessDecision.ALLOW, baseTime);
-        LogEntry log2 = createLogEntry("B002", "E002", "R001", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
-        LogEntry log3 = createLogEntry("B001", "E001", "R002", AccessDecision.ALLOW, baseTime); // 不同资源
+        LogEntry log1 = createLogEntry("BADGEMP001", "EMP001", "RES001", AccessDecision.ALLOW, baseTime);
+        LogEntry log2 = createLogEntry("B002", "EMP002", "RES001", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
+        LogEntry log3 = createLogEntry("BADGEMP001", "EMP001", "RES002", AccessDecision.ALLOW, baseTime); // 不同资源
 
         List<LogEntry> allLogs = Arrays.asList(log1, log2, log3);
         when(cacheManager.getLogs()).thenReturn(allLogs);
@@ -103,7 +103,7 @@ public class LogQueryServiceImplTest {
         // 执行测试
         Instant from = baseInstant;
         Instant to = baseInstant.plus(2, ChronoUnit.HOURS);
-        List<LogEntry> result = logQueryService.findByResource("R001", from, to);
+        List<LogEntry> result = logQueryService.findByResource("RES001", from, to);
 
         // 验证结果
         assertEquals(2, result.size());
@@ -113,9 +113,9 @@ public class LogQueryServiceImplTest {
     @Test
     void findDenied_shouldReturnDeniedLogs() {
         // 准备测试数据
-        LogEntry log1 = createLogEntry("B001", "E001", "R001", AccessDecision.DENY, baseTime);
-        LogEntry log2 = createLogEntry("B002", "E002", "R002", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
-        LogEntry log3 = createLogEntry("B001", "E001", "R003", AccessDecision.ALLOW, baseTime); // 允许访问
+        LogEntry log1 = createLogEntry("BADGEMP001", "EMP001", "RES001", AccessDecision.DENY, baseTime);
+        LogEntry log2 = createLogEntry("B002", "EMP002", "RES002", AccessDecision.DENY, baseTime.plus(1, ChronoUnit.HOURS));
+        LogEntry log3 = createLogEntry("BADGEMP001", "EMP001", "RES003", AccessDecision.ALLOW, baseTime); // 允许访问
 
         List<LogEntry> allLogs = Arrays.asList(log1, log2, log3);
         when(cacheManager.getLogs()).thenReturn(allLogs);

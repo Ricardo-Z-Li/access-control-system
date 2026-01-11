@@ -12,11 +12,15 @@ import acs.simulator.RouterSystem;
 import acs.simulator.SimulationStatus;
 import acs.simulator.SystemHealth;
 import acs.simulator.LoadBalanceStats;
+import acs.simulator.ExecutionChainTracker;
+import acs.service.ClockService;
+import java.util.List;
 
 public class SimulatorPanel extends JPanel {
     private BadgeReaderSimulator badgeReaderSimulator;
     private EventSimulator eventSimulator;
     private RouterSystem routerSystem;
+    private ClockService clockService;
     
     private JTabbedPane tabbedPane;
     private JTextField readerIdField;
@@ -27,13 +31,24 @@ public class SimulatorPanel extends JPanel {
     private JLabel simulationStatusLabel;
     private JLabel systemHealthLabel;
     private JLabel loadBalanceLabel;
+    private JTextField absoluteTimeField;
+    private JButton setTimeButton;
+    private JButton resetTimeButton;
+    private JLabel currentTimeLabel;
+    
+    // 执行链追踪相关
+    private JTextArea executionChainArea;
+    private JTable executionChainTable;
+    private DefaultTableModel executionChainTableModel;
     
     public SimulatorPanel(BadgeReaderSimulator badgeReaderSimulator, 
                          EventSimulator eventSimulator,
-                         RouterSystem routerSystem) {
+                         RouterSystem routerSystem,
+                         ClockService clockService) {
         this.badgeReaderSimulator = badgeReaderSimulator;
         this.eventSimulator = eventSimulator;
         this.routerSystem = routerSystem;
+        this.clockService = clockService;
         initUI();
         startStatusTimer();
     }
@@ -51,6 +66,7 @@ public class SimulatorPanel extends JPanel {
         tabbedPane.addTab("事件模拟", createEventSimulatorPanel());
         tabbedPane.addTab("路由系统", createRouterSystemPanel());
         tabbedPane.addTab("系统监控", createSystemMonitorPanel());
+        tabbedPane.addTab("执行链追踪", createExecutionChainPanel());
         
         add(tabbedPane, BorderLayout.CENTER);
         
@@ -75,7 +91,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 1;
         readerIdField = new JTextField(20);
-        readerIdField.setText("READER-001");
+        readerIdField.setText("READER001");
         inputPanel.add(readerIdField, gbc);
         
         gbc.gridx = 0;
@@ -84,7 +100,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 1;
         badgeIdField = new JTextField(20);
-        badgeIdField.setText("B-10001");
+        badgeIdField.setText("BADGE001");
         inputPanel.add(badgeIdField, gbc);
         
         gbc.gridx = 0;
@@ -169,6 +185,44 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 3;
+        controlPanel.add(new JLabel("绝对时间 (yyyy-MM-dd HH:mm):"), gbc);
+        
+        gbc.gridx = 1;
+        absoluteTimeField = new JTextField(20);
+        absoluteTimeField.setText(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        controlPanel.add(absoluteTimeField, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        JPanel timeButtonPanel = new JPanel(new FlowLayout());
+        
+        setTimeButton = new JButton("设置模拟时间");
+        setTimeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setSimulatedTime();
+            }
+        });
+        timeButtonPanel.add(setTimeButton);
+        
+        resetTimeButton = new JButton("重置为真实时间");
+        resetTimeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                resetSimulatedTime();
+            }
+        });
+        timeButtonPanel.add(resetTimeButton);
+        
+        currentTimeLabel = new JLabel("当前时间: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        timeButtonPanel.add(currentTimeLabel);
+        
+        controlPanel.add(timeButtonPanel, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout());
@@ -250,7 +304,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 1;
         JTextField nodeIdField = new JTextField(15);
-        nodeIdField.setText("NODE-001");
+        nodeIdField.setText("NODE_1");
         controlPanel.add(nodeIdField, gbc);
         
         gbc.gridx = 0;
@@ -628,6 +682,7 @@ public class SimulatorPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 updateSimulationStatus();
+                updateCurrentTimeLabel();
             }
         });
         timer.start();
@@ -643,6 +698,180 @@ public class SimulatorPanel extends JPanel {
             } catch (Exception ex) {
                 // 忽略状态更新错误
             }
+        }
+    }
+    
+    private void setSimulatedTime() {
+        String timeText = absoluteTimeField.getText().trim();
+        if (timeText.isEmpty()) {
+            logMessage("错误: 请输入时间 (格式: yyyy-MM-dd HH:mm)");
+            return;
+        }
+        
+        try {
+            java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(timeText, 
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            clockService.setSimulatedTime(dateTime);
+            logMessage("模拟时间已设置为: " + dateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            updateCurrentTimeLabel();
+        } catch (java.time.format.DateTimeParseException e) {
+            logMessage("错误: 时间格式不正确，请使用 yyyy-MM-dd HH:mm 格式");
+        }
+    }
+    
+    private void resetSimulatedTime() {
+        clockService.resetToRealTime();
+        absoluteTimeField.setText(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        logMessage("已重置为真实系统时间");
+        updateCurrentTimeLabel();
+    }
+    
+    private void updateCurrentTimeLabel() {
+        if (currentTimeLabel != null) {
+            SwingUtilities.invokeLater(() -> {
+                currentTimeLabel.setText("当前时间: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            });
+        }
+    }
+    
+    /**
+     * 创建执行链追踪面板
+     */
+    private JPanel createExecutionChainPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // 控制面板
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton clearButton = new JButton("清除执行链");
+        clearButton.addActionListener(e -> clearExecutionChains());
+        controlPanel.add(clearButton);
+        
+        JButton refreshButton = new JButton("刷新");
+        refreshButton.addActionListener(e -> refreshExecutionChains());
+        controlPanel.add(refreshButton);
+        
+        panel.add(controlPanel, BorderLayout.NORTH);
+        
+        // 执行链表格
+        String[] columns = {"时间", "步骤", "读卡器", "徽章", "资源", "节点", "详细信息"};
+        executionChainTableModel = new DefaultTableModel(columns, 0);
+        executionChainTable = new JTable(executionChainTableModel);
+        executionChainTable.setAutoCreateRowSorter(true);
+        
+        JScrollPane scrollPane = new JScrollPane(executionChainTable);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        // 执行链文本区域（详细视图）
+        executionChainArea = new JTextArea(10, 60);
+        executionChainArea.setEditable(false);
+        executionChainArea.setFont(new Font("宋体", Font.PLAIN, 12));
+        JPanel areaPanel = new JPanel(new BorderLayout());
+        areaPanel.add(new JLabel("执行链详细信息:"), BorderLayout.NORTH);
+        areaPanel.add(new JScrollPane(executionChainArea), BorderLayout.CENTER);
+        panel.add(areaPanel, BorderLayout.SOUTH);
+        
+        // 注册执行链监听器
+        ExecutionChainTracker.getInstance().addListener(new ExecutionChainListenerImpl());
+        
+        return panel;
+    }
+    
+    /**
+     * 清除执行链显示
+     */
+    private void clearExecutionChains() {
+        SwingUtilities.invokeLater(() -> {
+            executionChainTableModel.setRowCount(0);
+            executionChainArea.setText("");
+            ExecutionChainTracker.getInstance().clearAllChains();
+            logMessage("执行链已清除");
+        });
+    }
+    
+    /**
+     * 刷新执行链显示
+     */
+    private void refreshExecutionChains() {
+        SwingUtilities.invokeLater(() -> {
+            executionChainTableModel.setRowCount(0);
+            executionChainArea.setText("");
+            
+            List<ExecutionChainTracker.ExecutionChain> chains = 
+                    ExecutionChainTracker.getInstance().getAllChains();
+            
+            for (ExecutionChainTracker.ExecutionChain chain : chains) {
+                for (ExecutionChainTracker.ChainStep step : chain.getSteps()) {
+                    addExecutionChainStepToTable(step);
+                }
+            }
+            
+            logMessage("执行链已刷新，共 " + chains.size() + " 条执行链");
+        });
+    }
+    
+    /**
+     * 添加执行链步骤到表格
+     */
+    private void addExecutionChainStepToTable(ExecutionChainTracker.ChainStep step) {
+        SwingUtilities.invokeLater(() -> {
+            executionChainTableModel.addRow(new Object[]{
+                step.getFormattedTimestamp(),
+                step.getStepType().getDescription(),
+                step.getReaderId() != null ? step.getReaderId() : "",
+                step.getBadgeId() != null ? step.getBadgeId() : "",
+                step.getResourceId() != null ? step.getResourceId() : "",
+                step.getNodeId() != null ? step.getNodeId() : "",
+                step.getAdditionalInfo() != null ? step.getAdditionalInfo() : ""
+            });
+            
+            // 自动滚动到最后一行
+            executionChainTable.scrollRectToVisible(
+                executionChainTable.getCellRect(executionChainTableModel.getRowCount()-1, 0, true)
+            );
+        });
+    }
+    
+    /**
+     * 更新执行链文本区域
+     */
+    private void updateExecutionChainArea(ExecutionChainTracker.ExecutionChain chain) {
+        SwingUtilities.invokeLater(() -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append("执行链: ").append(chain.getChainId()).append("\n");
+            sb.append("事件ID: ").append(chain.getEventId()).append("\n");
+            sb.append("状态: ").append(chain.isCompleted() ? "完成" : "进行中").append("\n");
+            sb.append("步骤数: ").append(chain.getSteps().size()).append("\n");
+            sb.append("步骤详情:\n");
+            
+            for (ExecutionChainTracker.ChainStep step : chain.getSteps()) {
+                sb.append("  ").append(step.toString()).append("\n");
+            }
+            
+            executionChainArea.setText(sb.toString());
+        });
+    }
+    
+    /**
+     * 执行链监听器实现
+     */
+    private class ExecutionChainListenerImpl implements ExecutionChainTracker.ExecutionChainListener {
+        @Override
+        public void onChainStarted(ExecutionChainTracker.ExecutionChain chain) {
+            logMessage("执行链开始: " + chain.getChainId() + " (事件: " + chain.getEventId() + ")");
+            updateExecutionChainArea(chain);
+        }
+        
+        @Override
+        public void onStepAdded(ExecutionChainTracker.ExecutionChain chain, 
+                               ExecutionChainTracker.ChainStep step) {
+            addExecutionChainStepToTable(step);
+            updateExecutionChainArea(chain);
+        }
+        
+        @Override
+        public void onChainCompleted(ExecutionChainTracker.ExecutionChain chain) {
+            logMessage("执行链完成: " + chain.getChainId() + " (事件: " + chain.getEventId() + ")");
+            updateExecutionChainArea(chain);
         }
     }
 }

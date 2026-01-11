@@ -4,9 +4,9 @@ import acs.domain.LogEntry;
 import acs.log.LogService;
 import acs.cache.LocalCacheManager;
 import acs.repository.AccessLogRepository;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component("logServiceImpl")
 public class LogServiceImpl implements LogService {
 
     private final AccessLogRepository accessLogRepository;

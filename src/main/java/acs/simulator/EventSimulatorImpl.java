@@ -2,6 +2,7 @@ package acs.simulator;
 
 import acs.domain.AccessResult;
 import acs.repository.BadgeReaderRepository;
+import acs.service.ClockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ public class EventSimulatorImpl implements EventSimulator {
 
     private final BadgeReaderSimulator badgeReaderSimulator;
     private final BadgeReaderRepository badgeReaderRepository;
+    private final ClockService clockService;
     
     // 模拟状态
     private SimulationStatus status = SimulationStatus.IDLE;
@@ -42,14 +44,15 @@ public class EventSimulatorImpl implements EventSimulator {
     private final List<SimulationListener> listeners = new CopyOnWriteArrayList<>();
     
     // 配置参数
-    private static final int MAX_CONCURRENT_THREADS = 100; // 最大并发线程数
     private static final int DEFAULT_EVENT_DELAY_MS = 1000; // 默认事件间隔1秒
     
     @Autowired
     public EventSimulatorImpl(BadgeReaderSimulator badgeReaderSimulator,
-                              BadgeReaderRepository badgeReaderRepository) {
+                              BadgeReaderRepository badgeReaderRepository,
+                              ClockService clockService) {
         this.badgeReaderSimulator = badgeReaderSimulator;
         this.badgeReaderRepository = badgeReaderRepository;
+        this.clockService = clockService;
         this.completionLatch = new CountDownLatch(0); // 初始化为0
     }
 
@@ -62,9 +65,8 @@ public class EventSimulatorImpl implements EventSimulator {
         setSimulationStatus(SimulationStatus.RUNNING);
         resetSimulationStats();
         
-        // 创建线程池
-        int threadPoolSize = Math.min(concurrencyLevel, MAX_CONCURRENT_THREADS);
-        executorService = Executors.newFixedThreadPool(threadPoolSize);
+        // 创建虚拟线程执行器
+        executorService = Executors.newVirtualThreadPerTaskExecutor();
         
         // 获取可用的读卡器列表
         List<String> readerIds = getAvailableReaderIds();
@@ -191,7 +193,7 @@ public class EventSimulatorImpl implements EventSimulator {
         // 生成模拟徽章ID（在实际系统中应从数据库获取）
         List<String> badgeIds = new ArrayList<>();
         for (int i = 1; i <= 300; i++) {
-            badgeIds.add("SIM_BADGE_" + i);
+            badgeIds.add("BADGE00" + i);
         }
         return badgeIds;
     }
@@ -263,7 +265,7 @@ public class EventSimulatorImpl implements EventSimulator {
                     // 随机选择读卡器和徽章
                     String readerId = readerIds.get(random.nextInt(readerIds.size()));
                     String badgeId = badgeIds.get(random.nextInt(badgeIds.size()));
-                    String eventId = "EVENT_" + Instant.now().toEpochMilli() + "_" + i;
+                    String eventId = "EVENT_" + clockService.now().toEpochMilli() + "_" + i;
                     
                     // 通知事件开始
                     listeners.forEach(l -> l.onSimulationEventStarted(eventId, readerId, badgeId));
@@ -272,8 +274,8 @@ public class EventSimulatorImpl implements EventSimulator {
                     long startTime = System.currentTimeMillis();
                     
                     try {
-                        // 模拟刷卡事件
-                        AccessResult result = badgeReaderSimulator.simulateBadgeSwipe(readerId, badgeId);
+                        // 模拟刷卡事件（传递事件ID用于执行链跟踪）
+                        AccessResult result = badgeReaderSimulator.simulateBadgeSwipe(readerId, badgeId, eventId);
                         
                         long endTime = System.currentTimeMillis();
                         long processingTime = endTime - startTime;

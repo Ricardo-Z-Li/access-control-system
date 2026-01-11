@@ -18,6 +18,9 @@ import java.util.List;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Collections;
@@ -27,12 +30,21 @@ import java.util.stream.Collectors;
 public class LocalCacheManager {
 
     // 缓存存储结构
-    private final Map<String, Badge> badgeCache = new HashMap<>();
-    private final Map<String, Employee> employeeCache = new HashMap<>();
-    private final Map<String, Group> groupCache = new HashMap<>();
-    private final Map<String, Resource> resourceCache = new HashMap<>();
-    private final List<LogEntry> logCache = new ArrayList<>();  // 日志缓存（有序列表）
+    private final Map<String, Badge> badgeCache = new ConcurrentHashMap<>();
+    private final Map<String, Employee> employeeCache = new ConcurrentHashMap<>();
+    private final Map<String, Group> groupCache = new ConcurrentHashMap<>();
+    private final Map<String, Resource> resourceCache = new ConcurrentHashMap<>();
+    private final List<LogEntry> logCache = new CopyOnWriteArrayList<>();  // 日志缓存（有序列表）
 
+    // 缓存性能统计
+    private final AtomicLong badgeCacheHits = new AtomicLong(0);
+    private final AtomicLong badgeCacheMisses = new AtomicLong(0);
+    private final AtomicLong employeeCacheHits = new AtomicLong(0);
+    private final AtomicLong employeeCacheMisses = new AtomicLong(0);
+    private final AtomicLong groupCacheHits = new AtomicLong(0);
+    private final AtomicLong groupCacheMisses = new AtomicLong(0);
+    private final AtomicLong resourceCacheHits = new AtomicLong(0);
+    private final AtomicLong resourceCacheMisses = new AtomicLong(0);
 
     // 依赖的Repository
     private final BadgeRepository badgeRepository;
@@ -107,19 +119,43 @@ public class LocalCacheManager {
 
     // 缓存操作方法
     public Badge getBadge(String badgeId) {
-        return badgeCache.get(badgeId);
+        Badge badge = badgeCache.get(badgeId);
+        if (badge != null) {
+            badgeCacheHits.incrementAndGet();
+        } else {
+            badgeCacheMisses.incrementAndGet();
+        }
+        return badge;
     }
 
     public Employee getEmployee(String employeeId) {
-        return employeeCache.get(employeeId);
+        Employee employee = employeeCache.get(employeeId);
+        if (employee != null) {
+            employeeCacheHits.incrementAndGet();
+        } else {
+            employeeCacheMisses.incrementAndGet();
+        }
+        return employee;
     }
 
     public Group getGroup(String groupId) {
-        return groupCache.get(groupId);
+        Group group = groupCache.get(groupId);
+        if (group != null) {
+            groupCacheHits.incrementAndGet();
+        } else {
+            groupCacheMisses.incrementAndGet();
+        }
+        return group;
     }
 
     public Resource getResource(String resourceId) {
-        return resourceCache.get(resourceId);
+        Resource resource = resourceCache.get(resourceId);
+        if (resource != null) {
+            resourceCacheHits.incrementAndGet();
+        } else {
+            resourceCacheMisses.incrementAndGet();
+        }
+        return resource;
     }
 
     // 获取有序日志列表（返回不可修改集合，防止外部篡改顺序）
@@ -141,7 +177,7 @@ public class LocalCacheManager {
             System.err.println("错误：尝试更新没有ID的Employee对象");
             System.err.println("Employee对象详情: " + employee);
             System.err.println("Employee名称: " + employee.getEmployeeName());
-            System.err.println("UserType: " + employee.getUserType());
+
             System.err.println("关联的Badge: " + (employee.getBadge() != null ? employee.getBadge().getBadgeId() : "null"));
             
             // 打印调用堆栈以确定问题来源
@@ -250,5 +286,40 @@ public class LocalCacheManager {
         loadGroups();
         loadResources();
         loadLogs();
+    }
+
+    // 获取缓存性能统计信息
+    public Map<String, Object> getCacheStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        long badgeHits = badgeCacheHits.get();
+        long badgeMisses = badgeCacheMisses.get();
+        long employeeHits = employeeCacheHits.get();
+        long employeeMisses = employeeCacheMisses.get();
+        long groupHits = groupCacheHits.get();
+        long groupMisses = groupCacheMisses.get();
+        long resourceHits = resourceCacheHits.get();
+        long resourceMisses = resourceCacheMisses.get();
+        
+        stats.put("badgeCacheHits", badgeHits);
+        stats.put("badgeCacheMisses", badgeMisses);
+        stats.put("badgeCacheHitRate", badgeHits + badgeMisses == 0 ? 0.0 : (double) badgeHits / (badgeHits + badgeMisses));
+        stats.put("employeeCacheHits", employeeHits);
+        stats.put("employeeCacheMisses", employeeMisses);
+        stats.put("employeeCacheHitRate", employeeHits + employeeMisses == 0 ? 0.0 : (double) employeeHits / (employeeHits + employeeMisses));
+        stats.put("groupCacheHits", groupHits);
+        stats.put("groupCacheMisses", groupMisses);
+        stats.put("groupCacheHitRate", groupHits + groupMisses == 0 ? 0.0 : (double) groupHits / (groupHits + groupMisses));
+        stats.put("resourceCacheHits", resourceHits);
+        stats.put("resourceCacheMisses", resourceMisses);
+        stats.put("resourceCacheHitRate", resourceHits + resourceMisses == 0 ? 0.0 : (double) resourceHits / (resourceHits + resourceMisses));
+        
+        stats.put("badgeCacheSize", badgeCache.size());
+        stats.put("employeeCacheSize", employeeCache.size());
+        stats.put("groupCacheSize", groupCache.size());
+        stats.put("resourceCacheSize", resourceCache.size());
+        stats.put("logCacheSize", logCache.size());
+        
+        return stats;
     }
 }
