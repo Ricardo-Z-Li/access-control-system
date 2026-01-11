@@ -69,7 +69,7 @@ public class AccessLimitPanel extends JPanel {
         
         gbc.gridx = 1;
         employeeIdField = new JTextField(20);
-        employeeIdField.setText("E-001");
+        employeeIdField.setText("EMP001");
         inputPanel.add(employeeIdField, gbc);
         
         gbc.gridx = 0;

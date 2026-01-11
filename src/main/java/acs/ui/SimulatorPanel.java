@@ -91,7 +91,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 1;
         readerIdField = new JTextField(20);
-        readerIdField.setText("READER-001");
+        readerIdField.setText("READER001");
         inputPanel.add(readerIdField, gbc);
         
         gbc.gridx = 0;
@@ -100,7 +100,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 1;
         badgeIdField = new JTextField(20);
-        badgeIdField.setText("B-10001");
+        badgeIdField.setText("BADGE001");
         inputPanel.add(badgeIdField, gbc);
         
         gbc.gridx = 0;
@@ -304,7 +304,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 1;
         JTextField nodeIdField = new JTextField(15);
-        nodeIdField.setText("NODE-001");
+        nodeIdField.setText("NODE001");
         controlPanel.add(nodeIdField, gbc);
         
         gbc.gridx = 0;

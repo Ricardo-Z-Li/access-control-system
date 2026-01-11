@@ -38,9 +38,9 @@ public class BadgeReaderSimulatorImplTest {
     @Test
     public void simulateBadgeSwipe_validInput_shouldReturnAccessResult() throws InterruptedException {
         // 准备测试数据
-        String readerId = "READER_001";
-        String badgeId = "BADGE_001";
-        String resourceId = "RESOURCE_001";
+        String readerId = "READER001";
+        String badgeId = "BADGE001";
+        String resourceId = "RES001";
         
         BadgeReader badgeReader = new BadgeReader(readerId, "Test Reader", "Location", "ONLINE", resourceId);
         AccessRequest expectedRequest = new AccessRequest(badgeId, resourceId, Instant.now());
@@ -68,7 +68,7 @@ public class BadgeReaderSimulatorImplTest {
     public void simulateBadgeSwipe_readerNotFound_shouldReturnDenyResult() throws InterruptedException {
         // 准备测试数据
         String readerId = "NON_EXISTENT_READER";
-        String badgeId = "BADGE_001";
+        String badgeId = "BADGE001";
         
         // 模拟依赖行为
         when(badgeReaderRepository.findByReaderId(readerId)).thenReturn(Optional.empty());
@@ -90,9 +90,9 @@ public class BadgeReaderSimulatorImplTest {
     @Test
     public void simulateBadgeSwipe_accessDenied_shouldNotUnlockResource() throws InterruptedException {
         // 准备测试数据
-        String readerId = "READER_001";
-        String badgeId = "BADGE_001";
-        String resourceId = "RESOURCE_001";
+        String readerId = "READER001";
+        String badgeId = "BADGE001";
+        String resourceId = "RES001";
         
         BadgeReader badgeReader = new BadgeReader(readerId, "Test Reader", "Location", "ONLINE", resourceId);
         AccessResult expectedResult = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Access denied");
@@ -116,8 +116,8 @@ public class BadgeReaderSimulatorImplTest {
     @Test
     public void readBadgeCode_validInput_shouldReturnCode() throws InterruptedException {
         // 准备测试数据
-        String readerId = "READER_001";
-        String badgeId = "BADGE_001";
+        String readerId = "READER001";
+        String badgeId = "BADGE001";
         
         // 执行测试
         String badgeCode = badgeReaderSimulator.readBadgeCode(readerId, badgeId);
@@ -131,10 +131,10 @@ public class BadgeReaderSimulatorImplTest {
     @Test
     public void updateReaderStatus_existingReader_shouldUpdateStatus() {
         // 准备测试数据
-        String readerId = "READER_001";
+        String readerId = "READER001";
         String newStatus = "MAINTENANCE";
         
-        BadgeReader badgeReader = new BadgeReader(readerId, "Test Reader", "Location", "ONLINE", "RESOURCE_001");
+        BadgeReader badgeReader = new BadgeReader(readerId, "Test Reader", "Location", "ONLINE", "RES001");
         
         // 模拟依赖行为
         when(badgeReaderRepository.findByReaderId(readerId)).thenReturn(Optional.of(badgeReader));

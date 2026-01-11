@@ -85,10 +85,12 @@ CREATE TABLE IF NOT EXISTS badge_readers (
     reader_name VARCHAR(100) NOT NULL,
     location VARCHAR(200),
     status VARCHAR(20) NOT NULL,
-    resource_id VARCHAR(50),
+    resource_id VARCHAR(50) NOT NULL,
     last_seen DATETIME,
     badge_code_length INT,
-    FOREIGN KEY (resource_id) REFERENCES resources(resource_id) ON DELETE SET NULL
+    operation_mode VARCHAR(20) DEFAULT 'SWIPE',
+    FOREIGN KEY (resource_id) REFERENCES resources(resource_id) ON DELETE CASCADE,
+    UNIQUE (resource_id)
 );
 
 -- 10. 新增表：profiles（配置文件表）
@@ -115,6 +117,10 @@ CREATE TABLE IF NOT EXISTS time_filters (
     days_of_week VARCHAR(50),
     start_time TIME,
     end_time TIME,
+    time_ranges VARCHAR(200),
+    excluded_months VARCHAR(100),
+    excluded_days_of_week VARCHAR(50),
+    excluded_time_ranges VARCHAR(200),
     is_recurring BOOLEAN DEFAULT FALSE,
     description VARCHAR(500)
 );
@@ -143,7 +149,11 @@ CREATE TABLE IF NOT EXISTS profile_groups (
 ALTER TABLE badges 
 ADD COLUMN expiration_date DATE,
 ADD COLUMN badge_code VARCHAR(100),
-ADD COLUMN last_updated DATETIME;
+ADD COLUMN last_updated DATETIME,
+ADD COLUMN last_code_update DATETIME,
+ADD COLUMN code_expiration_date DATE,
+ADD COLUMN needs_update BOOLEAN DEFAULT FALSE,
+ADD COLUMN update_due_date DATE;
 
 -- 为resources表添加新字段
 ALTER TABLE resources 

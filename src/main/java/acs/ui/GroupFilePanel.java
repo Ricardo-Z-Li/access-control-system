@@ -214,7 +214,7 @@ public class GroupFilePanel extends JPanel {
             if (valid) {
                 resultArea.setText("文件验证通过: " + filePath + "\n\n文件格式正确，可以被成功解析。");
             } else {
-                resultArea.setText("文件验证失败: " + filePath + "\n\n文件格式错误，请检查文件内容。\n\n正确格式示例:\ngroup1:开发组:D-1F-101,D-1F-102,D-2F-201\ngroup2:测试组:D-3F-301,D-3F-302");
+                resultArea.setText("文件验证失败: " + filePath + "\n\n文件格式错误，请检查文件内容。\n\n正确格式示例:\nGROUP001:Administrators:RES001,RES002,RES003\nGROUP002:Engineering:RES004,RES005,RES006");
             }
         } catch (Exception ex) {
             resultArea.setText("验证过程中出错: " + ex.getMessage());

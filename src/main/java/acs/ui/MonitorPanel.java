@@ -229,8 +229,8 @@ public class MonitorPanel extends JPanel {
     }
     
     private void simulateAccess() {
-        String[] badges = {"B-10001", "B-10002", "B-10003", "B-10004"};
-        String[] resources = {"D-1F-101", "D-2F-201", "D-3F-301", "D-1F-102"};
+        String[] badges = {"BADGE001", "BADGE002", "BADGE003", "BADGE004"};
+        String[] resources = {"RES001", "RES002", "RES003", "RES004"};
         String[] decisions = {"ALLOW", "DENY"};
         String[] reasons = {"SUCCESS", "BADGE_NOT_FOUND", "UNAUTHORIZED"};
         

@@ -1,217 +1,207 @@
--- 初始化测试数据库数据
-USE access_control_db;
+-- init-test-data.sql
+-- Test data for Access Control System
+-- All names in English, person names in "John White" format
 
--- 清空现有数据（按依赖反向顺序）
-SET FOREIGN_KEY_CHECKS = 0;
+-- Clear existing data (if any) - delete in reverse order to respect foreign key constraints
+DELETE FROM access_logs;
+DELETE FROM resource_dependencies;
+DELETE FROM profile_groups;
+DELETE FROM profile_time_filters;
+DELETE FROM badge_readers;
+DELETE FROM group_resources;
+DELETE FROM employee_groups;
+DELETE FROM profiles;
+DELETE FROM time_filters;
+DELETE FROM employees;
+DELETE FROM badges;
+DELETE FROM group_permissions;
+DELETE FROM resources;
 
--- 清空所有表（按依赖顺序反向）
-TRUNCATE access_logs;
-TRUNCATE profile_time_filters;
-TRUNCATE profile_groups;
-TRUNCATE employee_groups;
-TRUNCATE group_resources;
-TRUNCATE resource_dependencies;
-TRUNCATE badge_readers;
-ALTER TABLE employees DROP FOREIGN KEY fk_employee_badge;
-TRUNCATE badges;
-TRUNCATE employees;
-TRUNCATE profiles;
-TRUNCATE time_filters;
-TRUNCATE resources;
-TRUNCATE group_permissions;
-
--- 重新添加employees表的外键约束
-ALTER TABLE employees 
-ADD CONSTRAINT fk_employee_badge 
-FOREIGN KEY (badge_id) REFERENCES badges(badge_id) ON DELETE CASCADE;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
--- 1. 插入权限组数据
+-- 1. Insert permission groups (group_permissions table) - no dependencies
 INSERT INTO group_permissions (group_id, name) VALUES
-('G001', 'Administrators'),
-('G002', 'Engineering'),
-('G003', 'Human Resources'),
-('G004', 'IT Support'),
-('G005', 'Visitors'),
-('G006', 'Security'),
-('G007', 'Finance'),
-('G008', 'Maintenance');
+('GROUP001', 'Administrators'),
+('GROUP002', 'Engineering'),
+('GROUP003', 'Finance'),
+('GROUP004', 'Human Resources'),
+('GROUP005', 'Facilities'),
+('GROUP006', 'Security'),
+('GROUP007', 'Guests');
 
--- 2. 插入资源数据
+-- 2. Insert resources (resources table) - no dependencies
 INSERT INTO resources (resource_id, resource_name, resource_type, resource_state, is_controlled) VALUES
-('R001', 'Main Entrance', 'DOOR', 'AVAILABLE', TRUE),
-('R002', 'Server Room', 'ROOM', 'LOCKED', TRUE),
-('R003', 'Office Printer 1', 'PRINTER', 'AVAILABLE', TRUE),
-('R004', 'Engineering Workshop', 'ROOM', 'OCCUPIED', TRUE),
-('R005', 'HR Office', 'ROOM', 'AVAILABLE', TRUE),
-('R006', 'Executive Laptop', 'COMPUTER', 'AVAILABLE', TRUE),
-('R007', 'Cafeteria Door', 'DOOR', 'AVAILABLE', TRUE),
-('R008', 'Parking Gate', 'DOOR', 'OFFLINE', TRUE),
-('R009', 'Conference Room A', 'ROOM', 'AVAILABLE', TRUE),
-('R010', 'Finance Safe', 'OTHER', 'LOCKED', TRUE),
-('R011', 'Maintenance Closet', 'ROOM', 'AVAILABLE', FALSE),
-('R012', 'Emergency Exit', 'DOOR', 'AVAILABLE', TRUE);
+('RES001', 'Main Entrance Door', 'DOOR', 'AVAILABLE', TRUE),
+('RES002', 'Server Room Door', 'DOOR', 'LOCKED', TRUE),
+('RES003', 'Finance Office Door', 'DOOR', 'AVAILABLE', TRUE),
+('RES004', 'Color Printer 3rd Floor', 'PRINTER', 'AVAILABLE', TRUE),
+('RES005', 'Engineering Lab Computer', 'COMPUTER', 'OCCUPIED', TRUE),
+('RES006', 'Conference Room A', 'ROOM', 'AVAILABLE', TRUE),
+('RES007', 'Executive Office', 'ROOM', 'AVAILABLE', TRUE),
+('RES008', 'Security Control Room', 'ROOM', 'OCCUPIED', TRUE),
+('RES009', 'Document Printer', 'PRINTER', 'OFFLINE', TRUE),
+('RES010', 'Guest WiFi Access', 'OTHER', 'AVAILABLE', FALSE),
+('RES011', 'Parking Gate', 'DOOR', 'AVAILABLE', TRUE),
+('RES012', 'Cafeteria Entrance', 'DOOR', 'AVAILABLE', TRUE);
 
--- 3. 插入徽章数据（包含新增字段）
-INSERT INTO badges (badge_id, status, expiration_date, badge_code, last_updated, last_code_update, code_expiration_date, needs_update, update_due_date) VALUES
-('B001', 'ACTIVE', '2026-12-31', 'ABC123', '2025-01-10 08:00:00', '2025-01-10 08:00:00', '2026-12-31', FALSE, NULL),
-('B002', 'ACTIVE', '2026-11-30', 'DEF456', '2025-01-10 09:15:00', '2025-01-10 09:15:00', '2026-11-30', FALSE, NULL),
-('B003', 'DISABLED', '2025-06-30', 'GHI789', '2025-01-09 14:20:00', '2025-01-09 14:20:00', '2025-06-30', TRUE, '2025-07-01'),
-('B004', 'ACTIVE', '2027-03-15', 'JKL012', '2025-01-11 10:30:00', '2025-01-11 10:30:00', '2027-03-15', FALSE, NULL),
-('B005', 'LOST', '2026-08-20', 'MNO345', '2025-01-08 16:45:00', '2025-01-08 16:45:00', '2026-08-20', TRUE, '2025-02-01'),
-('B006', 'ACTIVE', '2027-01-31', 'PQR678', '2025-01-11 11:00:00', '2025-01-11 11:00:00', '2027-01-31', FALSE, NULL),
-('B007', 'ACTIVE', '2026-10-10', 'STU901', '2025-01-10 13:20:00', '2025-01-10 13:20:00', '2026-10-10', FALSE, NULL),
-('B008', 'ACTIVE', '2027-05-05', 'VWX234', '2025-01-11 08:45:00', '2025-01-11 08:45:00', '2027-05-05', FALSE, NULL),
-('B009', 'DISABLED', '2025-12-31', 'YZA567', '2025-01-09 10:10:00', '2025-01-09 10:10:00', '2025-12-31', TRUE, '2026-01-15'),
-('B010', 'ACTIVE', '2026-09-30', 'BCD890', '2025-01-11 14:00:00', '2025-01-11 14:00:00', '2026-09-30', FALSE, NULL);
+-- 3. Insert badges (badges table) - simple insert, only required fields
+INSERT INTO badges (badge_id, status) VALUES
+('BADGE001', 'ACTIVE'),
+('BADGE002', 'ACTIVE'),
+('BADGE003', 'ACTIVE'),
+('BADGE004', 'DISABLED'),
+('BADGE005', 'LOST'),
+('BADGE006', 'ACTIVE'),
+('BADGE007', 'ACTIVE'),
+('BADGE008', 'ACTIVE');
 
--- 4. 插入员工数据
+-- 4. Insert employees (employees table) - depends on badges
 INSERT INTO employees (employee_id, employee_name, badge_id) VALUES
-('E001', 'John Doe', 'B001'),
-('E002', 'Jane Smith', 'B002'),
-('E003', 'Robert Johnson', 'B003'),
-('E004', 'Emily Davis', 'B004'),
-('E005', 'Michael Brown', 'B005'),
-('E006', 'Sarah Wilson', 'B006'),
-('E007', 'David Miller', 'B007'),
-('E008', 'Lisa Taylor', 'B008'),
-('E009', 'James Anderson', 'B009'),
-('E010', 'Mary Thomas', 'B010');
+('EMP001', 'John White', 'BADGE001'),
+('EMP002', 'Sarah Johnson', 'BADGE002'),
+('EMP003', 'Michael Brown', 'BADGE003'),
+('EMP004', 'Emily Davis', 'BADGE004'),
+('EMP005', 'David Wilson', 'BADGE005'),
+('EMP006', 'Jennifer Lee', 'BADGE006'),
+('EMP007', 'Robert Taylor', 'BADGE007'),
+('EMP008', 'Jessica Miller', 'BADGE008');
 
--- 5. 插入员工-组关联数据
+-- 5. Insert employee-group associations (employee_groups table)
 INSERT INTO employee_groups (employee_id, group_id) VALUES
-('E001', 'G001'),  -- John Doe 属于管理员组
-('E001', 'G006'),  -- John Doe 也属于安全组
-('E002', 'G003'),  -- Jane Smith 属于HR组
-('E003', 'G002'),  -- Robert Johnson 属于工程组
-('E004', 'G002'),  -- Emily Davis 属于工程组
-('E005', 'G004'),  -- Michael Brown 属于IT组
-('E006', 'G004'),  -- Sarah Wilson 属于IT组
-('E006', 'G008'),  -- Sarah Wilson 也属于维护组
-('E007', 'G005'),  -- David Miller 属于访客组
-('E008', 'G007'),  -- Lisa Taylor 属于财务组
-('E009', 'G006'),  -- James Anderson 属于安全组
-('E010', 'G008');  -- Mary Thomas 属于维护组
+('EMP001', 'GROUP001'),
+('EMP001', 'GROUP002'),
+('EMP002', 'GROUP002'),
+('EMP003', 'GROUP002'),
+('EMP004', 'GROUP003'),
+('EMP005', 'GROUP005'),
+('EMP006', 'GROUP004'),
+('EMP007', 'GROUP006'),
+('EMP008', 'GROUP007');
 
--- 6. 插入组-资源关联数据
+-- 6. Insert group-resource associations (group_resources table)
+-- Administrators have access to everything
 INSERT INTO group_resources (group_id, resource_id) VALUES
-('G001', 'R001'),  -- 管理员可访问主入口
-('G001', 'R002'),  -- 管理员可访问服务器机房
-('G001', 'R003'),  -- 管理员可访问打印机
-('G001', 'R004'),  -- 管理员可访问工程车间
-('G001', 'R005'),  -- 管理员可访问HR办公室
-('G001', 'R006'),  -- 管理员可访问高管笔记本
-('G001', 'R007'),  -- 管理员可访问食堂门
-('G001', 'R008'),  -- 管理员可访问停车场门
-('G001', 'R009'),  -- 管理员可访问会议室A
-('G001', 'R010'),  -- 管理员可访问财务保险箱
-('G001', 'R011'),  -- 管理员可访问维护柜
-('G001', 'R012'),  -- 管理员可访问紧急出口
-('G002', 'R001'),  -- 工程组可访问主入口
-('G002', 'R004'),  -- 工程组可访问工程车间
-('G002', 'R003'),  -- 工程组可访问打印机
-('G002', 'R009'),  -- 工程组可访问会议室A
-('G003', 'R001'),  -- HR组可访问主入口
-('G003', 'R005'),  -- HR组可访问HR办公室
-('G003', 'R003'),  -- HR组可访问打印机
-('G003', 'R009'),  -- HR组可访问会议室A
-('G004', 'R001'),  -- IT组可访问主入口
-('G004', 'R002'),  -- IT组可访问服务器机房
-('G004', 'R006'),  -- IT组可访问高管笔记本
-('G004', 'R009'),  -- IT组可访问会议室A
-('G005', 'R001'),  -- 访客组可访问主入口
-('G005', 'R007'),  -- 访客组可访问食堂门
-('G005', 'R009'),  -- 访客组可访问会议室A
-('G006', 'R001'),  -- 安全组可访问主入口
-('G006', 'R002'),  -- 安全组可访问服务器机房
-('G006', 'R008'),  -- 安全组可访问停车场门
-('G006', 'R012'),  -- 安全组可访问紧急出口
-('G007', 'R001'),  -- 财务组可访问主入口
-('G007', 'R010'),  -- 财务组可访问财务保险箱
-('G007', 'R009'),  -- 财务组可访问会议室A
-('G008', 'R001'),  -- 维护组可访问主入口
-('G008', 'R011'),  -- 维护组可访问维护柜
-('G008', 'R012');  -- 维护组可访问紧急出口
+('GROUP001', 'RES001'),
+('GROUP001', 'RES002'),
+('GROUP001', 'RES003'),
+('GROUP001', 'RES004'),
+('GROUP001', 'RES005'),
+('GROUP001', 'RES006'),
+('GROUP001', 'RES007'),
+('GROUP001', 'RES008'),
+('GROUP001', 'RES009'),
+('GROUP001', 'RES010'),
+('GROUP001', 'RES011'),
+('GROUP001', 'RES012');
 
--- 7. 插入读卡器数据
+-- Engineering access
+INSERT INTO group_resources (group_id, resource_id) VALUES
+('GROUP002', 'RES001'),
+('GROUP002', 'RES002'),
+('GROUP002', 'RES004'),
+('GROUP002', 'RES005'),
+('GROUP002', 'RES006');
+
+-- Finance access
+INSERT INTO group_resources (group_id, resource_id) VALUES
+('GROUP003', 'RES001'),
+('GROUP003', 'RES003'),
+('GROUP003', 'RES004'),
+('GROUP003', 'RES006');
+
+-- HR access
+INSERT INTO group_resources (group_id, resource_id) VALUES
+('GROUP004', 'RES001'),
+('GROUP004', 'RES004'),
+('GROUP004', 'RES006'),
+('GROUP004', 'RES007');
+
+-- Facilities access
+INSERT INTO group_resources (group_id, resource_id) VALUES
+('GROUP005', 'RES001'),
+('GROUP005', 'RES002'),
+('GROUP005', 'RES011'),
+('GROUP005', 'RES012');
+
+-- Security access
+INSERT INTO group_resources (group_id, resource_id) VALUES
+('GROUP006', 'RES001'),
+('GROUP006', 'RES002'),
+('GROUP006', 'RES008'),
+('GROUP006', 'RES011');
+
+-- Guests access
+INSERT INTO group_resources (group_id, resource_id) VALUES
+('GROUP007', 'RES001'),
+('GROUP007', 'RES006'),
+('GROUP007', 'RES010'),
+('GROUP007', 'RES012');
+
+-- 7. Insert badge readers (badge_readers table)
 INSERT INTO badge_readers (reader_id, reader_name, location, status, resource_id, last_seen, badge_code_length, operation_mode) VALUES
-('READ001', 'Front Door Reader', 'Main Entrance Lobby', 'ONLINE', 'R001', '2025-01-11 08:30:00', 6, 'SWIPE'),
-('READ002', 'Server Room Reader', 'Data Center Room 101', 'ONLINE', 'R002', '2025-01-11 09:15:00', 6, 'SWIPE'),
-('READ003', 'HR Office Reader', 'HR Department', 'ONLINE', 'R005', '2025-01-11 10:00:00', 6, 'SWIPE'),
-('READ004', 'Engineering Reader', 'Engineering Wing', 'OFFLINE', 'R004', '2025-01-10 16:45:00', 6, 'SWIPE'),
-('READ005', 'Cafeteria Reader', 'Cafeteria Entrance', 'ONLINE', 'R007', '2025-01-11 11:20:00', 6, 'SWIPE'),
-('READ006', 'Parking Reader', 'Parking Gate 1', 'MAINTENANCE', 'R008', '2025-01-09 14:30:00', 6, 'SWIPE'),
-('READ007', 'Conference Reader', 'Conference Room A', 'ONLINE', 'R009', '2025-01-11 13:45:00', 6, 'SWIPE'),
-('READ008', 'Emergency Reader', 'Emergency Exit East', 'ONLINE', 'R012', '2025-01-11 07:50:00', 6, 'SWIPE');
+('READER001', 'Main Entrance Reader', 'Building A Lobby', 'ONLINE', 'RES001', NOW(), 9, 'SWIPE'),
+('READER002', 'Server Room Reader', 'Floor 3 Room 301', 'ONLINE', 'RES002', NOW(), 9, 'PROXIMITY'),
+('READER003', 'Finance Office Reader', 'Floor 2 Room 205', 'ONLINE', 'RES003', NOW(), 9, 'SWIPE'),
+('READER004', 'Conference Room Reader', 'Floor 1 Room 101', 'OFFLINE', 'RES006', DATE_SUB(NOW(), INTERVAL 1 HOUR), 9, 'SWIPE'),
+('READER005', 'Parking Gate Reader', 'Parking Lot Entrance', 'ONLINE', 'RES011', NOW(), 9, 'PROXIMITY'),
+('READER006', 'Cafeteria Reader', 'Cafeteria Entrance', 'MAINTENANCE', 'RES012', DATE_SUB(NOW(), INTERVAL 2 DAY), 9, 'SWIPE');
 
--- 8. 插入配置文件数据
+-- 8. Insert profiles (profiles table)
 INSERT INTO profiles (profile_id, profile_name, description, max_daily_access, max_weekly_access, priority_level, is_active, created_at, updated_at) VALUES
-('PROF001', 'Standard Employee', 'Standard access for regular employees', 10, 50, 5, TRUE, '2025-01-01 09:00:00', '2025-01-01 09:00:00'),
-('PROF002', 'Administrator', 'Full system access for administrators', 100, 500, 1, TRUE, '2025-01-01 09:00:00', '2025-01-01 09:00:00'),
-('PROF003', 'Visitor', 'Limited access for visitors', 5, 20, 10, TRUE, '2025-01-01 09:00:00', '2025-01-01 09:00:00'),
-('PROF004', 'Security Staff', 'Enhanced access for security personnel', 20, 100, 2, TRUE, '2025-01-01 09:00:00', '2025-01-01 09:00:00'),
-('PROF005', 'Maintenance', 'Access for maintenance staff', 15, 75, 6, TRUE, '2025-01-01 09:00:00', '2025-01-01 09:00:00'),
-('PROF006', 'After Hours', 'Access outside normal business hours', 5, 25, 8, FALSE, '2025-01-01 09:00:00', '2025-01-01 09:00:00');
+('PROFILE001', 'Standard Employee Profile', 'Default profile for regular employees', 10, 50, 5, TRUE, NOW(), NOW()),
+('PROFILE002', 'Admin Full Access', 'Administrators with full system access', NULL, NULL, 1, TRUE, NOW(), NOW()),
+('PROFILE003', 'Time Restricted Access', 'Access limited to business hours', 5, 25, 10, TRUE, NOW(), NOW()),
+('PROFILE004', 'Guest Limited Access', 'Limited access for visitors and guests', 3, 15, 20, TRUE, NOW(), NOW()),
+('PROFILE005', 'After Hours Access', 'Access permitted outside normal hours', 2, 10, 15, TRUE, NOW(), NOW());
 
--- 9. 插入时间过滤器数据
+-- 9. Insert time filters (time_filters table)
 INSERT INTO time_filters (time_filter_id, filter_name, raw_rule, year, months, days_of_month, days_of_week, start_time, end_time, time_ranges, excluded_months, excluded_days_of_week, excluded_time_ranges, is_recurring, description) VALUES
-('TF001', 'Business Hours', '2025.January-December.Monday-Friday.9:00-17:00', 2025, 'January,February,March,April,May,June,July,August,September,October,November,December', '1-31', 'Monday,Tuesday,Wednesday,Thursday,Friday', '09:00:00', '17:00:00', '9:00-17:00', NULL, 'Saturday,Sunday', NULL, TRUE, 'Standard business hours'),
-('TF002', 'Weekend Access', '2025.January-December.Saturday-Sunday.8:00-20:00', 2025, 'January,February,March,April,May,June,July,August,September,October,November,December', '1-31', 'Saturday,Sunday', '08:00:00', '20:00:00', '8:00-20:00', NULL, 'Monday,Tuesday,Wednesday,Thursday,Friday', NULL, TRUE, 'Weekend access hours'),
-('TF003', 'Night Shift', '2025.January-December.Monday-Friday.22:00-6:00', 2025, 'January,February,March,April,May,June,July,August,September,October,November,December', '1-31', 'Monday,Tuesday,Wednesday,Thursday,Friday', '22:00:00', '06:00:00', '22:00-6:00', NULL, 'Saturday,Sunday', NULL, TRUE, 'Night shift hours'),
-('TF004', 'Holiday Block', '2025.January-December.*.0:00-23:59', 2025, 'January,February,March,April,May,June,July,August,September,October,November,December', '1,15,25', '*', '00:00:00', '23:59:59', '0:00-23:59', NULL, NULL, NULL, FALSE, 'Block specific days of month'),
-('TF005', 'Summer Hours', '2025.June-August.Monday-Friday.8:00-16:00', 2025, 'June,July,August', '1-31', 'Monday,Tuesday,Wednesday,Thursday,Friday', '08:00:00', '16:00:00', '8:00-16:00', NULL, 'Saturday,Sunday', NULL, TRUE, 'Summer business hours');
+('TIMEFILTER001', 'Business Hours', '*.January-December.Monday-Friday.8:00-18:00', NULL, '1-12', NULL, '1-5', '08:00:00', '18:00:00', '08:00-18:00', NULL, NULL, NULL, TRUE, 'Standard business hours 8AM-6PM weekdays'),
+('TIMEFILTER002', 'Weekend Access', '*.January-December.Saturday-Sunday.*', NULL, '1-12', NULL, '6-7', NULL, NULL, NULL, NULL, NULL, NULL, TRUE, 'Weekend access only'),
+('TIMEFILTER003', 'After Hours', '*.January-December.Monday-Friday.18:00-22:00', NULL, '1-12', NULL, '1-5', '18:00:00', '22:00:00', '18:00-22:00', NULL, NULL, NULL, TRUE, 'Evening access after business hours'),
+('TIMEFILTER004', 'Holiday Exclusion', '*.January-December.*.*', NULL, '1-12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE, 'Holiday period exclusion'),
+('TIMEFILTER005', 'Quarter End', '2025.March,June,September,December.1-10.Monday-Friday.6:00-20:00', 2025, '3,6,9,12', '1-10', '1-5', '06:00:00', '20:00:00', '06:00-20:00', NULL, NULL, NULL, FALSE, 'Extended hours during quarter end');
 
--- 10. 插入配置文件-时间过滤器关联数据
+-- 10. Insert profile-time filter associations (profile_time_filters table)
 INSERT INTO profile_time_filters (profile_id, time_filter_id) VALUES
-('PROF001', 'TF001'),  -- Standard Employee uses business hours
-('PROF002', 'TF001'),  -- Administrator uses business hours
-('PROF002', 'TF002'),  -- Administrator also has weekend access
-('PROF002', 'TF003'),  -- Administrator also has night shift access
-('PROF003', 'TF001'),  -- Visitor uses business hours
-('PROF004', 'TF001'),  -- Security Staff uses business hours
-('PROF004', 'TF002'),  -- Security Staff also has weekend access
-('PROF004', 'TF003'),  -- Security Staff also has night shift access
-('PROF005', 'TF001'),  -- Maintenance uses business hours
-('PROF005', 'TF003'),  -- Maintenance also has night shift access
-('PROF006', 'TF003');  -- After Hours profile uses night shift only
+('PROFILE001', 'TIMEFILTER001'),
+('PROFILE003', 'TIMEFILTER001'),
+('PROFILE003', 'TIMEFILTER004'),
+('PROFILE004', 'TIMEFILTER001'),
+('PROFILE005', 'TIMEFILTER003'),
+('PROFILE005', 'TIMEFILTER002');
 
--- 11. 插入配置文件-权限组关联数据
+-- 11. Insert profile-group associations (profile_groups table)
 INSERT INTO profile_groups (profile_id, group_id) VALUES
-('PROF001', 'G002'),  -- Standard Employee profile linked to Engineering group
-('PROF001', 'G003'),  -- Standard Employee profile linked to HR group
-('PROF001', 'G004'),  -- Standard Employee profile linked to IT Support group
-('PROF002', 'G001'),  -- Administrator profile linked to Administrators group
-('PROF003', 'G005'),  -- Visitor profile linked to Visitors group
-('PROF004', 'G006'),  -- Security Staff profile linked to Security group
-('PROF005', 'G008'),  -- Maintenance profile linked to Maintenance group
-('PROF006', 'G001'),  -- After Hours profile linked to Administrators group
-('PROF006', 'G006');  -- After Hours profile also linked to Security group
+('PROFILE001', 'GROUP002'),
+('PROFILE001', 'GROUP003'),
+('PROFILE001', 'GROUP004'),
+('PROFILE001', 'GROUP005'),
+('PROFILE002', 'GROUP001'),
+('PROFILE002', 'GROUP006'),
+('PROFILE003', 'GROUP002'),
+('PROFILE004', 'GROUP007'),
+('PROFILE005', 'GROUP001'),
+('PROFILE005', 'GROUP006');
 
--- 12. 插入资源依赖关系数据
-INSERT INTO resource_dependencies (resource_id, required_resource_id, time_window_minutes, description) VALUES
-('R002', 'R001', 5, 'Server room requires main entrance access within 5 minutes'),
-('R004', 'R001', 10, 'Engineering workshop requires main entrance access within 10 minutes'),
-('R010', 'R005', 2, 'Finance safe requires HR office access within 2 minutes'),
-('R012', 'R001', 1, 'Emergency exit requires main entrance access within 1 minute');
-
--- 13. 插入访问日志数据（展示各种决策和原因代码）
+-- 12. Insert access logs (access_logs table)
 INSERT INTO access_logs (timestamp, badge_id, employee_id, resource_id, decision, reason_code) VALUES
-('2025-01-11 08:30:00', 'B001', 'E001', 'R001', 'ALLOW', 'ALLOW'),
-('2025-01-11 08:45:00', 'B002', 'E002', 'R005', 'ALLOW', 'ALLOW'),
-('2025-01-11 09:15:00', 'B003', 'E003', 'R004', 'DENY', 'BADGE_INACTIVE'),
-('2025-01-11 10:00:00', 'B004', 'E004', 'R002', 'DENY', 'NO_PERMISSION'),
-('2025-01-11 11:30:00', 'B005', 'E005', 'R001', 'DENY', 'BADGE_INACTIVE'),
-('2025-01-11 13:45:00', 'B006', 'E006', 'R002', 'ALLOW', 'ALLOW'),
-('2025-01-11 14:20:00', 'B007', 'E007', 'R004', 'DENY', 'NO_PERMISSION'),
-('2025-01-11 15:50:00', 'B001', 'E001', 'R002', 'ALLOW', 'ALLOW'),
-('2025-01-11 17:00:00', 'B002', 'E002', 'R007', 'ALLOW', 'ALLOW'),
-('2025-01-11 18:30:00', 'B008', 'E008', 'R010', 'DENY', 'RESOURCE_LOCKED'),
-('2025-01-11 20:15:00', 'B009', 'E009', 'R012', 'DENY', 'BADGE_INACTIVE'),
-('2025-01-11 21:45:00', 'B010', 'E010', 'R011', 'ALLOW', 'ALLOW'),
-('2025-01-11 22:10:00', 'B001', 'E001', 'R009', 'ALLOW', 'ALLOW'),
-('2025-01-11 23:30:00', 'B002', 'E002', 'R003', 'DENY', 'RESOURCE_OCCUPIED'),
-('2025-01-12 07:45:00', 'B006', 'E006', 'R008', 'DENY', 'RESOURCE_NOT_FOUND'),
-('2025-01-12 09:00:00', 'B004', 'E004', 'R006', 'ALLOW', 'ALLOW');
+(DATE_SUB(NOW(), INTERVAL 2 HOUR), 'BADGE001', 'EMP001', 'RES001', 'ALLOW', 'ALLOW'),
+(DATE_SUB(NOW(), INTERVAL 3 HOUR), 'BADGE002', 'EMP002', 'RES002', 'DENY', 'NO_PERMISSION'),
+(DATE_SUB(NOW(), INTERVAL 4 HOUR), 'BADGE003', 'EMP003', 'RES004', 'ALLOW', 'ALLOW'),
+(DATE_SUB(NOW(), INTERVAL 5 HOUR), 'BADGE004', 'EMP004', 'RES003', 'DENY', 'BADGE_INACTIVE'),
+(DATE_SUB(NOW(), INTERVAL 6 HOUR), 'BADGE005', 'EMP005', 'RES011', 'DENY', 'BADGE_INACTIVE'),
+(DATE_SUB(NOW(), INTERVAL 7 HOUR), 'BADGE001', 'EMP001', 'RES006', 'ALLOW', 'ALLOW'),
+(DATE_SUB(NOW(), INTERVAL 8 HOUR), 'BADGE002', 'EMP002', 'RES005', 'ALLOW', 'ALLOW'),
+(DATE_SUB(NOW(), INTERVAL 9 HOUR), 'BADGE003', 'EMP003', 'RES002', 'DENY', 'RESOURCE_LOCKED'),
+(DATE_SUB(NOW(), INTERVAL 10 HOUR), 'BADGE006', 'EMP006', 'RES007', 'ALLOW', 'ALLOW'),
+(DATE_SUB(NOW(), INTERVAL 11 HOUR), 'BADGE007', 'EMP007', 'RES008', 'ALLOW', 'ALLOW'),
+(DATE_SUB(NOW(), INTERVAL 12 HOUR), 'BADGE008', 'EMP008', 'RES010', 'ALLOW', 'ALLOW'),
+(DATE_SUB(NOW(), INTERVAL 13 HOUR), 'BADGE008', 'EMP008', 'RES002', 'DENY', 'NO_PERMISSION');
 
--- 完成初始化
+-- 13. Insert resource dependencies (resource_dependencies table)
+INSERT INTO resource_dependencies (resource_id, required_resource_id, time_window_minutes, description) VALUES
+('RES002', 'RES001', 5, 'Must access main entrance within 5 minutes before server room'),
+('RES007', 'RES001', 10, 'Executive office requires main entrance access within 10 minutes'),
+('RES008', 'RES001', 2, 'Security room requires recent main entrance access'),
+('RES005', 'RES001', 15, 'Engineering lab requires main entrance access within 15 minutes');
+
+-- End of test data initialization

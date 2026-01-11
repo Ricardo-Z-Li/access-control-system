@@ -193,7 +193,7 @@ public class EventSimulatorImpl implements EventSimulator {
         // 生成模拟徽章ID（在实际系统中应从数据库获取）
         List<String> badgeIds = new ArrayList<>();
         for (int i = 1; i <= 300; i++) {
-            badgeIds.add("SIM_BADGE_" + i);
+            badgeIds.add("BADGE00" + i);
         }
         return badgeIds;
     }

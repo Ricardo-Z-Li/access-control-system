@@ -9,7 +9,7 @@ import java.time.Instant;
  * 读卡器与资源关联：一个读卡器可以控制一个或多个资源。
  * 设计原则：
  * - readerId 是读卡器的唯一标识符
- * - resourceId 指向读卡器控制的资源（可以为空，表示未分配）
+ * - resourceId 指向读卡器控制的资源（不可为空，且唯一，表示一一绑定）
  * - status 表示读卡器状态（ONLINE/OFFLINE/MAINTENANCE）
  * - lastSeen 记录最后一次通信时间
  */
@@ -30,7 +30,7 @@ public class BadgeReader {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Column(name = "resource_id", length = 50)
+    @Column(name = "resource_id", nullable = false, unique = true, length = 50)
     private String resourceId;
 
     @Column(name = "last_seen")
