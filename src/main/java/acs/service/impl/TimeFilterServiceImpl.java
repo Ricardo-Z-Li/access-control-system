@@ -127,20 +127,14 @@ public class TimeFilterServiceImpl implements TimeFilterService {
         String currentMonth = dateTime.getMonth().name();
         if (timeFilter.getMonths() != null && !timeFilter.getMonths().isEmpty()) {
             // 包含列表：必须在此列表中
-            Set<String> includedMonths = new HashSet<>(Arrays.asList(timeFilter.getMonths().split(",")));
+            Set<String> includedMonths = parseMonthList(timeFilter.getMonths());
             if (!includedMonths.contains(currentMonth)) {
                 return false;
             }
         }
         if (timeFilter.getExcludedMonths() != null && !timeFilter.getExcludedMonths().isEmpty()) {
             // 排除列表：不能在此列表中
-            Set<String> excludedMonths = new HashSet<>();
-            for (String month : timeFilter.getExcludedMonths().split(",")) {
-                String trimmed = month.trim();
-                if (!trimmed.isEmpty()) {
-                    excludedMonths.add(trimmed);
-                }
-            }
+            Set<String> excludedMonths = parseMonthList(timeFilter.getExcludedMonths());
             if (excludedMonths.contains(currentMonth)) {
                 return false;
             }
@@ -150,20 +144,14 @@ public class TimeFilterServiceImpl implements TimeFilterService {
         int currentDay = dateTime.getDayOfWeek().getValue(); // 1=Monday, 7=Sunday
 
         if (timeFilter.getDaysOfWeek() != null && !timeFilter.getDaysOfWeek().isEmpty()) {
-            Set<String> includedDays = new HashSet<>(Arrays.asList(timeFilter.getDaysOfWeek().split(",")));
-            if (!includedDays.contains(String.valueOf(currentDay))) {
+            Set<Integer> includedDays = parseDayOfWeekList(timeFilter.getDaysOfWeek());
+            if (!includedDays.contains(currentDay)) {
                 return false;
             }
         }
         if (timeFilter.getExcludedDaysOfWeek() != null && !timeFilter.getExcludedDaysOfWeek().isEmpty()) {
-            Set<String> excludedDays = new HashSet<>();
-            for (String day : timeFilter.getExcludedDaysOfWeek().split(",")) {
-                String trimmed = day.trim();
-                if (!trimmed.isEmpty()) {
-                    excludedDays.add(trimmed);
-                }
-            }
-            if (excludedDays.contains(String.valueOf(currentDay))) {
+            Set<Integer> excludedDays = parseDayOfWeekList(timeFilter.getExcludedDaysOfWeek());
+            if (excludedDays.contains(currentDay)) {
                 return false;
             }
         }
@@ -244,6 +232,15 @@ public class TimeFilterServiceImpl implements TimeFilterService {
     }
 
     private int parseDayOfWeek(String day) {
+        // 尝试解析为数字
+        try {
+            int dayNum = Integer.parseInt(day.trim());
+            if (dayNum >= 1 && dayNum <= 7) {
+                return dayNum;
+            }
+        } catch (NumberFormatException e) {
+            // 不是数字，继续按名称解析
+        }
         String lower = day.toLowerCase();
         switch (lower) {
             case "monday": case "mon": return 1;
@@ -285,6 +282,50 @@ public class TimeFilterServiceImpl implements TimeFilterService {
         return new String[]{trimmed, null};
     }
 
+    private Set<Integer> parseNumberRange(String rangeStr) {
+        Set<Integer> numbers = new HashSet<>();
+        if (rangeStr == null || rangeStr.isEmpty()) {
+            return numbers;
+        }
+        String[] parts = rangeStr.split(",");
+        for (String part : parts) {
+            part = part.trim();
+            if (part.contains("-")) {
+                String[] range = part.split("-");
+                if (range.length != 2) {
+                    throw new IllegalArgumentException("无效的数字范围: " + part);
+                }
+                int start = Integer.parseInt(range[0].trim());
+                int end = Integer.parseInt(range[1].trim());
+                for (int i = start; i <= end; i++) {
+                    numbers.add(i);
+                }
+            } else {
+                numbers.add(Integer.parseInt(part.trim()));
+            }
+        }
+        return numbers;
+    }
+
+    private Month parseMonth(String monthStr) {
+        // 尝试解析为数字
+        try {
+            int monthNum = Integer.parseInt(monthStr.trim());
+            if (monthNum >= 1 && monthNum <= 12) {
+                return Month.of(monthNum);
+            }
+        } catch (NumberFormatException e) {
+            // 不是数字，继续
+        }
+        // 尝试解析为月份名称
+        try {
+            return Month.valueOf(monthStr.toUpperCase());
+        } catch (IllegalArgumentException e1) {
+            // 尝试缩写
+            return parseMonthAbbreviation(monthStr);
+        }
+    }
+
     private Set<String> parseMonthList(String monthListStr) {
         Set<String> monthSet = new HashSet<>();
         if (monthListStr == null || monthListStr.isEmpty()) {
@@ -293,11 +334,23 @@ public class TimeFilterServiceImpl implements TimeFilterService {
         String[] items = monthListStr.split(",");
         for (String item : items) {
             item = item.trim();
-            try {
-                Month month = Month.valueOf(item.toUpperCase());
-                monthSet.add(month.name());
-            } catch (IllegalArgumentException e) {
-                Month month = parseMonthAbbreviation(item);
+            if (item.contains("-")) {
+                // 范围，例如 "1-12" 或 "January-March"
+                String[] range = item.split("-");
+                if (range.length != 2) {
+                    throw new IllegalArgumentException("无效的月份范围: " + item);
+                }
+                Month start = parseMonth(range[0].trim());
+                Month end = parseMonth(range[1].trim());
+                // 获取月份序号（1-12）
+                int startNum = start.getValue();
+                int endNum = end.getValue();
+                for (int i = startNum; i <= endNum; i++) {
+                    monthSet.add(Month.of(i).name());
+                }
+            } else {
+                // 单个月份
+                Month month = parseMonth(item);
                 monthSet.add(month.name());
             }
         }

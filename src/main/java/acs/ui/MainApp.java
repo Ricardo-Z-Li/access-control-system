@@ -118,7 +118,7 @@ public class MainApp extends JFrame {
         
         adminPanel = new AdminPanel(adminService, profileFileService);
         scanPanel = new ScanPanel(accessControlService, badgeCodeUpdateService, clockService);
-        monitorPanel = new MonitorPanel(logQueryService, siteMapPanel, csvLogExporter, logCleanupService);
+        monitorPanel = new MonitorPanel(logQueryService, accessControlService, localCacheManager, siteMapPanel, csvLogExporter, logCleanupService);
         simulatorPanel = new SimulatorPanel(badgeReaderSimulator, eventSimulator, routerSystem, clockService);
         accessLimitPanel = new AccessLimitPanel(accessLimitService, employeeRepository, profileRepository);
         timeFilterPanel = new TimeFilterPanel(timeFilterService, timeFilterRepository);

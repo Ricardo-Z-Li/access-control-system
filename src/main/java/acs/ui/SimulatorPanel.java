@@ -304,7 +304,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 1;
         JTextField nodeIdField = new JTextField(15);
-        nodeIdField.setText("NODE001");
+        nodeIdField.setText("NODE_1");
         controlPanel.add(nodeIdField, gbc);
         
         gbc.gridx = 0;

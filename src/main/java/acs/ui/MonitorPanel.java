@@ -3,14 +3,21 @@ package acs.ui;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import acs.service.LogQueryService;
+import acs.service.AccessControlService;
+import acs.domain.AccessRequest;
+import acs.domain.AccessResult;
+import acs.domain.Badge;
+import acs.domain.Employee;
 import acs.cache.LocalCacheManager;
 
 public class MonitorPanel extends JPanel {
     private LogQueryService logQueryService;
+    private AccessControlService accessControlService;
     private LocalCacheManager cacheManager;
     private SiteMapPanel siteMapPanel;
     private acs.log.csv.CsvLogExporter csvLogExporter;
@@ -31,17 +38,34 @@ public class MonitorPanel extends JPanel {
     private JComboBox<String> decisionCombo;
     
     public MonitorPanel(LogQueryService logQueryService) {
-        this(logQueryService, null);
+        this(logQueryService, null, null, null, null, null);
     }
     
     public MonitorPanel(LogQueryService logQueryService, SiteMapPanel siteMapPanel) {
-        this(logQueryService, siteMapPanel, null, null);
+        this(logQueryService, null, null, siteMapPanel, null, null);
     }
     
     public MonitorPanel(LogQueryService logQueryService, SiteMapPanel siteMapPanel,
                        acs.log.csv.CsvLogExporter csvLogExporter,
                        acs.service.LogCleanupService logCleanupService) {
+        this(logQueryService, null, null, siteMapPanel, csvLogExporter, logCleanupService);
+    }
+    
+    public MonitorPanel(LogQueryService logQueryService, AccessControlService accessControlService, 
+                       SiteMapPanel siteMapPanel,
+                       acs.log.csv.CsvLogExporter csvLogExporter,
+                       acs.service.LogCleanupService logCleanupService) {
+        this(logQueryService, accessControlService, null, siteMapPanel, csvLogExporter, logCleanupService);
+    }
+    
+    public MonitorPanel(LogQueryService logQueryService, AccessControlService accessControlService, 
+                       LocalCacheManager cacheManager,
+                       SiteMapPanel siteMapPanel,
+                       acs.log.csv.CsvLogExporter csvLogExporter,
+                       acs.service.LogCleanupService logCleanupService) {
         this.logQueryService = logQueryService;
+        this.accessControlService = accessControlService;
+        this.cacheManager = cacheManager;
         this.siteMapPanel = siteMapPanel;
         this.csvLogExporter = csvLogExporter;
         this.logCleanupService = logCleanupService;
@@ -298,18 +322,46 @@ public class MonitorPanel extends JPanel {
     }
     
     private void simulateAccess() {
+        if (accessControlService == null) {
+            JOptionPane.showMessageDialog(this, "访问控制服务未初始化，无法模拟真实访问", "错误", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         String[] badges = {"BADGE001", "BADGE002", "BADGE003", "BADGE004"};
         String[] resources = {"RES001", "RES002", "RES003", "RES004"};
-        String[] decisions = {"ALLOW", "DENY"};
-        String[] reasons = {"SUCCESS", "BADGE_NOT_FOUND", "UNAUTHORIZED"};
         
-        String badge = badges[(int) (Math.random() * badges.length)];
-        String resource = resources[(int) (Math.random() * resources.length)];
-        String decision = decisions[(int) (Math.random() * decisions.length)];
-        String reason = reasons[(int) (Math.random() * reasons.length)];
+        String badgeId = badges[(int) (Math.random() * badges.length)];
+        String resourceId = resources[(int) (Math.random() * resources.length)];
+        Instant timestamp = Instant.now();
+        
+        // 获取真实的员工信息
+        String employeeInfo = "未知员工";
+        if (cacheManager != null) {
+            Badge badge = cacheManager.getBadge(badgeId);
+            if (badge != null && badge.getEmployee() != null) {
+                Employee employee = badge.getEmployee();
+                String employeeName = employee.getEmployeeName() != null ? employee.getEmployeeName() : "";
+                String employeeId = employee.getEmployeeId() != null ? employee.getEmployeeId() : "";
+                if (!employeeName.isEmpty() && !employeeId.isEmpty()) {
+                    employeeInfo = employeeName + " (" + employeeId + ")";
+                } else if (!employeeId.isEmpty()) {
+                    employeeInfo = employeeId;
+                } else if (!employeeName.isEmpty()) {
+                    employeeInfo = employeeName;
+                }
+                // 否则保持"未知员工"
+            }
+        } else {
+            employeeInfo = "员工" + badgeId.substring(2); // 回退到模拟名称
+        }
+        
+        AccessRequest request = new AccessRequest(badgeId, resourceId, timestamp);
+        AccessResult result = accessControlService.processAccess(request);
+        
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
         
-        realTimeTableModel.addRow(new Object[]{time, badge, "员工" + badge.substring(2), resource, decision, reason});
+        realTimeTableModel.addRow(new Object[]{time, badgeId, employeeInfo, resourceId, 
+            result.getDecision().toString(), result.getReasonCode().toString()});
         
         if (realTimeTableModel.getRowCount() > 50) {
             realTimeTableModel.removeRow(0);
