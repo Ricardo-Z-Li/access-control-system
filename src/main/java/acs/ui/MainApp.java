@@ -24,6 +24,8 @@ import acs.repository.ProfileRepository;
 import acs.repository.TimeFilterRepository;
 import acs.repository.GroupRepository;
 import acs.ui.SiteMapPanel;
+import acs.log.csv.CsvLogExporter;
+import acs.service.LogCleanupService;
 
 @Component
 @Profile("!test")
@@ -65,6 +67,12 @@ public class MainApp extends JFrame {
     
     @Autowired
     private LocalCacheManager localCacheManager;
+    
+    @Autowired
+    private CsvLogExporter csvLogExporter;
+    
+    @Autowired
+    private LogCleanupService logCleanupService;
     
     @Autowired
     private BadgeReaderSimulator badgeReaderSimulator;
@@ -110,7 +118,7 @@ public class MainApp extends JFrame {
         
         adminPanel = new AdminPanel(adminService, profileFileService);
         scanPanel = new ScanPanel(accessControlService, badgeCodeUpdateService, clockService);
-        monitorPanel = new MonitorPanel(logQueryService, siteMapPanel);
+        monitorPanel = new MonitorPanel(logQueryService, siteMapPanel, csvLogExporter, logCleanupService);
         simulatorPanel = new SimulatorPanel(badgeReaderSimulator, eventSimulator, routerSystem, clockService);
         accessLimitPanel = new AccessLimitPanel(accessLimitService, employeeRepository, profileRepository);
         timeFilterPanel = new TimeFilterPanel(timeFilterService, timeFilterRepository);
