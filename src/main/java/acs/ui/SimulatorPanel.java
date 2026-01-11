@@ -12,7 +12,9 @@ import acs.simulator.RouterSystem;
 import acs.simulator.SimulationStatus;
 import acs.simulator.SystemHealth;
 import acs.simulator.LoadBalanceStats;
+import acs.simulator.ExecutionChainTracker;
 import acs.service.ClockService;
+import java.util.List;
 
 public class SimulatorPanel extends JPanel {
     private BadgeReaderSimulator badgeReaderSimulator;
@@ -33,6 +35,11 @@ public class SimulatorPanel extends JPanel {
     private JButton setTimeButton;
     private JButton resetTimeButton;
     private JLabel currentTimeLabel;
+    
+    // 执行链追踪相关
+    private JTextArea executionChainArea;
+    private JTable executionChainTable;
+    private DefaultTableModel executionChainTableModel;
     
     public SimulatorPanel(BadgeReaderSimulator badgeReaderSimulator, 
                          EventSimulator eventSimulator,
@@ -59,6 +66,7 @@ public class SimulatorPanel extends JPanel {
         tabbedPane.addTab("事件模拟", createEventSimulatorPanel());
         tabbedPane.addTab("路由系统", createRouterSystemPanel());
         tabbedPane.addTab("系统监控", createSystemMonitorPanel());
+        tabbedPane.addTab("执行链追踪", createExecutionChainPanel());
         
         add(tabbedPane, BorderLayout.CENTER);
         
@@ -723,6 +731,147 @@ public class SimulatorPanel extends JPanel {
             SwingUtilities.invokeLater(() -> {
                 currentTimeLabel.setText("当前时间: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             });
+        }
+    }
+    
+    /**
+     * 创建执行链追踪面板
+     */
+    private JPanel createExecutionChainPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // 控制面板
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton clearButton = new JButton("清除执行链");
+        clearButton.addActionListener(e -> clearExecutionChains());
+        controlPanel.add(clearButton);
+        
+        JButton refreshButton = new JButton("刷新");
+        refreshButton.addActionListener(e -> refreshExecutionChains());
+        controlPanel.add(refreshButton);
+        
+        panel.add(controlPanel, BorderLayout.NORTH);
+        
+        // 执行链表格
+        String[] columns = {"时间", "步骤", "读卡器", "徽章", "资源", "节点", "详细信息"};
+        executionChainTableModel = new DefaultTableModel(columns, 0);
+        executionChainTable = new JTable(executionChainTableModel);
+        executionChainTable.setAutoCreateRowSorter(true);
+        
+        JScrollPane scrollPane = new JScrollPane(executionChainTable);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        // 执行链文本区域（详细视图）
+        executionChainArea = new JTextArea(10, 60);
+        executionChainArea.setEditable(false);
+        executionChainArea.setFont(new Font("宋体", Font.PLAIN, 12));
+        JPanel areaPanel = new JPanel(new BorderLayout());
+        areaPanel.add(new JLabel("执行链详细信息:"), BorderLayout.NORTH);
+        areaPanel.add(new JScrollPane(executionChainArea), BorderLayout.CENTER);
+        panel.add(areaPanel, BorderLayout.SOUTH);
+        
+        // 注册执行链监听器
+        ExecutionChainTracker.getInstance().addListener(new ExecutionChainListenerImpl());
+        
+        return panel;
+    }
+    
+    /**
+     * 清除执行链显示
+     */
+    private void clearExecutionChains() {
+        SwingUtilities.invokeLater(() -> {
+            executionChainTableModel.setRowCount(0);
+            executionChainArea.setText("");
+            ExecutionChainTracker.getInstance().clearAllChains();
+            logMessage("执行链已清除");
+        });
+    }
+    
+    /**
+     * 刷新执行链显示
+     */
+    private void refreshExecutionChains() {
+        SwingUtilities.invokeLater(() -> {
+            executionChainTableModel.setRowCount(0);
+            executionChainArea.setText("");
+            
+            List<ExecutionChainTracker.ExecutionChain> chains = 
+                    ExecutionChainTracker.getInstance().getAllChains();
+            
+            for (ExecutionChainTracker.ExecutionChain chain : chains) {
+                for (ExecutionChainTracker.ChainStep step : chain.getSteps()) {
+                    addExecutionChainStepToTable(step);
+                }
+            }
+            
+            logMessage("执行链已刷新，共 " + chains.size() + " 条执行链");
+        });
+    }
+    
+    /**
+     * 添加执行链步骤到表格
+     */
+    private void addExecutionChainStepToTable(ExecutionChainTracker.ChainStep step) {
+        SwingUtilities.invokeLater(() -> {
+            executionChainTableModel.addRow(new Object[]{
+                step.getFormattedTimestamp(),
+                step.getStepType().getDescription(),
+                step.getReaderId() != null ? step.getReaderId() : "",
+                step.getBadgeId() != null ? step.getBadgeId() : "",
+                step.getResourceId() != null ? step.getResourceId() : "",
+                step.getNodeId() != null ? step.getNodeId() : "",
+                step.getAdditionalInfo() != null ? step.getAdditionalInfo() : ""
+            });
+            
+            // 自动滚动到最后一行
+            executionChainTable.scrollRectToVisible(
+                executionChainTable.getCellRect(executionChainTableModel.getRowCount()-1, 0, true)
+            );
+        });
+    }
+    
+    /**
+     * 更新执行链文本区域
+     */
+    private void updateExecutionChainArea(ExecutionChainTracker.ExecutionChain chain) {
+        SwingUtilities.invokeLater(() -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append("执行链: ").append(chain.getChainId()).append("\n");
+            sb.append("事件ID: ").append(chain.getEventId()).append("\n");
+            sb.append("状态: ").append(chain.isCompleted() ? "完成" : "进行中").append("\n");
+            sb.append("步骤数: ").append(chain.getSteps().size()).append("\n");
+            sb.append("步骤详情:\n");
+            
+            for (ExecutionChainTracker.ChainStep step : chain.getSteps()) {
+                sb.append("  ").append(step.toString()).append("\n");
+            }
+            
+            executionChainArea.setText(sb.toString());
+        });
+    }
+    
+    /**
+     * 执行链监听器实现
+     */
+    private class ExecutionChainListenerImpl implements ExecutionChainTracker.ExecutionChainListener {
+        @Override
+        public void onChainStarted(ExecutionChainTracker.ExecutionChain chain) {
+            logMessage("执行链开始: " + chain.getChainId() + " (事件: " + chain.getEventId() + ")");
+            updateExecutionChainArea(chain);
+        }
+        
+        @Override
+        public void onStepAdded(ExecutionChainTracker.ExecutionChain chain, 
+                               ExecutionChainTracker.ChainStep step) {
+            addExecutionChainStepToTable(step);
+            updateExecutionChainArea(chain);
+        }
+        
+        @Override
+        public void onChainCompleted(ExecutionChainTracker.ExecutionChain chain) {
+            logMessage("执行链完成: " + chain.getChainId() + " (事件: " + chain.getEventId() + ")");
+            updateExecutionChainArea(chain);
         }
     }
 }

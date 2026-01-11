@@ -274,8 +274,8 @@ public class EventSimulatorImpl implements EventSimulator {
                     long startTime = System.currentTimeMillis();
                     
                     try {
-                        // 模拟刷卡事件
-                        AccessResult result = badgeReaderSimulator.simulateBadgeSwipe(readerId, badgeId);
+                        // 模拟刷卡事件（传递事件ID用于执行链跟踪）
+                        AccessResult result = badgeReaderSimulator.simulateBadgeSwipe(readerId, badgeId, eventId);
                         
                         long endTime = System.currentTimeMillis();
                         long processingTime = endTime - startTime;
