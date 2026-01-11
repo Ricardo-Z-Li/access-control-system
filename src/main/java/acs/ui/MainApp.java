@@ -13,6 +13,7 @@ import acs.service.AccessLimitService;
 import acs.service.TimeFilterService;
 import acs.service.GroupFileService;
 import acs.service.EmergencyControlService;
+import acs.service.ClockService;
 import acs.cache.LocalCacheManager;
 import acs.simulator.BadgeReaderSimulator;
 import acs.simulator.EventSimulator;
@@ -79,6 +80,9 @@ public class MainApp extends JFrame {
 
     @Autowired
     private EmergencyControlService emergencyControlService;
+
+    @Autowired
+    private ClockService clockService;
     
     private AdminPanel adminPanel;
     private ScanPanel scanPanel;
@@ -105,9 +109,9 @@ public class MainApp extends JFrame {
         tabbedPane = new JTabbedPane();
         
         adminPanel = new AdminPanel(adminService, profileFileService);
-        scanPanel = new ScanPanel(accessControlService, badgeCodeUpdateService);
+        scanPanel = new ScanPanel(accessControlService, badgeCodeUpdateService, clockService);
         monitorPanel = new MonitorPanel(logQueryService, siteMapPanel);
-        simulatorPanel = new SimulatorPanel(badgeReaderSimulator, eventSimulator, routerSystem);
+        simulatorPanel = new SimulatorPanel(badgeReaderSimulator, eventSimulator, routerSystem, clockService);
         accessLimitPanel = new AccessLimitPanel(accessLimitService, employeeRepository, profileRepository);
         timeFilterPanel = new TimeFilterPanel(timeFilterService, timeFilterRepository);
         groupFilePanel = new GroupFilePanel(groupFileService, groupRepository);

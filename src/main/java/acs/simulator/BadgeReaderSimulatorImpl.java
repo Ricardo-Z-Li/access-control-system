@@ -3,6 +3,7 @@ package acs.simulator;
 import acs.domain.*;
 import acs.repository.BadgeReaderRepository;
 import acs.service.AccessControlService;
+import acs.service.ClockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
     private final AccessControlService accessControlService;
     private final ResourceController resourceController;
     private final BadgeReaderRepository badgeReaderRepository;
+    private final ClockService clockService;
     
     // 模拟延迟配置（毫秒）
     private static final long BADGE_READ_DELAY_MS = 200;      // 读卡延迟200ms
@@ -35,10 +37,12 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
     @Autowired
     public BadgeReaderSimulatorImpl(AccessControlService accessControlService,
                                     ResourceController resourceController,
-                                    BadgeReaderRepository badgeReaderRepository) {
+                                    BadgeReaderRepository badgeReaderRepository,
+                                    ClockService clockService) {
         this.accessControlService = accessControlService;
         this.resourceController = resourceController;
         this.badgeReaderRepository = badgeReaderRepository;
+        this.clockService = clockService;
     }
 
     @Override
@@ -65,7 +69,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         }
         
         // 4. 创建访问请求
-        AccessRequest request = new AccessRequest(badgeId, resourceId, Instant.now());
+        AccessRequest request = new AccessRequest(badgeId, resourceId, clockService.now());
         
         // 5. 模拟处理延迟
         Thread.sleep(PROCESSING_DELAY_MS);
@@ -104,14 +108,14 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         
         // 在实际系统中，这里会从硬件读取徽章代码
         // 我们模拟返回一个合成的徽章代码
-        return "SIM_" + badgeId + "_" + System.currentTimeMillis();
+        return "SIM_" + badgeId + "_" + clockService.now().toEpochMilli();
     }
 
     @Override
     public void updateReaderStatus(String readerId, String status) {
         badgeReaderRepository.findByReaderId(readerId).ifPresent(reader -> {
             reader.setStatus(status);
-            reader.setLastSeen(Instant.now());
+            reader.setLastSeen(clockService.now());
             badgeReaderRepository.save(reader);
         });
     }
@@ -136,7 +140,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
     
     private void updateReaderLastSeen(String readerId) {
         badgeReaderRepository.findByReaderId(readerId).ifPresent(reader -> {
-            reader.setLastSeen(Instant.now());
+            reader.setLastSeen(clockService.now());
             badgeReaderRepository.save(reader);
         });
     }

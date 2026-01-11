@@ -12,11 +12,13 @@ import acs.simulator.RouterSystem;
 import acs.simulator.SimulationStatus;
 import acs.simulator.SystemHealth;
 import acs.simulator.LoadBalanceStats;
+import acs.service.ClockService;
 
 public class SimulatorPanel extends JPanel {
     private BadgeReaderSimulator badgeReaderSimulator;
     private EventSimulator eventSimulator;
     private RouterSystem routerSystem;
+    private ClockService clockService;
     
     private JTabbedPane tabbedPane;
     private JTextField readerIdField;
@@ -27,13 +29,19 @@ public class SimulatorPanel extends JPanel {
     private JLabel simulationStatusLabel;
     private JLabel systemHealthLabel;
     private JLabel loadBalanceLabel;
+    private JTextField absoluteTimeField;
+    private JButton setTimeButton;
+    private JButton resetTimeButton;
+    private JLabel currentTimeLabel;
     
     public SimulatorPanel(BadgeReaderSimulator badgeReaderSimulator, 
                          EventSimulator eventSimulator,
-                         RouterSystem routerSystem) {
+                         RouterSystem routerSystem,
+                         ClockService clockService) {
         this.badgeReaderSimulator = badgeReaderSimulator;
         this.eventSimulator = eventSimulator;
         this.routerSystem = routerSystem;
+        this.clockService = clockService;
         initUI();
         startStatusTimer();
     }
@@ -169,6 +177,44 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 3;
+        controlPanel.add(new JLabel("绝对时间 (yyyy-MM-dd HH:mm):"), gbc);
+        
+        gbc.gridx = 1;
+        absoluteTimeField = new JTextField(20);
+        absoluteTimeField.setText(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        controlPanel.add(absoluteTimeField, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        JPanel timeButtonPanel = new JPanel(new FlowLayout());
+        
+        setTimeButton = new JButton("设置模拟时间");
+        setTimeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setSimulatedTime();
+            }
+        });
+        timeButtonPanel.add(setTimeButton);
+        
+        resetTimeButton = new JButton("重置为真实时间");
+        resetTimeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                resetSimulatedTime();
+            }
+        });
+        timeButtonPanel.add(resetTimeButton);
+        
+        currentTimeLabel = new JLabel("当前时间: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        timeButtonPanel.add(currentTimeLabel);
+        
+        controlPanel.add(timeButtonPanel, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout());
@@ -628,6 +674,7 @@ public class SimulatorPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 updateSimulationStatus();
+                updateCurrentTimeLabel();
             }
         });
         timer.start();
@@ -643,6 +690,39 @@ public class SimulatorPanel extends JPanel {
             } catch (Exception ex) {
                 // 忽略状态更新错误
             }
+        }
+    }
+    
+    private void setSimulatedTime() {
+        String timeText = absoluteTimeField.getText().trim();
+        if (timeText.isEmpty()) {
+            logMessage("错误: 请输入时间 (格式: yyyy-MM-dd HH:mm)");
+            return;
+        }
+        
+        try {
+            java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(timeText, 
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            clockService.setSimulatedTime(dateTime);
+            logMessage("模拟时间已设置为: " + dateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            updateCurrentTimeLabel();
+        } catch (java.time.format.DateTimeParseException e) {
+            logMessage("错误: 时间格式不正确，请使用 yyyy-MM-dd HH:mm 格式");
+        }
+    }
+    
+    private void resetSimulatedTime() {
+        clockService.resetToRealTime();
+        absoluteTimeField.setText(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        logMessage("已重置为真实系统时间");
+        updateCurrentTimeLabel();
+    }
+    
+    private void updateCurrentTimeLabel() {
+        if (currentTimeLabel != null) {
+            SwingUtilities.invokeLater(() -> {
+                currentTimeLabel.setText("当前时间: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            });
         }
     }
 }

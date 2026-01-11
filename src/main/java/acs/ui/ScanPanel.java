@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import acs.service.AccessControlService;
+import acs.service.ClockService;
 import acs.domain.AccessRequest;
 import acs.domain.AccessResult;
 import acs.simulator.BadgeCodeUpdateService;
@@ -13,6 +14,7 @@ import acs.domain.Badge;
 public class ScanPanel extends JPanel {
     private AccessControlService accessControlService;
     private BadgeCodeUpdateService badgeCodeUpdateService;
+    private ClockService clockService;
     private JTextField badgeIdField;
     private JTextField resourceIdField;
     private JComboBox<String> modeComboBox;
@@ -20,9 +22,10 @@ public class ScanPanel extends JPanel {
     private static final String MODE_SWIPE = "刷卡模式";
     private static final String MODE_HOLD = "更新模式";
     
-    public ScanPanel(AccessControlService accessControlService, BadgeCodeUpdateService badgeCodeUpdateService) {
+    public ScanPanel(AccessControlService accessControlService, BadgeCodeUpdateService badgeCodeUpdateService, ClockService clockService) {
         this.accessControlService = accessControlService;
         this.badgeCodeUpdateService = badgeCodeUpdateService;
+        this.clockService = clockService;
         initUI();
     }
     
@@ -106,7 +109,7 @@ public class ScanPanel extends JPanel {
             
             if (selectedMode.equals(MODE_SWIPE)) {
                 // 刷卡模式：正常访问控制
-                AccessRequest request = new AccessRequest(badgeId, resourceId, java.time.LocalDateTime.now());
+                AccessRequest request = new AccessRequest(badgeId, resourceId, clockService.localNow());
                 AccessResult result = accessControlService.processAccess(request);
                 
                 sb.append("资源ID: ").append(resourceId).append("\n");

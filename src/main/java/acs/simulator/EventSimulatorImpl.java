@@ -2,6 +2,7 @@ package acs.simulator;
 
 import acs.domain.AccessResult;
 import acs.repository.BadgeReaderRepository;
+import acs.service.ClockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ public class EventSimulatorImpl implements EventSimulator {
 
     private final BadgeReaderSimulator badgeReaderSimulator;
     private final BadgeReaderRepository badgeReaderRepository;
+    private final ClockService clockService;
     
     // 模拟状态
     private SimulationStatus status = SimulationStatus.IDLE;
@@ -46,9 +48,11 @@ public class EventSimulatorImpl implements EventSimulator {
     
     @Autowired
     public EventSimulatorImpl(BadgeReaderSimulator badgeReaderSimulator,
-                              BadgeReaderRepository badgeReaderRepository) {
+                              BadgeReaderRepository badgeReaderRepository,
+                              ClockService clockService) {
         this.badgeReaderSimulator = badgeReaderSimulator;
         this.badgeReaderRepository = badgeReaderRepository;
+        this.clockService = clockService;
         this.completionLatch = new CountDownLatch(0); // 初始化为0
     }
 
@@ -261,7 +265,7 @@ public class EventSimulatorImpl implements EventSimulator {
                     // 随机选择读卡器和徽章
                     String readerId = readerIds.get(random.nextInt(readerIds.size()));
                     String badgeId = badgeIds.get(random.nextInt(badgeIds.size()));
-                    String eventId = "EVENT_" + Instant.now().toEpochMilli() + "_" + i;
+                    String eventId = "EVENT_" + clockService.now().toEpochMilli() + "_" + i;
                     
                     // 通知事件开始
                     listeners.forEach(l -> l.onSimulationEventStarted(eventId, readerId, badgeId));
