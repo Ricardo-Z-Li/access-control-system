@@ -4,6 +4,8 @@
 target/
 !.mvn/wrapper/maven-wrapper.jar
 
+.codex
+.npm-cache
 # ========================
 # IDE - VSCode
 # ========================
