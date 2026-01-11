@@ -108,38 +108,42 @@ public class AccessControlServiceImpl implements AccessControlService {
                 return result;
             }
 
-            // 6. 验证权限（员工所属组是否有权限访问该资源）
-            if (employee.getGroups() == null || employee.getGroups().isEmpty()) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "员工未分配任何权限组");
-                recordLog(badge, employee, resource, result, request);
-                return result;
-            }
-            boolean hasPermission = employee.getGroups().stream()
-                    .filter(group -> group.getResources() != null)
-                    .flatMap(group -> group.getResources().stream())
-                    .anyMatch(r -> r.getResourceId().equals(resource.getResourceId()));
+            // 6. 验证权限（员工所属组是否有权限访问该资源）- 仅当资源受控时检查
+            if (resource.getIsControlled() != null && resource.getIsControlled()) {
+                if (employee.getGroups() == null || employee.getGroups().isEmpty()) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "员工未分配任何权限组");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
+                boolean hasPermission = employee.getGroups().stream()
+                        .filter(group -> group.getResources() != null)
+                        .flatMap(group -> group.getResources().stream())
+                        .anyMatch(r -> r.getResourceId().equals(resource.getResourceId()));
 
-            if (!hasPermission) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "没有访问该资源的权限");
-                recordLog(badge, employee, resource, result, request);
-                return result;
+                if (!hasPermission) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "没有访问该资源的权限");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
             }
 
-            // 7. 验证资源状态
-            if (resource.getResourceState() == ResourceState.LOCKED) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "资源已被锁定");
-                recordLog(badge, employee, resource, result, request);
-                return result;
-            }
-            if (resource.getResourceState() == ResourceState.OCCUPIED) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_OCCUPIED, "资源当前被占用");
-                recordLog(badge, employee, resource, result, request);
-                return result;
-            }
-            if (resource.getResourceState() == ResourceState.OFFLINE || resource.getResourceState() == ResourceState.PENDING) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "资源当前不可用");
-                recordLog(badge, employee, resource, result, request);
-                return result;
+            // 7. 验证资源状态（仅当资源受控时检查）
+            if (resource.getIsControlled() != null && resource.getIsControlled()) {
+                if (resource.getResourceState() == ResourceState.LOCKED) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "资源已被锁定");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
+                if (resource.getResourceState() == ResourceState.OCCUPIED) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_OCCUPIED, "资源当前被占用");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
+                if (resource.getResourceState() == ResourceState.OFFLINE || resource.getResourceState() == ResourceState.PENDING) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "资源当前不可用");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
             }
 
             // 8. 时间过滤器验证（仅当资源受控时）
@@ -186,18 +190,22 @@ public class AccessControlServiceImpl implements AccessControlService {
                 // 如果没有激活的配置文件，则跳过时间检查
             }
 
-            // 9. 访问次数限制检查
-            if (!accessLimitService.checkAllLimits(employee, request.getTimestamp())) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "超过每日/每周访问限制");
-                recordLog(badge, employee, resource, result, request);
-                return result;
+            // 9. 访问次数限制检查（仅当资源受控时检查）
+            if (resource.getIsControlled() != null && resource.getIsControlled()) {
+                if (!accessLimitService.checkAllLimits(employee, request.getTimestamp())) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "超过每日/每周访问限制");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
             }
 
-            // 10. 优先级规则检查（资源依赖关系）
-            if (!checkPriorityRules(employee, resource, request.getTimestamp())) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "未满足先决访问条件");
-                recordLog(badge, employee, resource, result, request);
-                return result;
+            // 10. 优先级规则检查（资源依赖关系）- 仅当资源受控时检查
+            if (resource.getIsControlled() != null && resource.getIsControlled()) {
+                if (!checkPriorityRules(employee, resource, request.getTimestamp())) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "未满足先决访问条件");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
             }
 
             // 11. 所有验证通过，允许访问

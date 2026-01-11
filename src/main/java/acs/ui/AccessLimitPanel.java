@@ -148,26 +148,26 @@ public class AccessLimitPanel extends JPanel {
         }
         
         try {
-            Employee employee = employeeRepository.findById(employeeId).orElse(null);
+            Employee employeeWithGroups = employeeRepository.findByIdWithGroups(employeeId).orElse(null);
             
-            if (employee == null) {
+            if (employeeWithGroups == null) {
                 resultArea.setText("错误: 员工不存在 - " + employeeId);
                 return;
             }
             
-            boolean withinAllLimits = accessLimitService.checkAllLimits(employee);
-            int todayCount = accessLimitService.getTodayAccessCount(employee);
-            int weekCount = accessLimitService.getWeekAccessCount(employee);
+            boolean withinAllLimits = accessLimitService.checkAllLimits(employeeWithGroups);
+            int todayCount = accessLimitService.getTodayAccessCount(employeeWithGroups);
+            int weekCount = accessLimitService.getWeekAccessCount(employeeWithGroups);
             
             StringBuilder sb = new StringBuilder();
             sb.append("所有限制检查结果:\n");
-            sb.append("员工: ").append(employeeId).append(" (").append(employee.getEmployeeName()).append(")\n");
+            sb.append("员工: ").append(employeeId).append(" (").append(employeeWithGroups.getEmployeeName()).append(")\n");
             sb.append("今日访问次数: ").append(todayCount).append("\n");
             sb.append("本周访问次数: ").append(weekCount).append("\n");
             sb.append("检查结果: ").append(withinAllLimits ? "✅ 所有限制都满足" : "❌ 超过某些限制").append("\n");
             
             // 获取员工的配置文件信息（通过组）
-            Set<Profile> profiles = getProfilesForEmployee(employee);
+            Set<Profile> profiles = getProfilesForEmployee(employeeWithGroups);
             sb.append("\n关联配置文件 (").append(profiles.size()).append(" 个):\n");
             
             if (profiles.isEmpty()) {
@@ -196,25 +196,25 @@ public class AccessLimitPanel extends JPanel {
         }
         
         try {
-            Employee employee = employeeRepository.findById(employeeId).orElse(null);
+            Employee employeeWithGroups = employeeRepository.findByIdWithGroups(employeeId).orElse(null);
             
-            if (employee == null) {
+            if (employeeWithGroups == null) {
                 resultArea.setText("错误: 员工不存在 - " + employeeId);
                 return;
             }
             
-            int todayCount = accessLimitService.getTodayAccessCount(employee);
-            int weekCount = accessLimitService.getWeekAccessCount(employee);
+            int todayCount = accessLimitService.getTodayAccessCount(employeeWithGroups);
+            int weekCount = accessLimitService.getWeekAccessCount(employeeWithGroups);
             
             StringBuilder sb = new StringBuilder();
             sb.append("访问次数统计:\n");
-            sb.append("员工: ").append(employeeId).append(" (").append(employee.getEmployeeName()).append(")\n");
+            sb.append("员工: ").append(employeeId).append(" (").append(employeeWithGroups.getEmployeeName()).append(")\n");
             sb.append("今日访问次数: ").append(todayCount).append("\n");
             sb.append("本周访问次数: ").append(weekCount).append("\n");
             sb.append("统计时间: ").append(java.time.LocalDateTime.now()).append("\n");
             
             // 检查是否接近限制（通过所有配置文件）
-            Set<Profile> profiles = getProfilesForEmployee(employee);
+            Set<Profile> profiles = getProfilesForEmployee(employeeWithGroups);
             if (!profiles.isEmpty()) {
                 // 找到最严格的限制
                 Integer strictestDailyLimit = null;

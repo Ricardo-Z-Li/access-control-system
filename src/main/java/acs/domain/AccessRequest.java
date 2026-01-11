@@ -63,8 +63,8 @@ public class AccessRequest {
     public AccessRequest(String badgeId, String resourceId, LocalDateTime localDateTime) {
         this.badgeId = badgeId;
         this.resourceId = resourceId;
-        // Convert LocalDateTime to Instant using a time zone (e.g., UTC)
-        this.timestamp = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
+        // Convert LocalDateTime to Instant using system default time zone
+        this.timestamp = localDateTime.atZone(ZoneId.systemDefault()).toInstant();
     }
 
     public String getBadgeId() {

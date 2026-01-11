@@ -10,6 +10,8 @@ import acs.domain.AccessRequest;
 import acs.domain.AccessResult;
 import acs.simulator.BadgeCodeUpdateService;
 import acs.domain.Badge;
+import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 
 public class ScanPanel extends JPanel {
     private AccessControlService accessControlService;
@@ -21,6 +23,8 @@ public class ScanPanel extends JPanel {
     private JTextArea resultArea;
     private static final String MODE_SWIPE = "刷卡模式";
     private static final String MODE_HOLD = "更新模式";
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     
     public ScanPanel(AccessControlService accessControlService, BadgeCodeUpdateService badgeCodeUpdateService, ClockService clockService) {
         this.accessControlService = accessControlService;
@@ -104,19 +108,34 @@ public class ScanPanel extends JPanel {
         try {
             StringBuilder sb = new StringBuilder();
             sb.append("扫描结果:\n");
-            sb.append("徽章ID: ").append(badgeId).append("\n");
-            sb.append("模式: ").append(selectedMode).append("\n");
-            
-            if (selectedMode.equals(MODE_SWIPE)) {
-                // 刷卡模式：正常访问控制
-                AccessRequest request = new AccessRequest(badgeId, resourceId, clockService.localNow());
-                AccessResult result = accessControlService.processAccess(request);
-                
-                sb.append("资源ID: ").append(resourceId).append("\n");
-                sb.append("决策: ").append(result.getDecision()).append("\n");
-                sb.append("原因代码: ").append(result.getReasonCode()).append("\n");
-                sb.append("消息: ").append(result.getMessage()).append("\n");
-                sb.append("请求时间: ").append(request.getTimestamp()).append("\n");
+             if (clockService.isSimulated()) {
+                 sb.append("警告: 当前使用模拟时间，日志时间可能不正确。\n");
+             } else {
+                 sb.append("提示: 当前使用真实时间，如需模拟时间请在模拟器面板设置。\n");
+             }
+             sb.append("徽章ID: ").append(badgeId).append("\n");
+             sb.append("模式: ").append(selectedMode).append("\n");
+             
+             if (selectedMode.equals(MODE_SWIPE)) {
+                 // 刷卡模式：正常访问控制
+                 AccessRequest request = new AccessRequest(badgeId, resourceId, clockService.localNow());
+                 AccessResult result = accessControlService.processAccess(request);
+                 
+                 // 摘要行（与日志格式一致）
+                  String timeStr = java.time.LocalDateTime.ofInstant(request.getTimestamp(), ZONE_ID).format(TIME_FORMATTER);
+                 sb.append("摘要: 时间: ").append(timeStr)
+                     .append(" | 徽章: ").append(badgeId)
+                     .append(" | 模式: ").append(selectedMode)
+                     .append(" | 资源: ").append(resourceId)
+                     .append(" | 决策: ").append(result.getDecision())
+                     .append(" | 原因: ").append(result.getReasonCode())
+                     .append(" | 消息: ").append(result.getMessage()).append("\n");
+                 
+                 sb.append("资源ID: ").append(resourceId).append("\n");
+                 sb.append("决策: ").append(result.getDecision()).append("\n");
+                 sb.append("原因代码: ").append(result.getReasonCode()).append("\n");
+                 sb.append("消息: ").append(result.getMessage()).append("\n");
+                  sb.append("时间: ").append(timeStr).append("\n");
             } else {
                 // 更新模式：徽章代码更新
                 sb.append("操作: 徽章代码更新\n");
