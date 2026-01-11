@@ -29,6 +29,7 @@ public class MonitorPanel extends JPanel {
     private JLabel cacheStatusLabel;
     private JLabel dbStatusLabel;
     private JLabel lastUpdateLabel;
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     private JTextField badgeIdField;
     private JTextField employeeIdField;
@@ -255,6 +256,13 @@ public class MonitorPanel extends JPanel {
         return panel;
     }
     
+    private String formatTimestamp(LocalDateTime timestamp) {
+        if (timestamp == null) {
+            return "N/A";
+        }
+        return timestamp.format(TIMESTAMP_FORMATTER);
+    }
+    
     private void refreshLogs() {
         if (logQueryService == null) {
             logArea.setText("LogQueryService 未连接");
@@ -270,8 +278,8 @@ public class MonitorPanel extends JPanel {
             int count = 0;
             for (acs.domain.LogEntry log : logs) {
                 if (count >= 100) break;
-                sb.append(String.format("时间: %s | 徽章: %s | 资源: %s | 决策: %s | 原因: %s\n",
-                    log.getTimestamp() != null ? log.getTimestamp() : "N/A",
+                 sb.append(String.format("时间: %s | 徽章: %s | 资源: %s | 决策: %s | 原因: %s\n",
+                     formatTimestamp(log.getTimestamp()),
                     log.getBadge() != null ? log.getBadge().getBadgeId() : "N/A",
                     log.getResource() != null ? log.getResource().getResourceId() : "N/A",
                     log.getDecision() != null ? log.getDecision() : "N/A",
@@ -300,8 +308,8 @@ public class MonitorPanel extends JPanel {
             
             int count = 0;
             for (acs.domain.LogEntry log : logs) {
-                String logStr = String.format("时间: %s | 徽章: %s | 资源: %s | 决策: %s | 原因: %s",
-                    log.getTimestamp() != null ? log.getTimestamp() : "N/A",
+                 String logStr = String.format("时间: %s | 徽章: %s | 资源: %s | 决策: %s | 原因: %s",
+                     formatTimestamp(log.getTimestamp()),
                     log.getBadge() != null ? log.getBadge().getBadgeId() : "N/A",
                     log.getResource() != null ? log.getResource().getResourceId() : "N/A",
                     log.getDecision() != null ? log.getDecision() : "N/A",
@@ -433,7 +441,7 @@ public class MonitorPanel extends JPanel {
                     // 对于ALLOW，我们需要过滤所有日志中的ALLOW决策
                     logs = logQueryService.findAll();
                     logs = logs.stream()
-                        .filter(log -> log.getDecision() != null && log.getDecision().toString().equals("ALLOW"))
+                        .filter(log -> log.getDecision() != null && acs.domain.AccessDecision.ALLOW.equals(log.getDecision()))
                         .collect(java.util.stream.Collectors.toList());
                 }
             } else {
@@ -464,8 +472,8 @@ public class MonitorPanel extends JPanel {
             sb.append("========================================\n");
             
             for (acs.domain.LogEntry log : logs) {
-                sb.append(String.format("时间: %s | 徽章: %s | 员工: %s | 资源: %s | 决策: %s | 原因: %s\n",
-                    log.getTimestamp() != null ? log.getTimestamp() : "N/A",
+                 sb.append(String.format("时间: %s | 徽章: %s | 员工: %s | 资源: %s | 决策: %s | 原因: %s\n",
+                     formatTimestamp(log.getTimestamp()),
                     log.getBadge() != null ? log.getBadge().getBadgeId() : "N/A",
                     log.getEmployee() != null ? log.getEmployee().getEmployeeId() : "N/A",
                     log.getResource() != null ? log.getResource().getResourceId() : "N/A",

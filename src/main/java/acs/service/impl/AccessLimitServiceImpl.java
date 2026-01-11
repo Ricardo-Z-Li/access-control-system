@@ -10,12 +10,14 @@ import acs.repository.AccessLogRepository;
 import acs.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoField;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -66,52 +68,65 @@ public class AccessLimitServiceImpl implements AccessLimitService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public int getTodayAccessCount(Employee employee) {
-        if (employee == null || employee.getEmployeeId() == null) {
+        return getTodayAccessCount(employee, Instant.now());
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getWeekAccessCount(Employee employee) {
+        return getWeekAccessCount(employee, Instant.now());
+    }
+
+    /**
+     * 根据指定时间戳获取员工今日已访问次数
+     */
+    private int getTodayAccessCount(Employee employee, Instant timestamp) {
+        if (employee == null || employee.getEmployeeId() == null || timestamp == null) {
             return 0;
         }
         
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+        LocalDateTime accessTime = LocalDateTime.ofInstant(timestamp, ZoneId.systemDefault());
+        LocalDateTime startOfDay = accessTime.toLocalDate().atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
         
-        // 统计员工今日的允许访问日志
         List<LogEntry> logs = accessLogRepository.findByEmployeeEmployeeIdAndTimestampBetween(
             employee.getEmployeeId(), startOfDay, endOfDay);
         
-        // 只计算决策为ALLOW的访问
         return (int) logs.stream()
-            .filter(log -> AccessDecision.ALLOW.name().equals(log.getDecision()))
+            .filter(log -> AccessDecision.ALLOW.equals(log.getDecision()))
             .count();
     }
 
-    @Override
-    public int getWeekAccessCount(Employee employee) {
-        if (employee == null || employee.getEmployeeId() == null) {
+    /**
+     * 根据指定时间戳获取员工本周已访问次数
+     */
+    private int getWeekAccessCount(Employee employee, Instant timestamp) {
+        if (employee == null || employee.getEmployeeId() == null || timestamp == null) {
             return 0;
         }
         
-        LocalDateTime now = LocalDateTime.now();
-        // 获取本周的第一天（周一）
-        LocalDateTime startOfWeek = now.with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1)
+        LocalDateTime accessTime = LocalDateTime.ofInstant(timestamp, ZoneId.systemDefault());
+        LocalDateTime startOfWeek = accessTime.with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1)
             .toLocalDate().atStartOfDay();
-        // 获取本周的最后一天（周日）
         LocalDateTime endOfWeek = startOfWeek.plusDays(7).minusNanos(1);
         
         List<LogEntry> logs = accessLogRepository.findByEmployeeEmployeeIdAndTimestampBetween(
             employee.getEmployeeId(), startOfWeek, endOfWeek);
         
-        // 只计算决策为ALLOW的访问
         return (int) logs.stream()
-            .filter(log -> AccessDecision.ALLOW.name().equals(log.getDecision()))
+            .filter(log -> AccessDecision.ALLOW.equals(log.getDecision()))
             .count();
     }
-    
+
     /**
      * 检查员工是否超过其所属配置文件的访问限制
      * @param employee 员工
      * @return true 如果未超过任何限制，false 如果超过任一限制
      */
+    @Transactional(readOnly = true)
     public boolean checkAllLimits(Employee employee) {
         if (employee == null || employee.getGroups() == null) {
             return true;
@@ -146,8 +161,56 @@ public class AccessLimitServiceImpl implements AccessLimitService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean checkAllLimits(Employee employee, Instant timestamp) {
-        // 暂时委托给无时间戳版本（保持现有行为）
-        return checkAllLimits(employee);
+        if (employee == null || employee.getGroups() == null || timestamp == null) {
+            return true;
+        }
+        
+        // 收集员工所属组关联的所有激活配置文件（去重）
+        List<Profile> activeProfiles = new ArrayList<>();
+        for (acs.domain.Group group : employee.getGroups()) {
+            List<Profile> profiles = profileRepository.findByGroupsContaining(group);
+            for (Profile profile : profiles) {
+                if (profile.getIsActive() != null && profile.getIsActive()) {
+                    // 去重
+                    if (!activeProfiles.contains(profile)) {
+                        activeProfiles.add(profile);
+                    }
+                }
+            }
+        }
+        
+        if (activeProfiles.isEmpty()) {
+            return true;
+        }
+        
+        // 按优先级排序（priorityLevel越小优先级越高）
+        activeProfiles.sort((p1, p2) -> {
+            Integer p1Level = p1.getPriorityLevel();
+            Integer p2Level = p2.getPriorityLevel();
+            if (p1Level == null && p2Level == null) return 0;
+            if (p1Level == null) return 1; // null排后面
+            if (p2Level == null) return -1;
+            return Integer.compare(p1Level, p2Level);
+        });
+        
+        // 选择最高优先级的配置文件（可能有多个相同优先级）
+        Profile highestPriorityProfile = activeProfiles.get(0);
+        // 检查限制（仅检查最高优先级配置文件）
+        if (highestPriorityProfile.getMaxDailyAccess() != null && highestPriorityProfile.getMaxDailyAccess() > 0) {
+            int todayCount = getTodayAccessCount(employee, timestamp);
+            if (todayCount >= highestPriorityProfile.getMaxDailyAccess()) {
+                return false;
+            }
+        }
+        if (highestPriorityProfile.getMaxWeeklyAccess() != null && highestPriorityProfile.getMaxWeeklyAccess() > 0) {
+            int weekCount = getWeekAccessCount(employee, timestamp);
+            if (weekCount >= highestPriorityProfile.getMaxWeeklyAccess()) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }

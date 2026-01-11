@@ -104,6 +104,8 @@ access-control-system
       │  └─ acs
       │     ├─ cache
       │     │  └─ LocalCacheManagerIntegrationTest.java
+      │     ├─ integration
+      │     │  └─ SimulatedTimeAccessControlIntegrationTest.java
       │     ├─ log
       │     │  └─ csv
       │     │     └─ CsvLogWriterTest.java
