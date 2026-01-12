@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.ArrayList;
 import acs.service.AccessLimitService;
 import acs.service.AdminService;
 import acs.domain.Employee;
@@ -329,6 +330,7 @@ public class AccessLimitPanel extends JPanel {
             return profiles;
         }
         
+
         // Reload employee with groups to avoid lazy initialization exception
         Employee employeeWithGroups = employeeRepository.findByIdWithGroups(employee.getEmployeeId()).orElse(null);
         if (employeeWithGroups == null || employeeWithGroups.getGroups() == null) {
@@ -340,6 +342,29 @@ public class AccessLimitPanel extends JPanel {
             profiles.addAll(groupProfiles);
         }
         
-        return profiles;
+        // 按优先级排序（priorityLevel越小优先级越高）
+        List<Profile> sortedProfiles = new ArrayList<>(profiles);
+        sortedProfiles.sort((p1, p2) -> {
+            Integer p1Level = p1.getPriorityLevel();
+            Integer p2Level = p2.getPriorityLevel();
+            if (p1Level == null && p2Level == null) return 0;
+            if (p1Level == null) return 1; // null排后面
+            if (p2Level == null) return -1;
+            return Integer.compare(p1Level, p2Level);
+        });
+        
+        // 只返回最高优先级的配置文件（可能有多个相同优先级）
+        Set<Profile> highestPriorityProfiles = new HashSet<>();
+        if (!sortedProfiles.isEmpty()) {
+            Integer highestPriority = sortedProfiles.get(0).getPriorityLevel();
+            for (Profile profile : sortedProfiles) {
+                if (profile.getPriorityLevel() == null || !profile.getPriorityLevel().equals(highestPriority)) {
+                    break;
+                }
+                highestPriorityProfiles.add(profile);
+            }
+        }
+        
+        return highestPriorityProfiles;
     }
 }
