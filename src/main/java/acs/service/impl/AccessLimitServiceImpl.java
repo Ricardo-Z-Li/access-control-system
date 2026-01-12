@@ -128,36 +128,7 @@ public class AccessLimitServiceImpl implements AccessLimitService {
      */
     @Transactional(readOnly = true)
     public boolean checkAllLimits(Employee employee) {
-        if (employee == null || employee.getGroups() == null) {
-            return true;
-        }
-        
-        // 收集员工所属组关联的所有配置文件（去重）
-        Set<Profile> profileSet = new HashSet<>();
-        for (acs.domain.Group group : employee.getGroups()) {
-            List<Profile> profiles = profileRepository.findByGroupsContaining(group);
-            for (Profile profile : profiles) {
-                if (profile.getIsActive() != null && profile.getIsActive()) {
-                    profileSet.add(profile);
-                }
-            }
-        }
-        
-        if (profileSet.isEmpty()) {
-            return true;
-        }
-        
-        // 检查每个配置文件的限制，取最严格的限制
-        for (Profile profile : profileSet) {
-            if (!checkDailyLimit(employee, profile)) {
-                return false;
-            }
-            if (!checkWeeklyLimit(employee, profile)) {
-                return false;
-            }
-        }
-        
-        return true;
+        return checkAllLimits(employee, Instant.now());
     }
 
     @Override
