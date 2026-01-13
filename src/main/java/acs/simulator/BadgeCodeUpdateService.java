@@ -1,8 +1,9 @@
 package acs.simulator;
 
 import acs.domain.Badge;
+import acs.domain.BadgeUpdateStatus;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -17,6 +18,14 @@ public interface BadgeCodeUpdateService {
      * @return 如果需要更新返回true
      */
     boolean checkBadgeNeedsUpdate(String badgeId);
+
+    /**
+     * Get badge update status for access decision.
+     * @param badgeId badge id
+     * @param timestamp reference time
+     * @return update status
+     */
+    BadgeUpdateStatus evaluateBadgeUpdateStatus(String badgeId, Instant timestamp);
 
     /**
      * 为徽章生成新的徽章代码

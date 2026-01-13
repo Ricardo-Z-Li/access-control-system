@@ -5,12 +5,14 @@ import acs.domain.Badge;
 import acs.domain.BadgeStatus;
 import acs.domain.Employee;
 import acs.domain.Group;
+import acs.domain.Profile;
 import acs.domain.Resource;
 import acs.domain.ResourceState;
 import acs.domain.ResourceType;
 import acs.repository.BadgeRepository;
 import acs.repository.EmployeeRepository;
 import acs.repository.GroupRepository;
+import acs.repository.ProfileRepository;
 import acs.repository.ResourceRepository;
 import acs.service.AdminService;
 import org.springframework.stereotype.Service;
@@ -25,16 +27,19 @@ public class AdminServiceImpl implements AdminService {
     private final BadgeRepository badgeRepository;
     private final GroupRepository groupRepository;
     private final ResourceRepository resourceRepository;
+    private final ProfileRepository profileRepository;
 
     public AdminServiceImpl(EmployeeRepository employeeRepository,
                             BadgeRepository badgeRepository,
                             GroupRepository groupRepository,
                             ResourceRepository resourceRepository,
+                            ProfileRepository profileRepository,
                             LocalCacheManager cacheManager) {
         this.employeeRepository = employeeRepository;
         this.badgeRepository = badgeRepository;
         this.groupRepository = groupRepository;
         this.resourceRepository = resourceRepository;
+        this.profileRepository = profileRepository;
         this.cacheManager = cacheManager;
     }
 
@@ -175,6 +180,21 @@ public class AdminServiceImpl implements AdminService {
         // 同步缓存
         cacheManager.updateResource(resource);
     }
+    @Override
+    @Transactional
+    public void updateResourceLocation(String resourceId, String building, String floor,
+                                       Integer coordX, Integer coordY, String location) {
+        Resource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found: " + resourceId));
+        resource.setBuilding(building);
+        resource.setFloor(floor);
+        resource.setCoordX(coordX);
+        resource.setCoordY(coordY);
+        resource.setLocation(location);
+        resourceRepository.save(resource);
+        cacheManager.updateResource(resource);
+    }
+
 
     @Override
     @Transactional
@@ -210,5 +230,74 @@ public class AdminServiceImpl implements AdminService {
         // 同步缓存
         cacheManager.updateGroup(group);
         cacheManager.updateResource(resource);
+    }
+
+
+    @Override
+    @Transactional
+    public void assignProfileToEmployee(String profileId, String employeeId) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found: " + profileId));
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + employeeId));
+
+        profile.getEmployees().add(employee);
+        profileRepository.save(profile);
+        cacheManager.refreshAllCache();
+    }
+
+    @Override
+    @Transactional
+    public void removeProfileFromEmployee(String profileId, String employeeId) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found: " + profileId));
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + employeeId));
+
+        profile.getEmployees().remove(employee);
+        profileRepository.save(profile);
+        cacheManager.refreshAllCache();
+    }
+
+    @Override
+    @Transactional
+    public void assignProfileToBadge(String profileId, String badgeId) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found: " + profileId));
+        Badge badge = badgeRepository.findById(badgeId)
+                .orElseThrow(() -> new IllegalArgumentException("Badge not found: " + badgeId));
+
+        profile.getBadges().add(badge);
+        profileRepository.save(profile);
+        cacheManager.refreshAllCache();
+    }
+
+    @Override
+    @Transactional
+    public void removeProfileFromBadge(String profileId, String badgeId) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found: " + profileId));
+        Badge badge = badgeRepository.findById(badgeId)
+                .orElseThrow(() -> new IllegalArgumentException("Badge not found: " + badgeId));
+
+        profile.getBadges().remove(badge);
+        profileRepository.save(profile);
+        cacheManager.refreshAllCache();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<Profile> getProfilesForEmployee(String employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + employeeId));
+        return profileRepository.findByEmployeesContaining(employee);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<Profile> getProfilesForBadge(String badgeId) {
+        Badge badge = badgeRepository.findById(badgeId)
+                .orElseThrow(() -> new IllegalArgumentException("Badge not found: " + badgeId));
+        return profileRepository.findByBadgesContaining(badge);
     }
 }

@@ -79,6 +79,9 @@ CREATE TABLE IF NOT EXISTS access_logs (
         'ALLOW',
         'BADGE_NOT_FOUND',
         'BADGE_INACTIVE',
+        'BADGE_EXPIRED',
+        'BADGE_UPDATE_REQUIRED',
+        'BADGE_UPDATE_OVERDUE',
         'EMPLOYEE_NOT_FOUND',
         'RESOURCE_NOT_FOUND',
         'RESOURCE_LOCKED',
@@ -156,7 +159,40 @@ CREATE TABLE IF NOT EXISTS profile_groups (
     FOREIGN KEY (group_id) REFERENCES group_permissions (group_id) ON DELETE CASCADE
 );
 
--- 14. 修改现有表：添加新字段
+-- 14. 新增关联表：profile_employees（配置文件-员工多对多）
+CREATE TABLE IF NOT EXISTS profile_employees (
+    profile_id VARCHAR(50) NOT NULL,
+    employee_id VARCHAR(50) NOT NULL,
+    PRIMARY KEY (profile_id, employee_id),
+    FOREIGN KEY (profile_id) REFERENCES profiles (profile_id) ON DELETE CASCADE,
+    FOREIGN KEY (employee_id) REFERENCES employees (employee_id) ON DELETE CASCADE
+);
+
+-- 15. 新增关联表：profile_badges（配置文件-徽章多对多）
+CREATE TABLE IF NOT EXISTS profile_badges (
+    profile_id VARCHAR(50) NOT NULL,
+    badge_id VARCHAR(50) NOT NULL,
+    PRIMARY KEY (profile_id, badge_id),
+    FOREIGN KEY (profile_id) REFERENCES profiles (profile_id) ON DELETE CASCADE,
+    FOREIGN KEY (badge_id) REFERENCES badges (badge_id) ON DELETE CASCADE
+);
+
+-- 16. 新增表：profile_resource_limits（配置文件-资源访问次数限制）
+CREATE TABLE IF NOT EXISTS profile_resource_limits (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    profile_id VARCHAR(50) NOT NULL,
+    resource_id VARCHAR(50),
+    daily_limit INT,
+    weekly_limit INT,
+    is_active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (profile_id) REFERENCES profiles (profile_id) ON DELETE CASCADE,
+    FOREIGN KEY (resource_id) REFERENCES resources (resource_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_profile_resource_limits_profile ON profile_resource_limits (profile_id);
+CREATE INDEX idx_profile_resource_limits_resource ON profile_resource_limits (resource_id);
+
+-- 17. 修改现有表：添加新字段
 
 -- 为badges表添加新字段
 ALTER TABLE badges
@@ -170,6 +206,12 @@ ADD COLUMN update_due_date DATE;
 
 -- 为resources表添加新字段
 ALTER TABLE resources ADD COLUMN is_controlled BOOLEAN DEFAULT TRUE;
+ALTER TABLE resources
+ADD COLUMN building VARCHAR(50),
+ADD COLUMN floor VARCHAR(20),
+ADD COLUMN coord_x INT,
+ADD COLUMN coord_y INT,
+ADD COLUMN location VARCHAR(200);
 
 -- 创建索引（仅保留非主键的有效索引）
 CREATE INDEX idx_group_id ON group_permissions (group_id);

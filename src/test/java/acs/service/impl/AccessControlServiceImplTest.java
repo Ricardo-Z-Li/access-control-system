@@ -8,6 +8,8 @@ import acs.repository.ResourceDependencyRepository;
 import acs.repository.AccessLogRepository;
 import acs.service.TimeFilterService;
 import acs.service.AccessLimitService;
+import acs.simulator.BadgeCodeUpdateService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
@@ -51,6 +54,9 @@ public class AccessControlServiceImplTest {
     @Mock
     private AccessLogRepository accessLogRepository;
 
+    @Mock
+    private BadgeCodeUpdateService badgeCodeUpdateService;
+
     @InjectMocks
     private AccessControlServiceImpl accessControlService;
 
@@ -63,6 +69,13 @@ public class AccessControlServiceImplTest {
         request.setResourceId(resourceId);
         request.setTimestamp(testInstant);
         return request;
+    }
+
+    @BeforeEach
+    void setUpDefaults() {
+        when(accessLimitService.checkResourceLimits(any(), any(), any())).thenReturn(true);
+        when(profileRepository.findByEmployeesContaining(any())).thenReturn(Collections.emptyList());
+        when(profileRepository.findByBadgesContaining(any())).thenReturn(Collections.emptyList());
     }
 
     @Test
@@ -101,6 +114,50 @@ public class AccessControlServiceImplTest {
         assertEquals(AccessDecision.DENY, result.getDecision());
         assertEquals(ReasonCode.BADGE_INACTIVE, result.getReasonCode());
     }
+
+    @Test
+    void processAccess_badgeExpired_shouldDeny() {
+        Badge badge = new Badge("BADGEXP001", BadgeStatus.ACTIVE);
+        badge.setExpirationDate(LocalDate.of(2024, 4, 30));
+        when(cacheManager.getBadge("BADGEXP001")).thenReturn(badge);
+
+        AccessRequest request = createAccessRequest("BADGEXP001", "RES001");
+        AccessResult result = accessControlService.processAccess(request);
+
+        assertEquals(AccessDecision.DENY, result.getDecision());
+        assertEquals(ReasonCode.BADGE_EXPIRED, result.getReasonCode());
+    }
+
+    @Test
+    void processAccess_badgeUpdateRequired_shouldDeny() {
+        Badge badge = new Badge("BADGEUPD001", BadgeStatus.ACTIVE);
+        badge.setExpirationDate(LocalDate.of(2024, 12, 31));
+        when(cacheManager.getBadge("BADGEUPD001")).thenReturn(badge);
+        when(badgeCodeUpdateService.evaluateBadgeUpdateStatus(eq("BADGEUPD001"), any(Instant.class)))
+                .thenReturn(BadgeUpdateStatus.UPDATE_REQUIRED);
+
+        AccessRequest request = createAccessRequest("BADGEUPD001", "RES001");
+        AccessResult result = accessControlService.processAccess(request);
+
+        assertEquals(AccessDecision.DENY, result.getDecision());
+        assertEquals(ReasonCode.BADGE_UPDATE_REQUIRED, result.getReasonCode());
+    }
+
+    @Test
+    void processAccess_badgeUpdateOverdue_shouldDeny() {
+        Badge badge = new Badge("BADGEUPD002", BadgeStatus.ACTIVE);
+        badge.setExpirationDate(LocalDate.of(2024, 12, 31));
+        when(cacheManager.getBadge("BADGEUPD002")).thenReturn(badge);
+        when(badgeCodeUpdateService.evaluateBadgeUpdateStatus(eq("BADGEUPD002"), any(Instant.class)))
+                .thenReturn(BadgeUpdateStatus.UPDATE_OVERDUE);
+
+        AccessRequest request = createAccessRequest("BADGEUPD002", "RES001");
+        AccessResult result = accessControlService.processAccess(request);
+
+        assertEquals(AccessDecision.DENY, result.getDecision());
+        assertEquals(ReasonCode.BADGE_UPDATE_OVERDUE, result.getReasonCode());
+    }
+
 
     @Test
     void processAccess_employeeNotFound_shouldDeny() {

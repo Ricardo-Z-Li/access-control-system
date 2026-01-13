@@ -11,10 +11,17 @@ import acs.simulator.EventSimulator;
 import acs.simulator.RouterSystem;
 import acs.simulator.SimulationStatus;
 import acs.simulator.SystemHealth;
-import acs.simulator.LoadBalanceStats;
-import acs.simulator.ExecutionChainTracker;
+import acs.simulator.*;
 import acs.service.ClockService;
 import java.util.List;
+import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import acs.simulator.SimulationScenarioConfig;
+import acs.simulator.SimulationPath;
 
 public class SimulatorPanel extends JPanel {
     private BadgeReaderSimulator badgeReaderSimulator;
@@ -40,6 +47,14 @@ public class SimulatorPanel extends JPanel {
     private JTextArea executionChainArea;
     private JTable executionChainTable;
     private DefaultTableModel executionChainTableModel;
+
+    private JTextField scenarioStepDelayField;
+    private JCheckBox scenarioEnabledCheck;
+    private JTable scenarioTable;
+    private DefaultTableModel scenarioTableModel;
+    private JTextField scenarioNameField;
+    private JTextField scenarioResourcesField;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     
     public SimulatorPanel(BadgeReaderSimulator badgeReaderSimulator, 
                          EventSimulator eventSimulator,
@@ -874,4 +889,240 @@ public class SimulatorPanel extends JPanel {
             updateExecutionChainArea(chain);
         }
     }
+
+    private JPanel createScenarioConfigPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        JPanel topPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        topPanel.add(new JLabel("启用:"), gbc);
+        gbc.gridx = 1;
+        scenarioEnabledCheck = new JCheckBox();
+        scenarioEnabledCheck.setSelected(true);
+        topPanel.add(scenarioEnabledCheck, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        topPanel.add(new JLabel("步骤延迟(ms):"), gbc);
+        gbc.gridx = 1;
+        scenarioStepDelayField = new JTextField(10);
+        topPanel.add(scenarioStepDelayField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+
+        JButton loadButton = new JButton("加载");
+        loadButton.addActionListener(e -> loadScenarioConfig());
+        buttonPanel.add(loadButton);
+
+        JButton saveButton = new JButton("保存");
+        saveButton.addActionListener(e -> saveScenarioConfig());
+        buttonPanel.add(saveButton);
+
+        JButton validateButton = new JButton("校验");
+        validateButton.addActionListener(e -> validateScenarioConfig());
+        buttonPanel.add(validateButton);
+
+        topPanel.add(buttonPanel, gbc);
+
+        panel.add(topPanel, BorderLayout.NORTH);
+
+        String[] columns = {"路径名", "资源ID列表(逗号分隔)"};
+        scenarioTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return true;
+            }
+        };
+        scenarioTable = new JTable(scenarioTableModel);
+        scenarioTable.setAutoCreateRowSorter(true);
+        panel.add(new JScrollPane(scenarioTable), BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        bottomPanel.add(new JLabel("路径名:"));
+        scenarioNameField = new JTextField(12);
+        bottomPanel.add(scenarioNameField);
+        bottomPanel.add(new JLabel("资源ID列表:"));
+        scenarioResourcesField = new JTextField(30);
+        bottomPanel.add(scenarioResourcesField);
+
+        JButton addPathButton = new JButton("添加路径");
+        addPathButton.addActionListener(e -> addScenarioPath());
+        bottomPanel.add(addPathButton);
+
+        JButton removePathButton = new JButton("移除路径");
+        removePathButton.addActionListener(e -> removeScenarioPath());
+        bottomPanel.add(removePathButton);
+
+        panel.add(bottomPanel, BorderLayout.SOUTH);
+
+        loadScenarioConfig();
+        return panel;
+    }
+
+    private void addScenarioPath() {
+        String name = scenarioNameField.getText().trim();
+        String resources = scenarioResourcesField.getText().trim();
+        if (name.isEmpty() || resources.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "请输入路径名和资源ID列表");
+            return;
+        }
+        scenarioTableModel.addRow(new Object[]{name, resources});
+        scenarioNameField.setText("");
+        scenarioResourcesField.setText("");
+    }
+
+    private void removeScenarioPath() {
+        int row = scenarioTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要移除的行。");
+            return;
+        }
+        int modelRow = scenarioTable.convertRowIndexToModel(row);
+        scenarioTableModel.removeRow(modelRow);
+    }
+
+    private void loadScenarioConfig() {
+        SimulationScenarioConfig config = readScenarioConfig();
+        if (config == null) {
+            JOptionPane.showMessageDialog(this, "未找到场景配置。");
+            return;
+        }
+        scenarioEnabledCheck.setSelected(config.isEnabled());
+        scenarioStepDelayField.setText(config.getStepDelayMs() == null ? "" : String.valueOf(config.getStepDelayMs()));
+        scenarioTableModel.setRowCount(0);
+        if (config.getPaths() != null) {
+            for (SimulationPath path : config.getPaths()) {
+                String name = path.getName() == null ? "" : path.getName();
+                String resources = "";
+                if (path.getResourceIds() != null && !path.getResourceIds().isEmpty()) {
+                    resources = String.join(",", path.getResourceIds());
+                }
+                scenarioTableModel.addRow(new Object[]{name, resources});
+            }
+        }
+    }
+
+    private void saveScenarioConfig() {
+        try {
+            SimulationScenarioConfig config = new SimulationScenarioConfig();
+            config.setEnabled(scenarioEnabledCheck.isSelected());
+            String delayText = scenarioStepDelayField.getText().trim();
+            if (!delayText.isEmpty()) {
+                config.setStepDelayMs(Integer.parseInt(delayText));
+            }
+            List<SimulationPath> paths = new ArrayList<>();
+            for (int i = 0; i < scenarioTableModel.getRowCount(); i++) {
+                String name = String.valueOf(scenarioTableModel.getValueAt(i, 0)).trim();
+                String resources = String.valueOf(scenarioTableModel.getValueAt(i, 1)).trim();
+                if (name.isEmpty() || resources.isEmpty()) {
+                    continue;
+                }
+                SimulationPath path = new SimulationPath();
+                path.setName(name);
+                List<String> resourceIds = new ArrayList<>();
+                for (String token : resources.split(",")) {
+                    String trimmed = token.trim();
+                    if (!trimmed.isEmpty()) {
+                        resourceIds.add(trimmed);
+                    }
+                }
+                path.setResourceIds(resourceIds);
+                paths.add(path);
+            }
+            config.setPaths(paths);
+
+            writeScenarioConfig(config);
+            JOptionPane.showMessageDialog(this, "保存成功。");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "保存失败: " + ex.getMessage());
+        }
+    }
+
+    private void validateScenarioConfig() {
+        try {
+            SimulationScenarioConfig config = buildScenarioConfigFromUI();
+            if (config.getPaths() == null || config.getPaths().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "未配置任何路径。");
+                return;
+            }
+            JOptionPane.showMessageDialog(this, "校验通过。");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "校验失败: " + ex.getMessage());
+        }
+    }
+
+    private SimulationScenarioConfig buildScenarioConfigFromUI() {
+        SimulationScenarioConfig config = new SimulationScenarioConfig();
+        config.setEnabled(scenarioEnabledCheck.isSelected());
+        String delayText = scenarioStepDelayField.getText().trim();
+        if (!delayText.isEmpty()) {
+            config.setStepDelayMs(Integer.parseInt(delayText));
+        }
+        List<SimulationPath> paths = new ArrayList<>();
+        for (int i = 0; i < scenarioTableModel.getRowCount(); i++) {
+            String name = String.valueOf(scenarioTableModel.getValueAt(i, 0)).trim();
+            String resources = String.valueOf(scenarioTableModel.getValueAt(i, 1)).trim();
+            if (name.isEmpty() || resources.isEmpty()) {
+                continue;
+            }
+            SimulationPath path = new SimulationPath();
+            path.setName(name);
+            List<String> resourceIds = new ArrayList<>();
+            for (String token : resources.split(",")) {
+                String trimmed = token.trim();
+                if (!trimmed.isEmpty()) {
+                    resourceIds.add(trimmed);
+                }
+            }
+            path.setResourceIds(resourceIds);
+            paths.add(path);
+        }
+        config.setPaths(paths);
+        return config;
+    }
+
+    private SimulationScenarioConfig readScenarioConfig() {
+        try {
+            Path sourcePath = getScenarioSourcePath();
+            if (Files.exists(sourcePath)) {
+                String json = Files.readString(sourcePath, StandardCharsets.UTF_8);
+                return objectMapper.readValue(json, SimulationScenarioConfig.class);
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void writeScenarioConfig(SimulationScenarioConfig config) throws Exception {
+        String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(config);
+        Path sourcePath = getScenarioSourcePath();
+        Files.createDirectories(sourcePath.getParent());
+        Files.writeString(sourcePath, json, StandardCharsets.UTF_8);
+
+        Path targetPath = getScenarioTargetPath();
+        if (targetPath != null) {
+            Files.createDirectories(targetPath.getParent());
+            Files.writeString(targetPath, json, StandardCharsets.UTF_8);
+        }
+    }
+
+    private Path getScenarioSourcePath() {
+        return Paths.get(System.getProperty("user.dir"), "src", "main", "resources", "simulator", "scenarios.json");
+    }
+
+    private Path getScenarioTargetPath() {
+        Path target = Paths.get(System.getProperty("user.dir"), "target", "classes", "simulator", "scenarios.json");
+        return target;
+    }
+
 }

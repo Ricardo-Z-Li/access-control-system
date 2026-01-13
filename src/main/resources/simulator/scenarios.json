@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "stepDelayMs": 800,
+  "paths": [
+    {
+      "name": "Gate-To-Server",
+      "resourceIds": ["RES011", "RES001", "RES002"]
+    },
+    {
+      "name": "Gate-To-Finance",
+      "resourceIds": ["RES011", "RES001", "RES003"]
+    },
+    {
+      "name": "Gate-To-Entrance",
+      "resourceIds": ["RES011", "RES001"]
+    },
+    {
+      "name": "Entrance-To-Server",
+      "resourceIds": ["RES001", "RES002"]
+    }
+  ]
+}

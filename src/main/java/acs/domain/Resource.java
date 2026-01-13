@@ -35,6 +35,21 @@ public class Resource {
     @Column(name = "is_controlled")
     private Boolean isControlled;
 
+    @Column(name = "building", length = 50)
+    private String building;
+
+    @Column(name = "floor", length = 20)
+    private String floor;
+
+    @Column(name = "coord_x")
+    private Integer coordX;
+
+    @Column(name = "coord_y")
+    private Integer coordY;
+
+    @Column(name = "location", length = 200)
+    private String location;
+
     @ManyToMany(mappedBy = "resources")
     private Set<Group> groups = new HashSet<>();
 
@@ -110,5 +125,45 @@ public class Resource {
 
     public void setIsControlled(Boolean isControlled) {
         this.isControlled = isControlled;
+    }
+
+    public String getBuilding() {
+        return building;
+    }
+
+    public void setBuilding(String building) {
+        this.building = building;
+    }
+
+    public String getFloor() {
+        return floor;
+    }
+
+    public void setFloor(String floor) {
+        this.floor = floor;
+    }
+
+    public Integer getCoordX() {
+        return coordX;
+    }
+
+    public void setCoordX(Integer coordX) {
+        this.coordX = coordX;
+    }
+
+    public Integer getCoordY() {
+        return coordY;
+    }
+
+    public void setCoordY(Integer coordY) {
+        this.coordY = coordY;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 }

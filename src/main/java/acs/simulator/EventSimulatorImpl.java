@@ -1,12 +1,15 @@
 package acs.simulator;
 
 import acs.domain.AccessResult;
+import acs.domain.BadgeReader;
 import acs.repository.BadgeReaderRepository;
 import acs.service.ClockService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,7 +47,11 @@ public class EventSimulatorImpl implements EventSimulator {
     private final List<SimulationListener> listeners = new CopyOnWriteArrayList<>();
     
     // 配置参数
-    private static final int DEFAULT_EVENT_DELAY_MS = 1000; // 默认事件间隔1秒
+    private static final int DEFAULT_EVENT_DELAY_MS = 1000; // default event delay in ms
+    private static final String SCENARIO_CONFIG_PATH = "simulator/scenarios.json";
+
+    private final ObjectMapper objectMapper;
+    private final Map<String, PathAssignment> pathAssignments = new ConcurrentHashMap<>();
     
     @Autowired
     public EventSimulatorImpl(BadgeReaderSimulator badgeReaderSimulator,
@@ -52,6 +59,7 @@ public class EventSimulatorImpl implements EventSimulator {
                               ClockService clockService) {
         this.badgeReaderSimulator = badgeReaderSimulator;
         this.badgeReaderRepository = badgeReaderRepository;
+        this.objectMapper = new ObjectMapper();
         this.clockService = clockService;
         this.completionLatch = new CountDownLatch(0); // 初始化为0
     }
@@ -66,7 +74,7 @@ public class EventSimulatorImpl implements EventSimulator {
         resetSimulationStats();
         
         // 创建虚拟线程执行器
-        executorService = Executors.newVirtualThreadPerTaskExecutor();
+        executorService = Executors.newFixedThreadPool(Math.max(1, concurrencyLevel));
         
         // 获取可用的读卡器列表
         List<String> readerIds = getAvailableReaderIds();
@@ -76,6 +84,12 @@ public class EventSimulatorImpl implements EventSimulator {
         
         // 获取可用的徽章列表（模拟数据）
         List<String> badgeIds = generateSimulatedBadgeIds();
+
+        SimulationScenarioConfig scenarioConfig = loadScenarioConfig();
+        boolean scenarioEnabled = isScenarioEnabled(scenarioConfig);
+        Integer scenarioStepDelayMs = scenarioConfig != null ? scenarioConfig.getStepDelayMs() : null;
+        Map<String, List<String>> resourceReaderMap = buildResourceReaderMap();
+        pathAssignments.clear();
         
         // 计算每个线程的事件数
         int eventsPerThread = numEvents / concurrencyLevel;
@@ -88,7 +102,8 @@ public class EventSimulatorImpl implements EventSimulator {
             int eventsForThisThread = eventsPerThread + (i < remainingEvents ? 1 : 0);
             if (eventsForThisThread > 0) {
                 futures.add(executorService.submit(new SimulationTask(
-                        eventsForThisThread, readerIds, badgeIds, completionLatch)));
+                        eventsForThisThread, readerIds, badgeIds, completionLatch,
+                        scenarioEnabled, scenarioConfig, scenarioStepDelayMs, resourceReaderMap)));
             } else {
                 completionLatch.countDown();
             }
@@ -238,70 +253,177 @@ public class EventSimulatorImpl implements EventSimulator {
     /**
      * 模拟任务类，负责执行单个线程的模拟事件
      */
+    private SimulationScenarioConfig loadScenarioConfig() {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(SCENARIO_CONFIG_PATH)) {
+            if (input == null) {
+                return null;
+            }
+            return objectMapper.readValue(input, SimulationScenarioConfig.class);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private boolean isScenarioEnabled(SimulationScenarioConfig config) {
+        return config != null && config.isEnabled()
+                && config.getPaths() != null && !config.getPaths().isEmpty();
+    }
+
+    private Map<String, List<String>> buildResourceReaderMap() {
+        Map<String, List<String>> map = new HashMap<>();
+        for (BadgeReader reader : badgeReaderRepository.findAll()) {
+            if (reader.getResourceId() == null) {
+                continue;
+            }
+            map.computeIfAbsent(reader.getResourceId(), key -> new ArrayList<>())
+                    .add(reader.getReaderId());
+        }
+        return map;
+    }
+
+    private SimulationPath selectRandomPath(SimulationScenarioConfig config, Random random) {
+        List<SimulationPath> paths = config.getPaths();
+        return paths.get(random.nextInt(paths.size()));
+    }
+
+    private String getScenarioResourceId(String badgeId, Random random, SimulationScenarioConfig config) {
+        if (!isScenarioEnabled(config)) {
+            return null;
+        }
+        PathAssignment assignment = pathAssignments.computeIfAbsent(badgeId,
+                id -> new PathAssignment(selectRandomPath(config, random)));
+        SimulationPath path = assignment.getPath();
+        if (path == null || path.getResourceIds() == null || path.getResourceIds().isEmpty()) {
+            return null;
+        }
+        int index = assignment.nextIndex(path.getResourceIds().size());
+        return path.getResourceIds().get(index);
+    }
+
+    private String selectReaderId(String resourceId,
+                                  Map<String, List<String>> resourceReaderMap,
+                                  List<String> fallbackReaderIds,
+                                  Random random) {
+        if (resourceId != null) {
+            List<String> readers = resourceReaderMap.get(resourceId);
+            if (readers != null && !readers.isEmpty()) {
+                return readers.get(random.nextInt(readers.size()));
+            }
+        }
+        if (fallbackReaderIds == null || fallbackReaderIds.isEmpty()) {
+            return null;
+        }
+        return fallbackReaderIds.get(random.nextInt(fallbackReaderIds.size()));
+    }
+
+    private static class PathAssignment {
+        private final SimulationPath path;
+        private final AtomicInteger index = new AtomicInteger(0);
+
+        private PathAssignment(SimulationPath path) {
+            this.path = path;
+        }
+
+        public SimulationPath getPath() {
+            return path;
+        }
+
+        public int nextIndex(int size) {
+            if (size <= 0) {
+                return 0;
+            }
+            int current = index.getAndIncrement();
+            int value = current % size;
+            return value < 0 ? value + size : value;
+        }
+    }
+
     private class SimulationTask implements Runnable {
         private final int numEvents;
         private final List<String> readerIds;
         private final List<String> badgeIds;
         private final CountDownLatch latch;
-        
-        public SimulationTask(int numEvents, List<String> readerIds, 
-                              List<String> badgeIds, CountDownLatch latch) {
+        private final boolean scenarioEnabled;
+        private final SimulationScenarioConfig scenarioConfig;
+        private final Integer scenarioStepDelayMs;
+        private final Map<String, List<String>> resourceReaderMap;
+
+        public SimulationTask(int numEvents, List<String> readerIds,
+                              List<String> badgeIds, CountDownLatch latch,
+                              boolean scenarioEnabled,
+                              SimulationScenarioConfig scenarioConfig,
+                              Integer scenarioStepDelayMs,
+                              Map<String, List<String>> resourceReaderMap) {
             this.numEvents = numEvents;
             this.readerIds = readerIds;
             this.badgeIds = badgeIds;
             this.latch = latch;
+            this.scenarioEnabled = scenarioEnabled;
+            this.scenarioConfig = scenarioConfig;
+            this.scenarioStepDelayMs = scenarioStepDelayMs;
+            this.resourceReaderMap = resourceReaderMap;
         }
-        
+
         @Override
         public void run() {
             try {
                 Random random = new Random();
-                
+
                 for (int i = 0; i < numEvents; i++) {
                     if (Thread.currentThread().isInterrupted()) {
                         break;
                     }
-                    
-                    // 随机选择读卡器和徽章
-                    String readerId = readerIds.get(random.nextInt(readerIds.size()));
+
                     String badgeId = badgeIds.get(random.nextInt(badgeIds.size()));
+                    String resourceId = scenarioEnabled
+                            ? getScenarioResourceId(badgeId, random, scenarioConfig)
+                            : null;
+                    String readerId = scenarioEnabled
+                            ? selectReaderId(resourceId, resourceReaderMap, readerIds, random)
+                            : readerIds.get(random.nextInt(readerIds.size()));
+                    if (readerId == null) {
+                        readerId = readerIds.get(random.nextInt(readerIds.size()));
+                    }
                     String eventId = "EVENT_" + clockService.now().toEpochMilli() + "_" + i;
-                    
-                    // 通知事件开始
-                    listeners.forEach(l -> l.onSimulationEventStarted(eventId, readerId, badgeId));
+
+                    final String finalReaderId = readerId;
+                    final String finalBadgeId = badgeId;
+                    final String finalEventId = eventId;
+
+                    listeners.forEach(l -> l.onSimulationEventStarted(finalEventId, finalReaderId, finalBadgeId));
                     totalEvents.incrementAndGet();
-                    
+
                     long startTime = System.currentTimeMillis();
-                    
+
                     try {
-                        // 模拟刷卡事件（传递事件ID用于执行链跟踪）
                         AccessResult result = badgeReaderSimulator.simulateBadgeSwipe(readerId, badgeId, eventId);
-                        
+
                         long endTime = System.currentTimeMillis();
                         long processingTime = endTime - startTime;
-                        
-                        // 更新统计信息
+
                         completedEvents.incrementAndGet();
                         totalProcessingTime.addAndGet(processingTime);
-                        
+
                         if (result.getDecision().toString().equals("ALLOW")) {
                             grantedAccess.incrementAndGet();
                         } else {
                             deniedAccess.incrementAndGet();
                         }
-                        
-                        // 通知事件完成
-                        listeners.forEach(l -> l.onSimulationEventCompleted(eventId, result, processingTime));
-                        
+
+                        listeners.forEach(l -> l.onSimulationEventCompleted(finalEventId, result, processingTime));
+
                     } catch (Exception e) {
                         failedEvents.incrementAndGet();
-                        listeners.forEach(l -> l.onSimulationError(eventId, e.getMessage()));
+                        listeners.forEach(l -> l.onSimulationError(finalEventId, e.getMessage()));
                     }
-                    
-                    // 模拟事件间隔（应用时间加速因子）
-                    if (i < numEvents - 1) { // 最后一个事件后不等待
-                        int delay = (int) (DEFAULT_EVENT_DELAY_MS / timeAccelerationFactor);
-                        Thread.sleep(Math.max(1, delay)); // 至少1毫秒
+
+                    if (i < numEvents - 1) {
+                        int baseDelayMs = DEFAULT_EVENT_DELAY_MS;
+                        if (scenarioEnabled && scenarioStepDelayMs != null && scenarioStepDelayMs > 0) {
+                            baseDelayMs = scenarioStepDelayMs;
+                        }
+                        int delay = (int) (baseDelayMs / timeAccelerationFactor);
+                        Thread.sleep(Math.max(1, delay));
                     }
                 }
             } catch (InterruptedException e) {

@@ -5,6 +5,9 @@
 -- Clear existing data (if any) - delete in reverse order to respect foreign key constraints
 DELETE FROM access_logs;
 DELETE FROM resource_dependencies;
+DELETE FROM profile_resource_limits;
+DELETE FROM profile_badges;
+DELETE FROM profile_employees;
 DELETE FROM profile_groups;
 DELETE FROM profile_time_filters;
 DELETE FROM badge_readers;
@@ -41,6 +44,20 @@ INSERT INTO resources (resource_id, resource_name, resource_type, resource_state
 ('RES010', 'Guest WiFi Access', 'OTHER', 'AVAILABLE', FALSE),
 ('RES011', 'Parking Gate', 'DOOR', 'AVAILABLE', TRUE),
 ('RES012', 'Cafeteria Entrance', 'DOOR', 'AVAILABLE', TRUE);
+
+-- Set resource locations (building/floor/coord)
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 80, coord_y = 120, location = 'Main Gate' WHERE resource_id = 'RES001';
+UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 520, coord_y = 140, location = 'Server Room' WHERE resource_id = 'RES002';
+UPDATE resources SET building = 'OFFICE', floor = '2F', coord_x = 420, coord_y = 220, location = 'Finance Office' WHERE resource_id = 'RES003';
+UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 300, coord_y = 160, location = 'Printer Area' WHERE resource_id = 'RES004';
+UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 260, coord_y = 180, location = 'Engineering Lab' WHERE resource_id = 'RES005';
+UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 240, coord_y = 320, location = 'Conference Room A' WHERE resource_id = 'RES006';
+UPDATE resources SET building = 'OFFICE', floor = '2F', coord_x = 460, coord_y = 260, location = 'Executive Office' WHERE resource_id = 'RES007';
+UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 140, coord_y = 360, location = 'Security Room' WHERE resource_id = 'RES008';
+UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 200, coord_y = 200, location = 'Document Printer' WHERE resource_id = 'RES009';
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 620, coord_y = 420, location = 'Guest WiFi' WHERE resource_id = 'RES010';
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 120, coord_y = 420, location = 'Parking Gate' WHERE resource_id = 'RES011';
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 300, coord_y = 420, location = 'Cafeteria' WHERE resource_id = 'RES012';
 
 -- 3. Insert badges (badges table) - simple insert, only required fields
 INSERT INTO badges (badge_id, status) VALUES

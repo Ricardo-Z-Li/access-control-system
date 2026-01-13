@@ -21,6 +21,12 @@ public enum ReasonCode {
     /** Badge 存在但不可用（禁用 / 挂失） */
     BADGE_INACTIVE,
 
+    BADGE_EXPIRED,
+
+    BADGE_UPDATE_REQUIRED,
+
+    BADGE_UPDATE_OVERDUE,
+
     /** Badge 存在，但找不到对应员工 */
     EMPLOYEE_NOT_FOUND,
 

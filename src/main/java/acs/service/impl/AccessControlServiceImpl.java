@@ -7,6 +7,7 @@ import acs.cache.LocalCacheManager;
 import acs.domain.AccessDecision;
 import acs.domain.Badge;
 import acs.domain.BadgeStatus;
+import acs.domain.BadgeUpdateStatus;
 import acs.domain.Employee;
 import acs.domain.LogEntry;
 import acs.domain.ReasonCode;
@@ -22,10 +23,12 @@ import acs.service.AccessLimitService;
 import acs.repository.ProfileRepository;
 import acs.repository.ResourceDependencyRepository;
 import acs.repository.AccessLogRepository;
+import acs.simulator.BadgeCodeUpdateService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Set;
@@ -44,6 +47,7 @@ public class AccessControlServiceImpl implements AccessControlService {
     private final AccessLimitService accessLimitService;
     private final ResourceDependencyRepository resourceDependencyRepository;
     private final AccessLogRepository accessLogRepository;
+    private final BadgeCodeUpdateService badgeCodeUpdateService;
 
     public AccessControlServiceImpl(
                                 LogService logService,
@@ -52,7 +56,8 @@ public class AccessControlServiceImpl implements AccessControlService {
                                 TimeFilterService timeFilterService,
                                 AccessLimitService accessLimitService,
                                 ResourceDependencyRepository resourceDependencyRepository,
-                                AccessLogRepository accessLogRepository) {
+                                AccessLogRepository accessLogRepository,
+                                BadgeCodeUpdateService badgeCodeUpdateService) {
         this.logService = logService;
         this.cacheManager = cacheManager;
         this.profileRepository = profileRepository;
@@ -60,6 +65,7 @@ public class AccessControlServiceImpl implements AccessControlService {
         this.accessLimitService = accessLimitService;
         this.resourceDependencyRepository = resourceDependencyRepository;
         this.accessLogRepository = accessLogRepository;
+        this.badgeCodeUpdateService = badgeCodeUpdateService;
     }
 
     // 修改processAccess方法中的数据访问部分，使用缓存
@@ -90,6 +96,32 @@ public class AccessControlServiceImpl implements AccessControlService {
                 recordLog(badge, null, null, result, request);
                 return result;
             }
+
+            // 3.1 Badge expiration check
+            LocalDate requestDate = LocalDate.ofInstant(request.getTimestamp(), ZoneId.systemDefault());
+            if (badge.getExpirationDate() != null && requestDate.isAfter(badge.getExpirationDate())) {
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_EXPIRED, "Badge expired");
+                recordLog(badge, null, null, result, request);
+                return result;
+            }
+
+            // 3.2 Badge code update status check
+            BadgeUpdateStatus updateStatus = badgeCodeUpdateService.evaluateBadgeUpdateStatus(
+                badge.getBadgeId(), request.getTimestamp());
+            if (updateStatus == null) {
+                updateStatus = BadgeUpdateStatus.OK;
+            }
+            if (updateStatus == BadgeUpdateStatus.UPDATE_OVERDUE) {
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_UPDATE_OVERDUE, "Badge update window overdue");
+                recordLog(badge, null, null, result, request);
+                return result;
+            }
+            if (updateStatus == BadgeUpdateStatus.UPDATE_REQUIRED) {
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_UPDATE_REQUIRED, "Badge update required");
+                recordLog(badge, null, null, result, request);
+                return result;
+            }
+
 
             // 4. 验证员工存在性 - 从缓存获取
             Employee employee = badge.getEmployee() != null ? 
@@ -150,29 +182,7 @@ public class AccessControlServiceImpl implements AccessControlService {
             if (resource.getIsControlled() != null && resource.getIsControlled()) {
                 // 获取员工所属组关联的配置文件的时间过滤器
                 // 收集所有激活的配置文件，按优先级排序（priorityLevel越小优先级越高）
-                List<Profile> activeProfiles = new ArrayList<>();
-                for (Group group : employee.getGroups()) {
-                    // 查找关联此组的配置文件
-                    List<Profile> profiles = profileRepository.findByGroupsContaining(group);
-                    for (Profile profile : profiles) {
-                        if (profile.getIsActive() != null && profile.getIsActive()) {
-                            // 去重
-                            if (!activeProfiles.contains(profile)) {
-                                activeProfiles.add(profile);
-                            }
-                        }
-                    }
-                }
-                // 按优先级排序（null视为最低优先级）
-                activeProfiles.sort((p1, p2) -> {
-                    Integer p1Level = p1.getPriorityLevel();
-                    Integer p2Level = p2.getPriorityLevel();
-                    if (p1Level == null && p2Level == null) return 0;
-                    if (p1Level == null) return 1; // null排后面
-                    if (p2Level == null) return -1;
-                    return Integer.compare(p1Level, p2Level);
-                });
-                // 选择最高优先级的配置文件（如果有）
+                List<Profile> activeProfiles = getActiveProfiles(employee, badge);
                 if (!activeProfiles.isEmpty()) {
                     Profile highestPriorityProfile = activeProfiles.get(0);
                     Set<TimeFilter> timeFilters = highestPriorityProfile.getTimeFilters();
@@ -197,6 +207,12 @@ public class AccessControlServiceImpl implements AccessControlService {
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
+                if (!accessLimitService.checkResourceLimits(employee, resource, request.getTimestamp())) {
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "超过资源访问次数限制");
+                    recordLog(badge, employee, resource, result, request);
+                    return result;
+                }
+
             }
 
             // 10. 优先级规则检查（资源依赖关系）- 仅当资源受控时检查
@@ -266,5 +282,46 @@ public class AccessControlServiceImpl implements AccessControlService {
         }
         
         return true; // 所有依赖关系满足
+    }
+
+
+    private List<Profile> getActiveProfiles(Employee employee, Badge badge) {
+        List<Profile> activeProfiles = new ArrayList<>();
+        if (employee != null && employee.getGroups() != null) {
+            for (Group group : employee.getGroups()) {
+                List<Profile> profiles = profileRepository.findByGroupsContaining(group);
+                for (Profile profile : profiles) {
+                    if (profile.getIsActive() != null && profile.getIsActive() && !activeProfiles.contains(profile)) {
+                        activeProfiles.add(profile);
+                    }
+                }
+            }
+        }
+        if (employee != null) {
+            List<Profile> profiles = profileRepository.findByEmployeesContaining(employee);
+            for (Profile profile : profiles) {
+                if (profile.getIsActive() != null && profile.getIsActive() && !activeProfiles.contains(profile)) {
+                    activeProfiles.add(profile);
+                }
+            }
+        }
+        if (badge != null) {
+            List<Profile> profiles = profileRepository.findByBadgesContaining(badge);
+            for (Profile profile : profiles) {
+                if (profile.getIsActive() != null && profile.getIsActive() && !activeProfiles.contains(profile)) {
+                    activeProfiles.add(profile);
+                }
+            }
+        }
+        // sort by priority (lowest number first)
+        activeProfiles.sort((p1, p2) -> {
+            Integer p1Level = p1.getPriorityLevel();
+            Integer p2Level = p2.getPriorityLevel();
+            if (p1Level == null && p2Level == null) return 0;
+            if (p1Level == null) return 1;
+            if (p2Level == null) return -1;
+            return Integer.compare(p1Level, p2Level);
+        });
+        return activeProfiles;
     }
 }

@@ -5,6 +5,7 @@ import acs.domain.*;
 import acs.repository.BadgeRepository;
 import acs.repository.EmployeeRepository;
 import acs.repository.GroupRepository;
+import acs.repository.ProfileRepository;
 import acs.repository.ResourceRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,9 @@ public class AdminServiceImplTest {
 
     @Mock
     private ResourceRepository resourceRepository;
+
+    @Mock
+    private ProfileRepository profileRepository;
 
     @Mock
     private LocalCacheManager cacheManager;

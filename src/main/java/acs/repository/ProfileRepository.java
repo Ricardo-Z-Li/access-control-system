@@ -2,6 +2,8 @@ package acs.repository;
 
 import acs.domain.Profile;
 import acs.domain.Group;
+import acs.domain.Employee;
+import acs.domain.Badge;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -20,5 +22,9 @@ public interface ProfileRepository extends JpaRepository<Profile, String> {
     List<Profile> findByPriorityLevelGreaterThanEqual(Integer priorityLevel);
 
     List<Profile> findByGroupsContaining(Group group);
+
+    List<Profile> findByEmployeesContaining(Employee employee);
+
+    List<Profile> findByBadgesContaining(Badge badge);
 
 }

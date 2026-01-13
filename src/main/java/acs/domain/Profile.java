@@ -62,6 +62,22 @@ public class Profile {
     )
     private Set<Group> groups = new HashSet<>();
 
+    @ManyToMany
+    @JoinTable(
+        name = "profile_employees",
+        joinColumns = @JoinColumn(name = "profile_id"),
+        inverseJoinColumns = @JoinColumn(name = "employee_id")
+    )
+    private Set<Employee> employees = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "profile_badges",
+        joinColumns = @JoinColumn(name = "profile_id"),
+        inverseJoinColumns = @JoinColumn(name = "badge_id")
+    )
+    private Set<Badge> badges = new HashSet<>();
+
     // 无参构造器（JPA必需）
     public Profile() {
         this.isActive = true;
@@ -166,5 +182,21 @@ public class Profile {
 
     public void setGroups(Set<Group> groups) {
         this.groups = groups;
+    }
+
+    public Set<Employee> getEmployees() {
+        return employees;
+    }
+
+    public void setEmployees(Set<Employee> employees) {
+        this.employees = employees;
+    }
+
+    public Set<Badge> getBadges() {
+        return badges;
+    }
+
+    public void setBadges(Set<Badge> badges) {
+        this.badges = badges;
     }
 }

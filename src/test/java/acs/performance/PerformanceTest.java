@@ -9,6 +9,7 @@ import acs.service.AccessControlService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@EnabledIfSystemProperty(named = "runPerformanceTests", matches = "true")
 public class PerformanceTest {
 
     private static final Logger logger = LoggerFactory.getLogger(PerformanceTest.class);
@@ -248,7 +250,7 @@ public class PerformanceTest {
         List<Long> processingTimes = Collections.synchronizedList(new ArrayList<>());
 
         // 创建虚拟线程执行器
-        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+        ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         CountDownLatch latch = new CountDownLatch(NUM_EVENTS);
 
         // 记录开始时间

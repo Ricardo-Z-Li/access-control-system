@@ -1,11 +1,14 @@
 package acs.simulator;
 
 import acs.domain.Badge;
+import acs.domain.BadgeUpdateStatus;
 import acs.repository.BadgeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,59 +45,22 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
     @Override
     public boolean checkBadgeNeedsUpdate(String badgeId) {
         totalChecks.incrementAndGet();
-        
+
         return badgeRepository.findById(badgeId)
-                .map(badge -> {
-                    // 如果徽章已禁用，不需要更新
-                    if (badge.getStatus() == acs.domain.BadgeStatus.DISABLED) {
-                        return false;
-                    }
-                    
-                    // 确定代码过期日期（优先使用codeExpirationDate）
-                    LocalDate codeExpiryDate = badge.getCodeExpirationDate();
-                    if (codeExpiryDate == null) {
-                        codeExpiryDate = badge.getExpirationDate();
-                    }
-                    if (codeExpiryDate == null) {
-                        return false; // 无过期日期，不需要更新
-                    }
-                    
-                    long daysUntilCodeExpiry = ChronoUnit.DAYS.between(LocalDate.now(), codeExpiryDate);
-                    
-                    // 检查是否已超过更新截止日期
-                    LocalDate updateDue = badge.getUpdateDueDate();
-                    if (updateDue != null && LocalDate.now().isAfter(updateDue)) {
-                        // 更新窗口已过，禁用徽章
-                        badge.setStatus(acs.domain.BadgeStatus.DISABLED);
-                        badgeRepository.save(badge);
-                        simulateUpdateNotification(badgeId, (int) daysUntilCodeExpiry);
-                        return false; // 已禁用，不需要更新
-                    }
-                    
-                    // 如果代码已过期或即将过期（30天内），则需要更新
-                    boolean needsUpdate = daysUntilCodeExpiry <= DAYS_BEFORE_EXPIRY_TO_NOTIFY;
-                    
-                    if (needsUpdate) {
-                        // 设置needsUpdate标志
-                        badge.setNeedsUpdate(true);
-                        // 如果尚未设置更新截止日期，则设置
-                        if (updateDue == null) {
-                            LocalDate dueDate = LocalDate.now().plusDays(UPDATE_WINDOW_DAYS);
-                            badge.setUpdateDueDate(dueDate);
-                        }
-                        badgeRepository.save(badge);
-                        simulateUpdateNotification(badgeId, (int) daysUntilCodeExpiry);
-                    } else {
-                        // 不需要更新，确保标志为false
-                        if (badge.isNeedsUpdate()) {
-                            badge.setNeedsUpdate(false);
-                            badgeRepository.save(badge);
-                        }
-                    }
-                    
-                    return needsUpdate;
-                })
+                .map(badge -> evaluateBadgeUpdateStatusInternal(badge, LocalDate.now(), true)
+                        == BadgeUpdateStatus.UPDATE_REQUIRED)
                 .orElse(false);
+    }
+
+    @Override
+    public BadgeUpdateStatus evaluateBadgeUpdateStatus(String badgeId, Instant timestamp) {
+        if (timestamp == null) {
+            return BadgeUpdateStatus.OK;
+        }
+        LocalDate today = LocalDate.ofInstant(timestamp, ZoneId.systemDefault());
+        return badgeRepository.findById(badgeId)
+                .map(badge -> evaluateBadgeUpdateStatusInternal(badge, today, false))
+                .orElse(BadgeUpdateStatus.OK);
     }
 
     @Override
@@ -186,6 +152,56 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
                 totalChecks.get(), updatesTriggered.get(), notificationsSent.get(), updateAttempts.size());
     }
     
+
+    private BadgeUpdateStatus evaluateBadgeUpdateStatusInternal(Badge badge, LocalDate today, boolean notify) {
+        if (badge == null || today == null) {
+            return BadgeUpdateStatus.OK;
+        }
+
+        if (badge.getStatus() != acs.domain.BadgeStatus.ACTIVE) {
+            return BadgeUpdateStatus.OK;
+        }
+
+        LocalDate codeExpiryDate = badge.getCodeExpirationDate();
+        if (codeExpiryDate == null) {
+            codeExpiryDate = badge.getExpirationDate();
+        }
+        if (codeExpiryDate == null) {
+            return BadgeUpdateStatus.OK;
+        }
+
+        long daysUntilCodeExpiry = ChronoUnit.DAYS.between(today, codeExpiryDate);
+        LocalDate updateDue = badge.getUpdateDueDate();
+
+        if (updateDue != null && today.isAfter(updateDue)) {
+            badge.setStatus(acs.domain.BadgeStatus.DISABLED);
+            badgeRepository.save(badge);
+            if (notify) {
+                simulateUpdateNotification(badge.getBadgeId(), (int) daysUntilCodeExpiry);
+            }
+            return BadgeUpdateStatus.UPDATE_OVERDUE;
+        }
+
+        if (daysUntilCodeExpiry <= DAYS_BEFORE_EXPIRY_TO_NOTIFY) {
+            badge.setNeedsUpdate(true);
+            if (updateDue == null) {
+                badge.setUpdateDueDate(today.plusDays(UPDATE_WINDOW_DAYS));
+            }
+            badgeRepository.save(badge);
+            if (notify) {
+                simulateUpdateNotification(badge.getBadgeId(), (int) daysUntilCodeExpiry);
+            }
+            return BadgeUpdateStatus.UPDATE_REQUIRED;
+        }
+
+        if (badge.isNeedsUpdate()) {
+            badge.setNeedsUpdate(false);
+            badgeRepository.save(badge);
+        }
+
+        return BadgeUpdateStatus.OK;
+    }
+
     /**
      * 重置统计信息（用于测试）
      */
