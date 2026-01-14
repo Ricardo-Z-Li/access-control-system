@@ -20,7 +20,7 @@ public class ScanPanel extends JPanel {
     private JComboBox<String> modeComboBox;
     private JTextArea resultArea;
     private static final String MODE_SWIPE = "刷卡";
-    private static final String MODE_UPDATE = "更新码";
+    private static final String MODE_UPDATE = "码更新";
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 
@@ -102,11 +102,11 @@ public class ScanPanel extends JPanel {
 
         try {
             StringBuilder sb = new StringBuilder();
-            sb.append("处理结果:\n");
+            sb.append("操作结果:\n");
             if (clockService.isSimulated()) {
-                sb.append("时间来源: 模拟时钟\n");
+                sb.append("时间来源: 模拟时间\n");
             } else {
-                sb.append("时间来源: 系统时钟\n");
+                sb.append("时间来源: 系统时间\n");
             }
             sb.append("徽章ID: ").append(badgeId).append("\n");
             sb.append("模式: ").append(selectedMode).append("\n");
@@ -122,22 +122,22 @@ public class ScanPanel extends JPanel {
                     .append(" | 资源: ").append(resourceId)
                     .append(" | 决策: ").append(result.getDecision())
                     .append(" | 原因码: ").append(result.getReasonCode())
-                    .append(" | 消息: ").append(result.getMessage()).append("\n");
+                    .append(" | 信息: ").append(result.getMessage()).append("\n");
 
                 sb.append("资源ID: ").append(resourceId).append("\n");
                 sb.append("决策: ").append(result.getDecision()).append("\n");
                 sb.append("原因码: ").append(result.getReasonCode()).append("\n");
-                sb.append("消息: ").append(result.getMessage()).append("\n");
+                sb.append("信息: ").append(result.getMessage()).append("\n");
                 sb.append("时间: ").append(timeStr).append("\n");
             } else {
-                sb.append("流程: 徽章码更新\n");
+                sb.append("码更新流程:\n");
 
                 boolean needsUpdate = badgeCodeUpdateService.checkBadgeNeedsUpdate(badgeId);
                 if (!needsUpdate) {
                     sb.append("状态: 无需更新\n");
-                    sb.append("说明: 徽章码仍然有效\n");
+                    sb.append("说明: 当前码仍然有效\n");
                 } else {
-                    sb.append("状态: 需要更新，开始处理...\n");
+                    sb.append("状态: 需要更新，开始更新...\n");
                     Badge updatedBadge = badgeCodeUpdateService.updateBadgeCode(badgeId);
                     if (updatedBadge != null) {
                         sb.append("状态: 更新成功\n");
@@ -154,7 +154,7 @@ public class ScanPanel extends JPanel {
 
             resultArea.setText(sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("错误: " + ex.getMessage());
+            resultArea.setText("执行失败: " + ex.getMessage());
             ex.printStackTrace();
         }
     }

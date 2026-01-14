@@ -39,7 +39,7 @@ public class GroupFilePanel extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("服务状态: " + (groupFileService != null ? "可用" : "不可用")));
+        statusPanel.add(new JLabel("服务状态: " + (groupFileService != null ? "正常" : "不可用")));
         add(statusPanel, BorderLayout.SOUTH);
     }
 
@@ -96,7 +96,7 @@ public class GroupFilePanel extends JPanel {
     private JPanel createGroupManagementPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        String[] columns = {"组ID", "组名", "成员数", "资源数"};
+        String[] columns = {"群组ID", "群组名称", "成员数", "资源数"};
         groupTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -139,14 +139,14 @@ public class GroupFilePanel extends JPanel {
             List<Group> groups = groupFileService.loadGroupsFromFile(filePath);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("加载结果\n");
+            sb.append("加载完成\n");
             sb.append("文件路径: ").append(filePath).append("\n");
             sb.append("群组数量: ").append(groups.size()).append("\n");
             sb.append("===============================\n");
 
             for (Group group : groups) {
-                sb.append("组ID: ").append(group.getGroupId()).append("\n");
-                sb.append("组名: ").append(group.getName()).append("\n");
+                sb.append("群组ID: ").append(group.getGroupId()).append("\n");
+                sb.append("群组名称: ").append(group.getName()).append("\n");
                 sb.append("成员数: ").append(group.getEmployees() != null ? group.getEmployees().size() : 0).append("\n");
                 sb.append("资源数: ").append(group.getResources() != null ? group.getResources().size() : 0).append("\n");
                 sb.append("------------------------------\n");
@@ -155,7 +155,7 @@ public class GroupFilePanel extends JPanel {
             resultArea.setText(sb.toString());
             refreshGroupTable();
         } catch (Exception ex) {
-            resultArea.setText("文件解析失败: " + ex.getMessage() +
+            resultArea.setText("加载失败: " + ex.getMessage() +
                 "\n\n示例格式:\nGROUP001:Administrators:RES001,RES002,RES003");
         }
     }
@@ -172,10 +172,10 @@ public class GroupFilePanel extends JPanel {
             boolean valid = groupFileService.validateGroupFile(filePath);
 
             if (valid) {
-                resultArea.setText("校验通过: " + filePath + "\n\n文件格式正确。");
+                resultArea.setText("校验通过: " + filePath + "\n\n文件格式正确");
             } else {
                 resultArea.setText("校验失败: " + filePath +
-                    "\n\n文件格式不符合要求。\n\n示例:\nGROUP001:Administrators:RES001,RES002,RES003");
+                    "\n\n文件格式可能不符合要求\n\n示例:\nGROUP001:Administrators:RES001,RES002,RES003");
             }
         } catch (Exception ex) {
             resultArea.setText("校验失败: " + ex.getMessage());
@@ -194,7 +194,7 @@ public class GroupFilePanel extends JPanel {
             Map<String, List<String>> mapping = groupFileService.loadGroupResourceMapping(filePath);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("组-资源映射:\n");
+            sb.append("群组-资源映射:\n");
             sb.append("文件路径: ").append(filePath).append("\n");
             sb.append("群组数量: ").append(mapping.size()).append("\n");
             sb.append("===============================\n");
@@ -203,7 +203,7 @@ public class GroupFilePanel extends JPanel {
                 String groupId = entry.getKey();
                 List<String> resources = entry.getValue();
 
-                sb.append("组ID: ").append(groupId).append("\n");
+                sb.append("群组ID: ").append(groupId).append("\n");
                 sb.append("资源列表(").append(resources.size()).append("):\n");
 
                 int count = 0;
@@ -273,7 +273,7 @@ public class GroupFilePanel extends JPanel {
         int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File selectedFile = fileChooser.getSelectedFile();
-            resultArea.setText("导出准备: 将导出到 " + selectedFile.getAbsolutePath() +
+            resultArea.setText("准备导出: 导出文件为 " + selectedFile.getAbsolutePath() +
                              "\n时间: " + java.time.LocalDateTime.now() +
                              "\n记录数: " + groupTableModel.getRowCount());
         }
@@ -300,14 +300,14 @@ public class GroupFilePanel extends JPanel {
             int memberCount = group.getEmployees() != null ? group.getEmployees().size() : 0;
             int resourceCount = group.getResources() != null ? group.getResources().size() : 0;
             sb.append("群组详情\n");
-            sb.append("组ID: ").append(group.getGroupId()).append("\n");
-            sb.append("组名: ").append(group.getName()).append("\n");
+            sb.append("群组ID: ").append(group.getGroupId()).append("\n");
+            sb.append("群组名称: ").append(group.getName()).append("\n");
             sb.append("状态: 未知\n");
             sb.append("成员数: ").append(memberCount).append("\n");
             sb.append("资源数: ").append(resourceCount).append("\n");
             sb.append("===============================\n");
 
-            sb.append("成员 (").append(memberCount).append(" 人):\n");
+            sb.append("成员 (" ).append(memberCount).append(" 个):\n");
             if (group.getEmployees() != null && !group.getEmployees().isEmpty()) {
                 int count = 0;
                 for (var employee : group.getEmployees()) {
@@ -321,7 +321,7 @@ public class GroupFilePanel extends JPanel {
 
             sb.append("===============================\n");
 
-            sb.append("资源列表 (").append(resourceCount).append(" 个):\n");
+            sb.append("资源列表 (" ).append(resourceCount).append(" 个):\n");
             if (group.getResources() != null && !group.getResources().isEmpty()) {
                 int count = 0;
                 for (var resource : group.getResources()) {

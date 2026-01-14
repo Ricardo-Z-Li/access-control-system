@@ -1,7 +1,9 @@
 package acs.ui;
 
 import javax.swing.*;
+import javax.swing.plaf.FontUIResource;
 import java.awt.*;
+import java.util.Enumeration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -115,6 +117,7 @@ public class MainApp extends JFrame {
     }
 
     private void initUI() {
+        applyTheme();
         setTitle("门禁控制系统 - 控制台");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
@@ -147,6 +150,29 @@ public class MainApp extends JFrame {
 
         JPanel statusPanel = createStatusPanel();
         add(statusPanel, BorderLayout.SOUTH);
+    }
+
+    private void applyTheme() {
+        Font baseFont = new Font("Microsoft YaHei UI", Font.PLAIN, 13);
+        if (!"Microsoft YaHei UI".equals(baseFont.getFamily())) {
+            baseFont = UIManager.getFont("Label.font");
+        }
+        if (baseFont == null) {
+            baseFont = new Font(Font.SANS_SERIF, Font.PLAIN, 13);
+        }
+        setGlobalFont(baseFont);
+    }
+
+    private void setGlobalFont(Font font) {
+        FontUIResource resource = new FontUIResource(font);
+        Enumeration<Object> keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = UIManager.get(key);
+            if (value instanceof FontUIResource) {
+                UIManager.put(key, resource);
+            }
+        }
     }
 
     private JMenuBar createMenuBar() {

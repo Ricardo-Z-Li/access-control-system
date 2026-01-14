@@ -30,7 +30,7 @@ public class TimeFilterPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout());
 
-        JLabel titleLabel = new JLabel("时间过滤规则", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("时间规则管理", SwingConstants.CENTER);
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -40,14 +40,14 @@ public class TimeFilterPanel extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("服务状态: " + (timeFilterService != null ? "可用" : "不可用")));
+        statusPanel.add(new JLabel("服务状态: " + (timeFilterService != null ? "正常" : "不可用")));
         add(statusPanel, BorderLayout.SOUTH);
     }
 
     private JPanel createRuleManagementPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        String[] columns = {"过滤器ID", "名称", "规则摘要", "年份", "月份", "开始时间", "结束时间"};
+        String[] columns = {"规则ID", "规则名称", "规则摘要", "年份", "月份", "开始时间", "结束时间"};
         filterTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -67,7 +67,7 @@ public class TimeFilterPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        controlPanel.add(new JLabel("规则文本:"), gbc);
+        controlPanel.add(new JLabel("规则表达式:"), gbc);
 
         gbc.gridx = 1;
         ruleField = new JTextField(40);
@@ -161,7 +161,7 @@ public class TimeFilterPanel extends JPanel {
         String rawRule = ruleField.getText().trim();
 
         if (rawRule.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "请输入规则");
+            JOptionPane.showMessageDialog(this, "请输入规则表达式");
             return;
         }
 
@@ -169,17 +169,17 @@ public class TimeFilterPanel extends JPanel {
             TimeFilter timeFilter = timeFilterService.parseTimeRule(rawRule);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("解析结果:\n");
+            sb.append("规则解析结果\n");
             sb.append("原始规则: ").append(rawRule).append("\n");
-            sb.append("过滤器ID: ").append(timeFilter.getTimeFilterId()).append("\n");
-            sb.append("名称: ").append(timeFilter.getFilterName() != null ? timeFilter.getFilterName() : "未命名").append("\n");
-            sb.append("年份: ").append(timeFilter.getYear() != null ? timeFilter.getYear() : "未设置").append("\n");
-            sb.append("月份: ").append(timeFilter.getMonths() != null ? timeFilter.getMonths() : "未设置").append("\n");
-            sb.append("日期: ").append(timeFilter.getDaysOfMonth() != null ? timeFilter.getDaysOfMonth() : "未设置").append("\n");
-            sb.append("星期: ").append(timeFilter.getDaysOfWeek() != null ? timeFilter.getDaysOfWeek() : "未设置").append("\n");
-            sb.append("开始时间: ").append(timeFilter.getStartTime() != null ? timeFilter.getStartTime() : "未设置").append("\n");
-            sb.append("结束时间: ").append(timeFilter.getEndTime() != null ? timeFilter.getEndTime() : "未设置").append("\n");
-            sb.append("是否重复: ").append(timeFilter.getIsRecurring() != null && timeFilter.getIsRecurring() ? "是" : "否").append("\n");
+            sb.append("规则ID: ").append(timeFilter.getTimeFilterId()).append("\n");
+            sb.append("规则名称: ").append(timeFilter.getFilterName() != null ? timeFilter.getFilterName() : "未命名").append("\n");
+            sb.append("年份: ").append(timeFilter.getYear() != null ? timeFilter.getYear() : "未指定").append("\n");
+            sb.append("月份: ").append(timeFilter.getMonths() != null ? timeFilter.getMonths() : "未指定").append("\n");
+            sb.append("日期: ").append(timeFilter.getDaysOfMonth() != null ? timeFilter.getDaysOfMonth() : "未指定").append("\n");
+            sb.append("星期: ").append(timeFilter.getDaysOfWeek() != null ? timeFilter.getDaysOfWeek() : "未指定").append("\n");
+            sb.append("开始时间: ").append(timeFilter.getStartTime() != null ? timeFilter.getStartTime() : "未指定").append("\n");
+            sb.append("结束时间: ").append(timeFilter.getEndTime() != null ? timeFilter.getEndTime() : "未指定").append("\n");
+            sb.append("是否循环: ").append(timeFilter.getIsRecurring() != null && timeFilter.getIsRecurring() ? "是" : "否").append("\n");
 
             resultArea.setText(sb.toString());
             refreshFilterTable();
@@ -192,7 +192,7 @@ public class TimeFilterPanel extends JPanel {
         String rawRule = ruleField.getText().trim();
 
         if (rawRule.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "请输入规则");
+            JOptionPane.showMessageDialog(this, "请输入规则表达式");
             return;
         }
 
@@ -200,9 +200,9 @@ public class TimeFilterPanel extends JPanel {
             boolean valid = timeFilterService.validateTimeRule(rawRule);
 
             if (valid) {
-                resultArea.setText("校验通过: " + rawRule + "\n\n规则格式正确。");
+                resultArea.setText("校验通过: " + rawRule + "\n\n规则格式正确");
             } else {
-                resultArea.setText("校验失败: " + rawRule + "\n\n规则格式不符合要求。");
+                resultArea.setText("校验失败: " + rawRule + "\n\n规则格式可能不合法");
             }
         } catch (Exception ex) {
             resultArea.setText("校验失败: " + ex.getMessage());
@@ -223,32 +223,32 @@ public class TimeFilterPanel extends JPanel {
             boolean matches = timeFilterService.matches(timeFilter, testTime);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("测试结果:\n");
+            sb.append("匹配结果\n");
             sb.append("规则: ").append(rawRule).append("\n");
             sb.append("测试时间: ").append(testTime).append("\n");
-            sb.append("匹配结果: ").append(matches ? "匹配" : "不匹配").append("\n\n");
+            sb.append("是否匹配: ").append(matches ? "匹配" : "不匹配").append("\n\n");
 
-            sb.append("过滤器详情:\n");
-            sb.append("过滤器ID: ").append(timeFilter.getTimeFilterId()).append("\n");
-            sb.append("名称: ").append(timeFilter.getFilterName() != null ? timeFilter.getFilterName() : "未命名").append("\n");
-            sb.append("年份: ").append(timeFilter.getYear() != null ? timeFilter.getYear() : "未设置").append("\n");
-            sb.append("月份: ").append(timeFilter.getMonths() != null ? timeFilter.getMonths() : "未设置").append("\n");
-            sb.append("日期: ").append(timeFilter.getDaysOfMonth() != null ? timeFilter.getDaysOfMonth() : "未设置").append("\n");
-            sb.append("星期: ").append(timeFilter.getDaysOfWeek() != null ? timeFilter.getDaysOfWeek() : "未设置").append("\n");
-            sb.append("开始时间: ").append(timeFilter.getStartTime() != null ? timeFilter.getStartTime() : "未设置").append("\n");
-            sb.append("结束时间: ").append(timeFilter.getEndTime() != null ? timeFilter.getEndTime() : "未设置").append("\n");
-            sb.append("是否重复: ").append(timeFilter.getIsRecurring() != null && timeFilter.getIsRecurring() ? "是" : "否").append("\n");
+            sb.append("规则解析信息:\n");
+            sb.append("规则ID: ").append(timeFilter.getTimeFilterId()).append("\n");
+            sb.append("规则名称: ").append(timeFilter.getFilterName() != null ? timeFilter.getFilterName() : "未命名").append("\n");
+            sb.append("年份: ").append(timeFilter.getYear() != null ? timeFilter.getYear() : "未指定").append("\n");
+            sb.append("月份: ").append(timeFilter.getMonths() != null ? timeFilter.getMonths() : "未指定").append("\n");
+            sb.append("日期: ").append(timeFilter.getDaysOfMonth() != null ? timeFilter.getDaysOfMonth() : "未指定").append("\n");
+            sb.append("星期: ").append(timeFilter.getDaysOfWeek() != null ? timeFilter.getDaysOfWeek() : "未指定").append("\n");
+            sb.append("开始时间: ").append(timeFilter.getStartTime() != null ? timeFilter.getStartTime() : "未指定").append("\n");
+            sb.append("结束时间: ").append(timeFilter.getEndTime() != null ? timeFilter.getEndTime() : "未指定").append("\n");
+            sb.append("是否循环: ").append(timeFilter.getIsRecurring() != null && timeFilter.getIsRecurring() ? "是" : "否").append("\n");
 
             sb.append("\n时间拆解:\n");
-            sb.append("年: ").append(testTime.getYear()).append("\n");
-            sb.append("月: ").append(testTime.getMonthValue()).append(" (").append(testTime.getMonth()).append(")\n");
-            sb.append("日: ").append(testTime.getDayOfMonth()).append("\n");
+            sb.append("年份: ").append(testTime.getYear()).append("\n");
+            sb.append("月份: ").append(testTime.getMonthValue()).append(" (").append(testTime.getMonth()).append(")\n");
+            sb.append("日期: ").append(testTime.getDayOfMonth()).append("\n");
             sb.append("星期: ").append(testTime.getDayOfWeek()).append("\n");
             sb.append("时间: ").append(String.format("%02d:%02d", testTime.getHour(), testTime.getMinute())).append("\n");
 
             resultArea.setText(sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("错误: " + ex.getMessage() + "\n\n时间格式: yyyy-MM-ddTHH:mm:ss");
+            resultArea.setText("测试失败: " + ex.getMessage() + "\n\n时间格式: yyyy-MM-ddTHH:mm:ss");
         }
     }
 
@@ -265,12 +265,12 @@ public class TimeFilterPanel extends JPanel {
         sb.append("   *.*.Wednesday.14:00-16:00\n\n");
         sb.append("5. 2025年1-2月工作日全天\n");
         sb.append("   2025.January,February.Monday-Friday.*\n\n");
-        sb.append("6. 工作日上下午时段\n");
+        sb.append("6. 工作日分段时间\n");
         sb.append("   *.*.Monday-Friday.8:00-12:00,13:00-17:00\n\n");
         sb.append("规则格式:\n");
-        sb.append("   [年].[月].[日/周].[时间段]\n");
-        sb.append("   * 表示任意\n");
-        sb.append("   月份/星期可用逗号分隔\n");
+        sb.append("   [年份].[月份].[日期/星期].[时间段]\n");
+        sb.append("   * 表示不限\n");
+        sb.append("   月份/日期/星期可用逗号分隔\n");
         sb.append("   时间段可用逗号分隔\n");
 
         resultArea.setText(sb.toString());
@@ -295,14 +295,14 @@ public class TimeFilterPanel extends JPanel {
                                 (filter.getRawRule().length() > 50 ?
                                     filter.getRawRule().substring(0, 50) + "..." :
                                     filter.getRawRule()) : "",
-                            filter.getYear() != null ? filter.getYear() : "未设置",
-                            filter.getMonths() != null ? filter.getMonths() : "未设置",
-                            filter.getStartTime() != null ? filter.getStartTime() : "未设置",
-                            filter.getEndTime() != null ? filter.getEndTime() : "未设置"
+                            filter.getYear() != null ? filter.getYear() : "未指定",
+                            filter.getMonths() != null ? filter.getMonths() : "未指定",
+                            filter.getStartTime() != null ? filter.getStartTime() : "未指定",
+                            filter.getEndTime() != null ? filter.getEndTime() : "未指定"
                         });
                     }
 
-                    resultArea.setText("已加载过滤规则 " + filters.size() + " 条");
+                    resultArea.setText("已加载时间规则 " + filters.size() + " 条");
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> resultArea.setText("刷新失败: " + ex.getMessage()));

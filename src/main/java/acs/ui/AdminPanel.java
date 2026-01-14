@@ -40,8 +40,8 @@ public class AdminPanel extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("AdminService: " + (adminService != null ? "可用" : "不可用")));
-        statusPanel.add(new JLabel("ProfileFileService: " + (profileFileService != null ? "可用" : "不可用")));
+        statusPanel.add(new JLabel("AdminService: " + (adminService != null ? "正常" : "不可用")));
+        statusPanel.add(new JLabel("ProfileFileService: " + (profileFileService != null ? "正常" : "不可用")));
         add(statusPanel, BorderLayout.SOUTH);
     }
 
@@ -147,14 +147,14 @@ public class AdminPanel extends JPanel {
             }
             try {
                 adminService.issueBadge(empId, badgeId);
-                JOptionPane.showMessageDialog(panel, "徽章已发放");
+                JOptionPane.showMessageDialog(panel, "徽章发放成功");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel, "发放失败: " + ex.getMessage());
             }
         });
         buttonPanel.add(issueButton);
 
-        JButton statusButton = new JButton("设置状态");
+        JButton statusButton = new JButton("更新状态");
         statusButton.addActionListener(e -> {
             String badgeId = badgeIdField.getText().trim();
             if (badgeId.isEmpty()) {
@@ -166,7 +166,7 @@ public class AdminPanel extends JPanel {
                 adminService.setBadgeStatus(badgeId, status);
                 JOptionPane.showMessageDialog(panel, "徽章状态已更新");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "设置失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "更新失败: " + ex.getMessage());
             }
         });
         buttonPanel.add(statusButton);
@@ -200,7 +200,7 @@ public class AdminPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        inputPanel.add(new JLabel("名称:"), gbc);
+        inputPanel.add(new JLabel("资源名称:"), gbc);
 
         gbc.gridx = 1;
         JTextField nameField = new JTextField(15);
@@ -265,7 +265,7 @@ public class AdminPanel extends JPanel {
             String resId = resIdField.getText().trim();
             String name = nameField.getText().trim();
             if (resId.isEmpty() || name.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入资源ID和名称");
+                JOptionPane.showMessageDialog(panel, "请输入资源ID和资源名称");
                 return;
             }
             try {
@@ -277,7 +277,7 @@ public class AdminPanel extends JPanel {
         });
         buttonPanel.add(registerButton);
 
-        JButton stateButton = new JButton("设置状态");
+        JButton stateButton = new JButton("更新状态");
         stateButton.addActionListener(e -> {
             String resId = resIdField.getText().trim();
             ResourceState state = (ResourceState) stateCombo.getSelectedItem();
@@ -289,7 +289,7 @@ public class AdminPanel extends JPanel {
                 adminService.setResourceState(resId, state);
                 JOptionPane.showMessageDialog(panel, "资源状态已更新");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "设置失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "更新失败: " + ex.getMessage());
             }
         });
         buttonPanel.add(stateButton);
@@ -356,7 +356,7 @@ public class AdminPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        inputPanel.add(new JLabel("组ID:"), gbc);
+        inputPanel.add(new JLabel("群组ID:"), gbc);
 
         gbc.gridx = 1;
         JTextField groupIdField = new JTextField(15);
@@ -364,7 +364,7 @@ public class AdminPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        inputPanel.add(new JLabel("组名:"), gbc);
+        inputPanel.add(new JLabel("群组名称:"), gbc);
 
         gbc.gridx = 1;
         JTextField groupNameField = new JTextField(15);
@@ -384,17 +384,17 @@ public class AdminPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout());
 
-        JButton createGroupButton = new JButton("创建组");
+        JButton createGroupButton = new JButton("创建群组");
         createGroupButton.addActionListener(e -> {
             String groupId = groupIdField.getText().trim();
             String groupName = groupNameField.getText().trim();
             if (groupId.isEmpty() || groupName.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入组ID和组名");
+                JOptionPane.showMessageDialog(panel, "请输入群组ID和群组名称");
                 return;
             }
             try {
                 adminService.createGroup(groupId, groupName);
-                JOptionPane.showMessageDialog(panel, "组已创建");
+                JOptionPane.showMessageDialog(panel, "群组已创建");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel, "创建失败: " + ex.getMessage());
             }
@@ -406,12 +406,12 @@ public class AdminPanel extends JPanel {
             String empId = empIdField.getText().trim();
             String groupId = groupIdField.getText().trim();
             if (empId.isEmpty() || groupId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入员工ID和组ID");
+                JOptionPane.showMessageDialog(panel, "请输入员工ID和群组ID");
                 return;
             }
             try {
                 adminService.assignEmployeeToGroup(empId, groupId);
-                JOptionPane.showMessageDialog(panel, "成员已加入");
+                JOptionPane.showMessageDialog(panel, "员工已加入群组");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel, "添加失败: " + ex.getMessage());
             }
@@ -423,12 +423,12 @@ public class AdminPanel extends JPanel {
             String empId = empIdField.getText().trim();
             String groupId = groupIdField.getText().trim();
             if (empId.isEmpty() || groupId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入员工ID和组ID");
+                JOptionPane.showMessageDialog(panel, "请输入员工ID和群组ID");
                 return;
             }
             try {
                 adminService.removeEmployeeFromGroup(empId, groupId);
-                JOptionPane.showMessageDialog(panel, "成员已移除");
+                JOptionPane.showMessageDialog(panel, "员工已移除");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel, "移除失败: " + ex.getMessage());
             }
@@ -456,7 +456,7 @@ public class AdminPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        inputPanel.add(new JLabel("组ID:"), gbc);
+        inputPanel.add(new JLabel("群组ID:"), gbc);
 
         gbc.gridx = 1;
         JTextField groupIdField = new JTextField(15);
@@ -481,12 +481,12 @@ public class AdminPanel extends JPanel {
             String groupId = groupIdField.getText().trim();
             String resourceId = resourceIdField.getText().trim();
             if (groupId.isEmpty() || resourceId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入组ID和资源ID");
+                JOptionPane.showMessageDialog(panel, "请输入群组ID和资源ID");
                 return;
             }
             try {
                 adminService.grantGroupAccessToResource(groupId, resourceId);
-                JOptionPane.showMessageDialog(panel, "已授权");
+                JOptionPane.showMessageDialog(panel, "授权成功");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel, "授权失败: " + ex.getMessage());
             }
@@ -498,12 +498,12 @@ public class AdminPanel extends JPanel {
             String groupId = groupIdField.getText().trim();
             String resourceId = resourceIdField.getText().trim();
             if (groupId.isEmpty() || resourceId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入组ID和资源ID");
+                JOptionPane.showMessageDialog(panel, "请输入群组ID和资源ID");
                 return;
             }
             try {
                 adminService.revokeGroupAccessToResource(groupId, resourceId);
-                JOptionPane.showMessageDialog(panel, "已撤销");
+                JOptionPane.showMessageDialog(panel, "已撤销授权");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel, "撤销失败: " + ex.getMessage());
             }
@@ -527,7 +527,7 @@ public class AdminPanel extends JPanel {
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField filePathField = new JTextField(30);
         filePathField.setText("src/main/resources/profiles.json");
-        controlPanel.add(new JLabel("Profile文件路径:"));
+        controlPanel.add(new JLabel("Profile 文件路径:"));
         controlPanel.add(filePathField);
 
         JButton loadButton = new JButton("加载");
@@ -539,7 +539,7 @@ public class AdminPanel extends JPanel {
             }
             try {
                 List<Profile> profiles = profileFileService.loadProfilesFromJson(filePath);
-                JOptionPane.showMessageDialog(panel, "加载Profile数量: " + profiles.size());
+                JOptionPane.showMessageDialog(panel, "已加载 Profile 数量: " + profiles.size());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel, "加载失败: " + ex.getMessage());
             }
@@ -614,7 +614,7 @@ public class AdminPanel extends JPanel {
             String profileId = profileIdField.getText().trim();
             String employeeId = employeeIdField.getText().trim();
             if (profileId.isEmpty() || employeeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入Profile ID和员工ID");
+                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和员工ID");
                 return;
             }
             try {
@@ -631,7 +631,7 @@ public class AdminPanel extends JPanel {
             String profileId = profileIdField.getText().trim();
             String employeeId = employeeIdField.getText().trim();
             if (profileId.isEmpty() || employeeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入Profile ID和员工ID");
+                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和员工ID");
                 return;
             }
             try {
@@ -648,7 +648,7 @@ public class AdminPanel extends JPanel {
             String profileId = profileIdField.getText().trim();
             String badgeId = badgeIdField.getText().trim();
             if (profileId.isEmpty() || badgeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入Profile ID和徽章ID");
+                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和徽章ID");
                 return;
             }
             try {
@@ -665,7 +665,7 @@ public class AdminPanel extends JPanel {
             String profileId = profileIdField.getText().trim();
             String badgeId = badgeIdField.getText().trim();
             if (profileId.isEmpty() || badgeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入Profile ID和徽章ID");
+                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和徽章ID");
                 return;
             }
             try {
@@ -685,7 +685,7 @@ public class AdminPanel extends JPanel {
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton viewEmployeeProfiles = new JButton("查看员工Profile");
+        JButton viewEmployeeProfiles = new JButton("查看员工 Profile");
         viewEmployeeProfiles.addActionListener(e -> {
             String employeeId = employeeIdField.getText().trim();
             if (employeeId.isEmpty()) {
@@ -695,7 +695,7 @@ public class AdminPanel extends JPanel {
             try {
                 List<Profile> profiles = adminService.getProfilesForEmployee(employeeId);
                 StringBuilder sb = new StringBuilder();
-                sb.append("Profile列表(").append(profiles.size()).append(")\n");
+                sb.append("Profile 列表(").append(profiles.size()).append(")\n");
                 for (Profile profile : profiles) {
                     sb.append("- ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");
@@ -707,7 +707,7 @@ public class AdminPanel extends JPanel {
         });
         viewPanel.add(viewEmployeeProfiles);
 
-        JButton viewBadgeProfiles = new JButton("查看徽章Profile");
+        JButton viewBadgeProfiles = new JButton("查看徽章 Profile");
         viewBadgeProfiles.addActionListener(e -> {
             String badgeId = badgeIdField.getText().trim();
             if (badgeId.isEmpty()) {
@@ -717,7 +717,7 @@ public class AdminPanel extends JPanel {
             try {
                 List<Profile> profiles = adminService.getProfilesForBadge(badgeId);
                 StringBuilder sb = new StringBuilder();
-                sb.append("Profile列表(").append(profiles.size()).append(")\n");
+                sb.append("Profile 列表(").append(profiles.size()).append(")\n");
                 for (Profile profile : profiles) {
                     sb.append("- ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");

@@ -446,7 +446,7 @@ public class MonitorPanel extends JPanel {
 
     private void exportToCsv() {
         if (csvLogExporter == null) {
-            logArea.setText("CSV导出服务不可用");
+            logArea.setText("CSV 导出服务不可用");
             return;
         }
 
@@ -462,7 +462,7 @@ public class MonitorPanel extends JPanel {
                 java.io.File file = fileChooser.getSelectedFile();
                 java.nio.file.Path path = file.toPath();
                 csvLogExporter.exportToFile(logs, path);
-                logArea.setText("CSV导出成功: " + path.toString());
+                logArea.setText("CSV 导出成功: " + path.toString());
             }
         } catch (Exception ex) {
             logArea.setText("导出失败: " + ex.getMessage());
