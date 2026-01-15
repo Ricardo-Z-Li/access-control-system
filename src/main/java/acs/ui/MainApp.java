@@ -37,6 +37,9 @@ public class MainApp extends JFrame {
     private DefaultListModel<NavItem> navModel;
     private JLabel sectionTitle;
     private JLabel sectionSubtitle;
+    private int hoveredIndex = -1;
+    private float hoverProgress = 0f;
+    private Timer hoverTimer;
 
     @Autowired
     private AccessControlService accessControlService;
@@ -167,15 +170,38 @@ public class MainApp extends JFrame {
         navList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
             JLabel label = new JLabel(value.label);
             label.setOpaque(true);
-            label.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+            float progress = (!isSelected && index == hoveredIndex) ? hoverProgress : 0f;
+            int leftInset = 14 + Math.round(4 * progress);
+            label.setBorder(BorderFactory.createEmptyBorder(10, leftInset, 10, 14));
             if (isSelected) {
                 label.setBackground(UiTheme.accent());
                 label.setForeground(Color.WHITE);
+            } else if (index == hoveredIndex) {
+                label.setBackground(blend(UiTheme.surface(), new Color(219, 234, 254), progress));
+                label.setForeground(new Color(30, 64, 175));
             } else {
                 label.setBackground(UiTheme.surface());
                 label.setForeground(UiTheme.mutedText());
             }
             return label;
+        });
+        navList.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int index = getHoverIndex(e.getPoint());
+                if (index != hoveredIndex) {
+                    hoveredIndex = index;
+                    hoverProgress = 0f;
+                }
+                startHoverTimer();
+            }
+        });
+        navList.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                hoveredIndex = -1;
+                startHoverTimer();
+            }
         });
         navList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -343,6 +369,45 @@ public class MainApp extends JFrame {
         timer.start();
 
         return panel;
+    }
+
+    private void startHoverTimer() {
+        if (hoverTimer == null) {
+            hoverTimer = new Timer(30, e -> {
+                float target = hoveredIndex >= 0 ? 1f : 0f;
+                hoverProgress += (target - hoverProgress) * 0.2f;
+                if (Math.abs(target - hoverProgress) < 0.02f) {
+                    hoverProgress = target;
+                    if (target == 0f) {
+                        hoverTimer.stop();
+                    }
+                }
+                navList.repaint();
+            });
+        }
+        if (!hoverTimer.isRunning()) {
+            hoverTimer.start();
+        }
+    }
+
+    private int getHoverIndex(Point point) {
+        int index = navList.locationToIndex(point);
+        if (index < 0) {
+            return -1;
+        }
+        Rectangle bounds = navList.getCellBounds(index, index);
+        if (bounds != null && bounds.contains(point)) {
+            return index;
+        }
+        return -1;
+    }
+
+    private static Color blend(Color from, Color to, float t) {
+        float clamped = Math.max(0f, Math.min(1f, t));
+        int r = Math.round(from.getRed() + (to.getRed() - from.getRed()) * clamped);
+        int g = Math.round(from.getGreen() + (to.getGreen() - from.getGreen()) * clamped);
+        int b = Math.round(from.getBlue() + (to.getBlue() - from.getBlue()) * clamped);
+        return new Color(r, g, b);
     }
 
     private void refreshCache() {

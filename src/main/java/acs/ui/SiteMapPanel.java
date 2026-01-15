@@ -21,6 +21,9 @@ import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +37,11 @@ public class SiteMapPanel extends JPanel {
 
     private static final int DOT_RADIUS = 6;
     private static final int DOT_HIT_RADIUS = 14;
-    private static final int GRID_STEP_X = 38;
-    private static final int GRID_STEP_Y = 30;
-    private static final int GRID_START_X = 40;
-    private static final int GRID_START_Y = 60;
+    private static final int GRID_STEP_X = 46;
+    private static final int GRID_STEP_Y = 36;
+    private static final int GRID_START_X = 50;
+    private static final int GRID_START_Y = 70;
+    private static final int MIN_DOT_SPACING = 24;
     private static final long FLASH_WINDOW_MS = 8000;
     private static final long CLICK_PULSE_DURATION_MS = 900;
     private static final long TOAST_DURATION_MS = 2200;
@@ -75,12 +79,12 @@ public class SiteMapPanel extends JPanel {
     private JToggleButton siteButton;
     private JToggleButton officeButton;
 
-    private static final Color CANVAS_BG = new Color(12, 16, 24);
-    private static final Color CANVAS_DEEP = new Color(6, 8, 14);
-    private static final Color GRID_COLOR = new Color(255, 255, 255, 12);
-    private static final Color TEXT_PRIMARY = new Color(245, 247, 250);
-    private static final Color TEXT_MUTED = new Color(176, 184, 196);
-    private static final Color TEXT_ACCENT = new Color(255, 207, 98);
+    private static final Color CANVAS_BG = new Color(235, 240, 246);
+    private static final Color CANVAS_DEEP = new Color(221, 228, 238);
+    private static final Color GRID_COLOR = new Color(148, 163, 184, 48);
+    private static final Color TEXT_PRIMARY = new Color(15, 23, 42);
+    private static final Color TEXT_MUTED = new Color(100, 116, 139);
+    private static final Color TEXT_ACCENT = new Color(30, 64, 175);
 
     private static final Font TITLE_FONT = new Font("Microsoft YaHei UI", Font.BOLD, 20);
     private static final Font SUBTITLE_FONT = new Font("Consolas", Font.PLAIN, 12);
@@ -126,10 +130,10 @@ public class SiteMapPanel extends JPanel {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint paint = new GradientPaint(0, 0, new Color(26, 34, 50), getWidth(), getHeight(), new Color(8, 10, 18));
+                GradientPaint paint = new GradientPaint(0, 0, new Color(240, 244, 249), getWidth(), getHeight(), new Color(225, 231, 240));
                 g2.setPaint(paint);
                 g2.fillRect(0, 0, getWidth(), getHeight());
-                g2.setColor(new Color(255, 255, 255, 40));
+                g2.setColor(new Color(148, 163, 184, 80));
                 g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
                 g2.dispose();
             }
@@ -151,12 +155,12 @@ public class SiteMapPanel extends JPanel {
 
     private JPanel createControlPanel() {
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        controlPanel.setBackground(new Color(18, 22, 32));
-        controlPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(255, 255, 255, 24)));
+        controlPanel.setBackground(new Color(234, 239, 246));
+        controlPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(148, 163, 184, 80)));
 
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> loadResources());
-        styleButton(refreshButton, new Color(32, 44, 62), TEXT_PRIMARY);
+        styleButton(refreshButton, new Color(223, 232, 244), TEXT_PRIMARY);
         controlPanel.add(refreshButton);
 
         ButtonGroup group = new ButtonGroup();
@@ -164,8 +168,8 @@ public class SiteMapPanel extends JPanel {
         officeButton = new JToggleButton("Office Layout");
         group.add(siteButton);
         group.add(officeButton);
-        styleToggleButton(siteButton, new Color(36, 44, 62));
-        styleToggleButton(officeButton, new Color(36, 44, 62));
+        styleToggleButton(siteButton, new Color(223, 232, 244));
+        styleToggleButton(officeButton, new Color(223, 232, 244));
         siteButton.addActionListener(e -> applyLayout(LayoutType.SITE));
         officeButton.addActionListener(e -> applyLayout(LayoutType.OFFICE));
         controlPanel.add(siteButton);
@@ -184,7 +188,7 @@ public class SiteMapPanel extends JPanel {
         button.setForeground(foreground);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 255, 255, 40)),
+            BorderFactory.createLineBorder(new Color(148, 163, 184, 120)),
             BorderFactory.createEmptyBorder(6, 14, 6, 14)
         ));
         button.setOpaque(true);
@@ -264,29 +268,29 @@ public class SiteMapPanel extends JPanel {
         }
 
         int fallbackIndex = 0;
+        Map<ResourceType, Integer> typeIndex = new EnumMap<>(ResourceType.class);
+        List<Point> placedPoints = new ArrayList<>();
         resourceBounds.clear();
         resourceCenters.clear();
-        for (Resource resource : resources) {
-            Integer coordX = resource.getCoordX();
-            Integer coordY = resource.getCoordY();
-
-            int centerX;
-            int centerY;
-            int baseX;
-            int baseY;
-            if (coordX != null && coordY != null) {
-                baseX = coordX;
-                baseY = coordY;
-            } else {
+        List<Resource> sortedResources = new ArrayList<>(resources);
+        sortedResources.sort(Comparator.comparing(
+            Resource::getResourceId,
+            Comparator.nullsLast(String::compareToIgnoreCase)
+        ));
+        for (Resource resource : sortedResources) {
+            Point basePoint = resolveBasePoint(resource, bg, typeIndex);
+            if (basePoint == null) {
                 int col = fallbackIndex % 12;
                 int row = fallbackIndex / 12;
-                baseX = GRID_START_X + col * GRID_STEP_X;
-                baseY = GRID_START_Y + row * GRID_STEP_Y;
+                basePoint = new Point(GRID_START_X + col * GRID_STEP_X, GRID_START_Y + row * GRID_STEP_Y);
                 fallbackIndex++;
             }
 
-            centerX = metrics.offsetX + (int) Math.round(baseX * metrics.scale);
-            centerY = metrics.offsetY + (int) Math.round(baseY * metrics.scale);
+            Point placed = spreadPoint(basePoint, placedPoints, bg);
+            placedPoints.add(placed);
+
+            int centerX = metrics.offsetX + (int) Math.round(placed.x * metrics.scale);
+            int centerY = metrics.offsetY + (int) Math.round(placed.y * metrics.scale);
 
             resourceCenters.put(resource.getResourceId(), new Point(centerX, centerY));
             resourceBounds.put(resource.getResourceId(),
@@ -372,9 +376,9 @@ public class SiteMapPanel extends JPanel {
 
         Composite old = g2.getComposite();
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.92f * alpha));
-        g2.setColor(new Color(10, 14, 20, 230));
+        g2.setColor(new Color(255, 255, 255, 230));
         g2.fillRoundRect(x, y + (int) floatOffset, cardWidth, cardHeight, 14, 14);
-        g2.setColor(new Color(255, 255, 255, 40));
+        g2.setColor(new Color(148, 163, 184, 120));
         g2.drawRoundRect(x, y + (int) floatOffset, cardWidth, cardHeight, 14, 14);
 
         g2.setFont(LABEL_FONT);
@@ -423,19 +427,19 @@ public class SiteMapPanel extends JPanel {
         }
 
         int offset = (int) (placeholderPhase % PLACEHOLDER_STRIPE_GAP);
-        g2.setColor(new Color(255, 255, 255, 28));
+        g2.setColor(new Color(148, 163, 184, 40));
         g2.setStroke(new BasicStroke(2f));
         for (int x = -h; x < w + h; x += PLACEHOLDER_STRIPE_GAP) {
             g2.drawLine(x + offset, 0, x - h + offset, h);
         }
 
-        g2.setColor(new Color(255, 255, 255, 120));
+        g2.setColor(new Color(71, 85, 105, 160));
         g2.setFont(LABEL_FONT);
         g2.drawString("Layout placeholder rendering", 60, 80);
     }
 
     private void paintOverlay(Graphics2D g2, LayoutMetrics metrics) {
-        g2.setColor(new Color(0, 0, 0, 32));
+        g2.setColor(new Color(15, 23, 42, 26));
         g2.fillRect(metrics.offsetX, metrics.offsetY, metrics.drawWidth, metrics.drawHeight);
         g2.setColor(GRID_COLOR);
         for (int x = metrics.offsetX; x < metrics.offsetX + metrics.drawWidth; x += 120) {
@@ -486,6 +490,153 @@ public class SiteMapPanel extends JPanel {
         return metrics;
     }
 
+    private Point resolveBasePoint(Resource resource,
+                                   BufferedImage bg,
+                                   Map<ResourceType, Integer> typeIndex) {
+        if (resource == null) {
+            return null;
+        }
+        Integer coordX = resource.getCoordX();
+        Integer coordY = resource.getCoordY();
+        if (coordX != null && coordY != null) {
+            return new Point(coordX, coordY);
+        }
+        if (bg == null) {
+            return null;
+        }
+        ResourceType type = resource.getResourceType();
+        if (type == null) {
+            type = ResourceType.OTHER;
+        }
+        int index = typeIndex.getOrDefault(type, 0);
+        typeIndex.put(type, index + 1);
+
+        Rectangle[] regions = getPlacementRegions(currentLayout, type, bg);
+        if (regions.length == 0) {
+            return null;
+        }
+        int regionIndex = index % regions.length;
+        Rectangle region = regions[regionIndex];
+        int padding = 12;
+        int regionWidth = Math.max(region.width - padding * 2, 1);
+        int regionHeight = Math.max(region.height - padding * 2, 1);
+        int cols = Math.max(1, regionWidth / MIN_DOT_SPACING);
+        int rows = Math.max(1, regionHeight / MIN_DOT_SPACING);
+        int maxSlots = Math.max(1, cols * rows);
+        int slot = (index / regions.length) % maxSlots;
+        int col = slot % cols;
+        int row = slot / cols;
+
+        int x = region.x + padding + col * MIN_DOT_SPACING;
+        int y = region.y + padding + row * MIN_DOT_SPACING;
+        return new Point(x, y);
+    }
+
+    private Rectangle[] getPlacementRegions(LayoutType layout, ResourceType type, BufferedImage bg) {
+        int w = bg.getWidth();
+        int h = bg.getHeight();
+        switch (layout) {
+            case OFFICE -> {
+                return switch (type) {
+                    case DOOR -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.06), (int) (h * 0.12), (int) (w * 0.28), (int) (h * 0.18)),
+                        new Rectangle((int) (w * 0.12), (int) (h * 0.72), (int) (w * 0.22), (int) (h * 0.18))
+                    };
+                    case ROOM -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.22), (int) (h * 0.30), (int) (w * 0.36), (int) (h * 0.36)),
+                        new Rectangle((int) (w * 0.60), (int) (h * 0.36), (int) (w * 0.28), (int) (h * 0.30))
+                    };
+                    case COMPUTER -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.60), (int) (h * 0.18), (int) (w * 0.30), (int) (h * 0.20)),
+                        new Rectangle((int) (w * 0.64), (int) (h * 0.58), (int) (w * 0.26), (int) (h * 0.20))
+                    };
+                    case PRINTER -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.42), (int) (h * 0.18), (int) (w * 0.18), (int) (h * 0.18)),
+                        new Rectangle((int) (w * 0.44), (int) (h * 0.70), (int) (w * 0.18), (int) (h * 0.16))
+                    };
+                    case OTHER, PENDING -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.08), (int) (h * 0.48), (int) (w * 0.18), (int) (h * 0.18)),
+                        new Rectangle((int) (w * 0.78), (int) (h * 0.14), (int) (w * 0.16), (int) (h * 0.16))
+                    };
+                };
+            }
+            case SITE -> {
+                return switch (type) {
+                    case DOOR -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.10), (int) (h * 0.08), (int) (w * 0.35), (int) (h * 0.16)),
+                        new Rectangle((int) (w * 0.55), (int) (h * 0.08), (int) (w * 0.35), (int) (h * 0.16))
+                    };
+                    case ROOM -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.22), (int) (h * 0.28), (int) (w * 0.30), (int) (h * 0.32)),
+                        new Rectangle((int) (w * 0.52), (int) (h * 0.28), (int) (w * 0.30), (int) (h * 0.32))
+                    };
+                    case COMPUTER -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.12), (int) (h * 0.62), (int) (w * 0.28), (int) (h * 0.24)),
+                        new Rectangle((int) (w * 0.12), (int) (h * 0.40), (int) (w * 0.20), (int) (h * 0.16))
+                    };
+                    case PRINTER -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.60), (int) (h * 0.62), (int) (w * 0.26), (int) (h * 0.24)),
+                        new Rectangle((int) (w * 0.68), (int) (h * 0.40), (int) (w * 0.20), (int) (h * 0.16))
+                    };
+                    case OTHER, PENDING -> new Rectangle[]{
+                        new Rectangle((int) (w * 0.06), (int) (h * 0.30), (int) (w * 0.14), (int) (h * 0.30)),
+                        new Rectangle((int) (w * 0.80), (int) (h * 0.30), (int) (w * 0.14), (int) (h * 0.30))
+                    };
+                };
+            }
+            default -> {
+                return new Rectangle[]{new Rectangle((int) (w * 0.10), (int) (h * 0.10), (int) (w * 0.80), (int) (h * 0.80))};
+            }
+        }
+    }
+
+    private Point spreadPoint(Point base, List<Point> placedPoints, BufferedImage bg) {
+        if (base == null) {
+            return new Point(GRID_START_X, GRID_START_Y);
+        }
+        int maxX = bg != null ? bg.getWidth() : Integer.MAX_VALUE;
+        int maxY = bg != null ? bg.getHeight() : Integer.MAX_VALUE;
+        int marginX = Math.max(10, MIN_DOT_SPACING);
+        int marginY = Math.max(10, MIN_DOT_SPACING);
+
+        Point clamped = new Point(
+            Math.min(Math.max(base.x, marginX), Math.max(marginX, maxX - marginX)),
+            Math.min(Math.max(base.y, marginY), Math.max(marginY, maxY - marginY))
+        );
+        if (isFarEnough(clamped, placedPoints)) {
+            return clamped;
+        }
+
+        for (int i = 0; i < 60; i++) {
+            double angle = i * 0.65;
+            int radius = MIN_DOT_SPACING + (i / 8) * 10;
+            int x = (int) Math.round(clamped.x + Math.cos(angle) * radius);
+            int y = (int) Math.round(clamped.y + Math.sin(angle) * radius);
+            Point candidate = new Point(
+                Math.min(Math.max(x, marginX), Math.max(marginX, maxX - marginX)),
+                Math.min(Math.max(y, marginY), Math.max(marginY, maxY - marginY))
+            );
+            if (isFarEnough(candidate, placedPoints)) {
+                return candidate;
+            }
+        }
+
+        return clamped;
+    }
+
+    private boolean isFarEnough(Point candidate, List<Point> placedPoints) {
+        int minDistance = MIN_DOT_SPACING;
+        int minDistanceSq = minDistance * minDistance;
+        for (Point existing : placedPoints) {
+            int dx = candidate.x - existing.x;
+            int dy = candidate.y - existing.y;
+            if (dx * dx + dy * dy < minDistanceSq) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static final class LayoutMetrics {
         private double scale;
         private int drawWidth;
@@ -510,9 +661,9 @@ public class SiteMapPanel extends JPanel {
         int w = mapCanvas != null ? mapCanvas.getWidth() : getWidth();
         int x = Math.max(20, w - 280);
         int y = 16;
-        g2.setColor(new Color(0, 0, 0, alpha));
-        g2.fillRoundRect(x, y, 240, 28, 16, 16);
         g2.setColor(new Color(255, 255, 255, alpha));
+        g2.fillRoundRect(x, y, 240, 28, 16, 16);
+        g2.setColor(new Color(30, 41, 59, alpha));
         g2.setFont(SUBTITLE_FONT);
         g2.drawString(toastMessage, x + 12, y + 18);
     }
