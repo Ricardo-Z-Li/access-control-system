@@ -1,6 +1,7 @@
 package acs.ui;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -164,27 +165,10 @@ public class MainApp extends JFrame {
 
         navList = new JList<>(navModel);
         navList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        navList.setFixedCellHeight(44);
+        navList.setFixedCellHeight(48);
         navList.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         navList.setBackground(UiTheme.surface());
-        navList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
-            JLabel label = new JLabel(value.label);
-            label.setOpaque(true);
-            float progress = (!isSelected && index == hoveredIndex) ? hoverProgress : 0f;
-            int leftInset = 14 + Math.round(4 * progress);
-            label.setBorder(BorderFactory.createEmptyBorder(10, leftInset, 10, 14));
-            if (isSelected) {
-                label.setBackground(UiTheme.accent());
-                label.setForeground(Color.WHITE);
-            } else if (index == hoveredIndex) {
-                label.setBackground(blend(UiTheme.surface(), new Color(219, 234, 254), progress));
-                label.setForeground(new Color(30, 64, 175));
-            } else {
-                label.setBackground(UiTheme.surface());
-                label.setForeground(UiTheme.mutedText());
-            }
-            return label;
-        });
+        navList.setCellRenderer(new NavCellRenderer());
         navList.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             @Override
             public void mouseMoved(java.awt.event.MouseEvent e) {
@@ -250,7 +234,10 @@ public class MainApp extends JFrame {
         titlePanel.add(sectionSubtitle);
 
         JPanel header = new JPanel(new BorderLayout());
-        header.setBorder(BorderFactory.createEmptyBorder(14, 16, 12, 16));
+        header.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, UiTheme.border()),
+            BorderFactory.createEmptyBorder(14, 16, 12, 16)
+        ));
         header.setBackground(UiTheme.background());
         header.add(titlePanel, BorderLayout.WEST);
 
@@ -259,19 +246,31 @@ public class MainApp extends JFrame {
         actions.add(refreshButton);
         actions.add(resetClockButton);
         actions.add(aboutButton);
-        header.add(actions, BorderLayout.EAST);
+
+        JPanel actionsCard = new JPanel(new BorderLayout());
+        actionsCard.setBackground(UiTheme.surface());
+        actionsCard.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(UiTheme.border(), 1, true),
+            BorderFactory.createEmptyBorder(6, 6, 6, 6)
+        ));
+        actionsCard.add(actions, BorderLayout.CENTER);
+        header.add(actionsCard, BorderLayout.EAST);
         return header;
     }
 
     private JSplitPane createMainLayout() {
         JPanel navContainer = new JPanel(new BorderLayout());
-        navContainer.setBackground(UiTheme.background());
-        navContainer.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 4));
+        navContainer.setBackground(UiTheme.surface());
+        navContainer.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 0, 1, UiTheme.border()),
+            BorderFactory.createEmptyBorder(12, 8, 12, 8)
+        ));
         navContainer.add(navList, BorderLayout.CENTER);
 
         JPanel contentWrapper = new JPanel(new BorderLayout());
         contentWrapper.setBackground(UiTheme.background());
-        contentWrapper.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 8));
+        contentWrapper.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        contentPanel.setOpaque(false);
         contentWrapper.add(contentPanel, BorderLayout.CENTER);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navContainer, contentWrapper);
@@ -354,8 +353,11 @@ public class MainApp extends JFrame {
 
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        panel.setBackground(UiTheme.background());
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, UiTheme.border()),
+            BorderFactory.createEmptyBorder(6, 12, 6, 12)
+        ));
+        panel.setBackground(UiTheme.surface());
 
         JLabel statusLabel = new JLabel("Ready");
         statusLabel.setHorizontalAlignment(SwingConstants.LEFT);
@@ -408,6 +410,48 @@ public class MainApp extends JFrame {
         int g = Math.round(from.getGreen() + (to.getGreen() - from.getGreen()) * clamped);
         int b = Math.round(from.getBlue() + (to.getBlue() - from.getBlue()) * clamped);
         return new Color(r, g, b);
+    }
+
+    private class NavCellRenderer extends JPanel implements ListCellRenderer<NavItem> {
+        private final JPanel indicator = new JPanel();
+        private final JLabel label = new JLabel();
+
+        private NavCellRenderer() {
+            setLayout(new BorderLayout());
+            setOpaque(true);
+            indicator.setPreferredSize(new Dimension(4, 1));
+            indicator.setOpaque(true);
+            label.setOpaque(false);
+            label.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+            add(indicator, BorderLayout.WEST);
+            add(label, BorderLayout.CENTER);
+            setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        }
+
+        @Override
+        public java.awt.Component getListCellRendererComponent(JList<? extends NavItem> list, NavItem value, int index,
+                                                               boolean isSelected, boolean cellHasFocus) {
+            label.setText(value.label);
+            float progress = (!isSelected && index == hoveredIndex) ? hoverProgress : 0f;
+            int leftInset = 12 + Math.round(4 * progress);
+            label.setBorder(BorderFactory.createEmptyBorder(8, leftInset, 8, 12));
+
+            if (isSelected) {
+                setBackground(UiTheme.accentSoft());
+                indicator.setBackground(UiTheme.accent());
+                label.setForeground(new Color(30, 64, 175));
+            } else if (index == hoveredIndex) {
+                Color hoverBg = blend(UiTheme.surface(), UiTheme.accentSoft(), 0.35f + 0.45f * progress);
+                setBackground(hoverBg);
+                indicator.setBackground(blend(UiTheme.accentSoft(), UiTheme.accent(), progress));
+                label.setForeground(new Color(51, 65, 85));
+            } else {
+                setBackground(UiTheme.surface());
+                indicator.setBackground(UiTheme.surface());
+                label.setForeground(UiTheme.mutedText());
+            }
+            return this;
+        }
     }
 
     private void refreshCache() {

@@ -67,6 +67,9 @@ public final class UiTheme {
         UIManager.put("ComboBox.border", roundedBorder());
         UIManager.put("Button.focus", COLOR_ACCENT_SOFT);
         UIManager.put("Label.foreground", COLOR_TEXT);
+        UIManager.put("TabbedPane.selected", new Color(235, 242, 255));
+        UIManager.put("TabbedPane.background", COLOR_BG);
+        UIManager.put("TabbedPane.contentBorderInsets", new Insets(2, 2, 2, 2));
     }
 
     public static Color background() {
@@ -87,6 +90,10 @@ public final class UiTheme {
 
     public static Color accent() {
         return COLOR_ACCENT;
+    }
+
+    public static Color accentSoft() {
+        return COLOR_ACCENT_SOFT;
     }
 
     public static JPanel wrapContent(JComponent content) {

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -114,63 +115,74 @@ public class SiteMapPanel extends JPanel {
 
         mapCanvas = new MapCanvas();
         mapCanvas.setBorder(BorderFactory.createEmptyBorder());
-        add(mapCanvas, BorderLayout.CENTER);
+        JPanel mapWrapper = new JPanel(new BorderLayout());
+        mapWrapper.setBackground(UiTheme.surface());
+        mapWrapper.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(UiTheme.border(), 1, true),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        mapWrapper.add(mapCanvas, BorderLayout.CENTER);
+        add(mapWrapper, BorderLayout.CENTER);
 
         JPanel controlPanel = createControlPanel();
         add(controlPanel, BorderLayout.SOUTH);
     }
 
     private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint paint = new GradientPaint(0, 0, new Color(240, 244, 249), getWidth(), getHeight(), new Color(225, 231, 240));
-                g2.setPaint(paint);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                g2.setColor(new Color(148, 163, 184, 80));
-                g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
-                g2.dispose();
-            }
-        };
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(16, 18, 12, 18));
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(UiTheme.surface());
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, UiTheme.border()),
+            BorderFactory.createEmptyBorder(14, 18, 10, 18)
+        ));
 
         JLabel titleLabel = new JLabel("Site Resource Map");
         titleLabel.setForeground(TEXT_PRIMARY);
         titleLabel.setFont(TITLE_FONT);
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
-        layoutLabel = new JLabel("Layout: Office");
-        layoutLabel.setForeground(TEXT_MUTED);
+        layoutLabel = new JLabel("Office Layout");
+        layoutLabel.setForeground(new Color(30, 64, 175));
         layoutLabel.setFont(SUBTITLE_FONT);
+        layoutLabel.setOpaque(true);
+        layoutLabel.setBackground(UiTheme.accentSoft());
+        layoutLabel.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(148, 163, 184, 120), 1, true),
+            BorderFactory.createEmptyBorder(4, 10, 4, 10)
+        ));
         headerPanel.add(layoutLabel, BorderLayout.EAST);
 
         return headerPanel;
     }
 
     private JPanel createControlPanel() {
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        controlPanel.setBackground(new Color(234, 239, 246));
+        JPanel controlPanel = new JPanel(new BorderLayout());
+        controlPanel.setBackground(new Color(238, 243, 249));
         controlPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(148, 163, 184, 80)));
+
+        JPanel leftActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        leftActions.setOpaque(false);
 
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> loadResources());
         styleButton(refreshButton, new Color(223, 232, 244), TEXT_PRIMARY);
-        controlPanel.add(refreshButton);
+        leftActions.add(refreshButton);
 
         officeButton = new JToggleButton("Office Layout");
         ButtonGroup group = new ButtonGroup();
         group.add(officeButton);
         styleToggleButton(officeButton, new Color(223, 232, 244));
         officeButton.addActionListener(e -> applyLayout(LayoutType.OFFICE));
-        controlPanel.add(officeButton);
+        leftActions.add(officeButton);
+        controlPanel.add(leftActions, BorderLayout.WEST);
 
         hintLabel = new JLabel("Hover for details - Left click to toggle - Right click for menu - Auto-fit image");
         hintLabel.setForeground(TEXT_ACCENT);
         hintLabel.setFont(SUBTITLE_FONT);
-        controlPanel.add(hintLabel);
+        JPanel rightMeta = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+        rightMeta.setOpaque(false);
+        rightMeta.add(hintLabel);
+        controlPanel.add(rightMeta, BorderLayout.EAST);
 
         return controlPanel;
     }
