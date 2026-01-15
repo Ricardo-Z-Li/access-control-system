@@ -41,7 +41,7 @@ public class SiteMapPanel extends JPanel {
     private static final int GRID_STEP_Y = 36;
     private static final int GRID_START_X = 50;
     private static final int GRID_START_Y = 70;
-    private static final int MIN_DOT_SPACING = 24;
+    private static final int MIN_DOT_SPACING = 32;
     private static final long FLASH_WINDOW_MS = 8000;
     private static final long CLICK_PULSE_DURATION_MS = 900;
     private static final long TOAST_DURATION_MS = 2200;
@@ -67,16 +67,14 @@ public class SiteMapPanel extends JPanel {
     private String toastMessage;
     private long toastAt;
 
-    private BufferedImage siteLayoutImage;
     private BufferedImage officeLayoutImage;
-    private LayoutType currentLayout = LayoutType.SITE;
+    private LayoutType currentLayout = LayoutType.OFFICE;
 
     private final Map<String, AccessDecision> recentDecisions = new HashMap<>();
     private final Map<String, Long> decisionTimes = new HashMap<>();
     private MapCanvas mapCanvas;
     private JLabel hintLabel;
     private JLabel layoutLabel;
-    private JToggleButton siteButton;
     private JToggleButton officeButton;
 
     private static final Color CANVAS_BG = new Color(235, 240, 246);
@@ -92,7 +90,6 @@ public class SiteMapPanel extends JPanel {
     private static final Font MONO_FONT = new Font("Consolas", Font.PLAIN, 11);
 
     private enum LayoutType {
-        SITE,
         OFFICE
     }
 
@@ -145,7 +142,7 @@ public class SiteMapPanel extends JPanel {
         titleLabel.setFont(TITLE_FONT);
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
-        layoutLabel = new JLabel("Layout: Site");
+        layoutLabel = new JLabel("Layout: Office");
         layoutLabel.setForeground(TEXT_MUTED);
         layoutLabel.setFont(SUBTITLE_FONT);
         headerPanel.add(layoutLabel, BorderLayout.EAST);
@@ -163,16 +160,11 @@ public class SiteMapPanel extends JPanel {
         styleButton(refreshButton, new Color(223, 232, 244), TEXT_PRIMARY);
         controlPanel.add(refreshButton);
 
-        ButtonGroup group = new ButtonGroup();
-        siteButton = new JToggleButton("Site Layout");
         officeButton = new JToggleButton("Office Layout");
-        group.add(siteButton);
+        ButtonGroup group = new ButtonGroup();
         group.add(officeButton);
-        styleToggleButton(siteButton, new Color(223, 232, 244));
         styleToggleButton(officeButton, new Color(223, 232, 244));
-        siteButton.addActionListener(e -> applyLayout(LayoutType.SITE));
         officeButton.addActionListener(e -> applyLayout(LayoutType.OFFICE));
-        controlPanel.add(siteButton);
         controlPanel.add(officeButton);
 
         hintLabel = new JLabel("Hover for details - Left click to toggle - Right click for menu - Auto-fit image");
@@ -199,13 +191,12 @@ public class SiteMapPanel extends JPanel {
     }
 
     private void applyLayout(LayoutType type) {
-        currentLayout = type;
-        if (siteButton != null && officeButton != null) {
-            siteButton.setSelected(type == LayoutType.SITE);
-            officeButton.setSelected(type == LayoutType.OFFICE);
+        currentLayout = LayoutType.OFFICE;
+        if (officeButton != null) {
+            officeButton.setSelected(true);
         }
         if (layoutLabel != null) {
-            layoutLabel.setText("Layout: " + (type == LayoutType.SITE ? "Site" : "Office"));
+            layoutLabel.setText("Layout: Office");
         }
         updateCanvasSize();
         repaint();
@@ -258,7 +249,7 @@ public class SiteMapPanel extends JPanel {
         int panelWidth = mapCanvas != null ? mapCanvas.getWidth() : getWidth();
         int panelHeight = mapCanvas != null ? mapCanvas.getHeight() : getHeight();
 
-        BufferedImage bg = currentLayout == LayoutType.OFFICE ? officeLayoutImage : siteLayoutImage;
+        BufferedImage bg = officeLayoutImage;
         LayoutMetrics metrics = calculateLayoutMetrics(bg, panelWidth, panelHeight);
         if (bg != null) {
             g2.drawImage(bg, metrics.offsetX, metrics.offsetY, metrics.drawWidth, metrics.drawHeight, null);
@@ -529,65 +520,50 @@ public class SiteMapPanel extends JPanel {
 
         int x = region.x + padding + col * MIN_DOT_SPACING;
         int y = region.y + padding + row * MIN_DOT_SPACING;
-        return new Point(x, y);
+        return applyJitter(new Point(x, y), resource, region);
     }
 
     private Rectangle[] getPlacementRegions(LayoutType layout, ResourceType type, BufferedImage bg) {
         int w = bg.getWidth();
         int h = bg.getHeight();
-        switch (layout) {
-            case OFFICE -> {
-                return switch (type) {
-                    case DOOR -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.06), (int) (h * 0.12), (int) (w * 0.28), (int) (h * 0.18)),
-                        new Rectangle((int) (w * 0.12), (int) (h * 0.72), (int) (w * 0.22), (int) (h * 0.18))
-                    };
-                    case ROOM -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.22), (int) (h * 0.30), (int) (w * 0.36), (int) (h * 0.36)),
-                        new Rectangle((int) (w * 0.60), (int) (h * 0.36), (int) (w * 0.28), (int) (h * 0.30))
-                    };
-                    case COMPUTER -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.60), (int) (h * 0.18), (int) (w * 0.30), (int) (h * 0.20)),
-                        new Rectangle((int) (w * 0.64), (int) (h * 0.58), (int) (w * 0.26), (int) (h * 0.20))
-                    };
-                    case PRINTER -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.42), (int) (h * 0.18), (int) (w * 0.18), (int) (h * 0.18)),
-                        new Rectangle((int) (w * 0.44), (int) (h * 0.70), (int) (w * 0.18), (int) (h * 0.16))
-                    };
-                    case OTHER, PENDING -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.08), (int) (h * 0.48), (int) (w * 0.18), (int) (h * 0.18)),
-                        new Rectangle((int) (w * 0.78), (int) (h * 0.14), (int) (w * 0.16), (int) (h * 0.16))
-                    };
-                };
-            }
-            case SITE -> {
-                return switch (type) {
-                    case DOOR -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.10), (int) (h * 0.08), (int) (w * 0.35), (int) (h * 0.16)),
-                        new Rectangle((int) (w * 0.55), (int) (h * 0.08), (int) (w * 0.35), (int) (h * 0.16))
-                    };
-                    case ROOM -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.22), (int) (h * 0.28), (int) (w * 0.30), (int) (h * 0.32)),
-                        new Rectangle((int) (w * 0.52), (int) (h * 0.28), (int) (w * 0.30), (int) (h * 0.32))
-                    };
-                    case COMPUTER -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.12), (int) (h * 0.62), (int) (w * 0.28), (int) (h * 0.24)),
-                        new Rectangle((int) (w * 0.12), (int) (h * 0.40), (int) (w * 0.20), (int) (h * 0.16))
-                    };
-                    case PRINTER -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.60), (int) (h * 0.62), (int) (w * 0.26), (int) (h * 0.24)),
-                        new Rectangle((int) (w * 0.68), (int) (h * 0.40), (int) (w * 0.20), (int) (h * 0.16))
-                    };
-                    case OTHER, PENDING -> new Rectangle[]{
-                        new Rectangle((int) (w * 0.06), (int) (h * 0.30), (int) (w * 0.14), (int) (h * 0.30)),
-                        new Rectangle((int) (w * 0.80), (int) (h * 0.30), (int) (w * 0.14), (int) (h * 0.30))
-                    };
-                };
-            }
-            default -> {
-                return new Rectangle[]{new Rectangle((int) (w * 0.10), (int) (h * 0.10), (int) (w * 0.80), (int) (h * 0.80))};
-            }
+        return switch (type) {
+            case DOOR -> new Rectangle[]{
+                new Rectangle((int) (w * 0.06), (int) (h * 0.12), (int) (w * 0.26), (int) (h * 0.18)),
+                new Rectangle((int) (w * 0.10), (int) (h * 0.70), (int) (w * 0.22), (int) (h * 0.18)),
+                new Rectangle((int) (w * 0.78), (int) (h * 0.66), (int) (w * 0.16), (int) (h * 0.20))
+            };
+            case ROOM -> new Rectangle[]{
+                new Rectangle((int) (w * 0.18), (int) (h * 0.28), (int) (w * 0.30), (int) (h * 0.32)),
+                new Rectangle((int) (w * 0.50), (int) (h * 0.30), (int) (w * 0.26), (int) (h * 0.30)),
+                new Rectangle((int) (w * 0.30), (int) (h * 0.58), (int) (w * 0.30), (int) (h * 0.22))
+            };
+            case COMPUTER -> new Rectangle[]{
+                new Rectangle((int) (w * 0.48), (int) (h * 0.16), (int) (w * 0.30), (int) (h * 0.18)),
+                new Rectangle((int) (w * 0.56), (int) (h * 0.56), (int) (w * 0.22), (int) (h * 0.20))
+            };
+            case PRINTER -> new Rectangle[]{
+                new Rectangle((int) (w * 0.40), (int) (h * 0.56), (int) (w * 0.18), (int) (h * 0.18)),
+                new Rectangle((int) (w * 0.76), (int) (h * 0.46), (int) (w * 0.12), (int) (h * 0.20))
+            };
+            case OTHER, PENDING -> new Rectangle[]{
+                new Rectangle((int) (w * 0.08), (int) (h * 0.46), (int) (w * 0.18), (int) (h * 0.20)),
+                new Rectangle((int) (w * 0.78), (int) (h * 0.14), (int) (w * 0.16), (int) (h * 0.16)),
+                new Rectangle((int) (w * 0.64), (int) (h * 0.80), (int) (w * 0.20), (int) (h * 0.14))
+            };
+        };
+    }
+
+    private Point applyJitter(Point base, Resource resource, Rectangle region) {
+        if (resource == null || base == null || region == null) {
+            return base;
         }
+        int hash = Math.abs(resource.getResourceId() != null ? resource.getResourceId().hashCode() : 0);
+        int jitter = Math.min(8, Math.max(4, MIN_DOT_SPACING / 6));
+        int dx = (hash % (jitter * 2 + 1)) - jitter;
+        int dy = ((hash / 31) % (jitter * 2 + 1)) - jitter;
+        int x = Math.min(Math.max(base.x + dx, region.x + 8), region.x + region.width - 8);
+        int y = Math.min(Math.max(base.y + dy, region.y + 8), region.y + region.height - 8);
+        return new Point(x, y);
     }
 
     private Point spreadPoint(Point base, List<Point> placedPoints, BufferedImage bg) {
@@ -705,7 +681,6 @@ public class SiteMapPanel extends JPanel {
     }
 
     private void loadLayoutImages() {
-        siteLayoutImage = loadImageFromResources("site-layout.png");
         officeLayoutImage = loadImageFromResources("office-layout.png");
     }
 
