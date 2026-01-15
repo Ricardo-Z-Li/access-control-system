@@ -71,9 +71,7 @@ public class SimulatorPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout());
         
-        JLabel titleLabel = new JLabel("Simulator Control Panel", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        add(titleLabel, BorderLayout.NORTH);
+        add(UiTheme.createHeader("Simulator Control", "Simulate readers, events, routing, and execution chains"), BorderLayout.NORTH);
         
         tabbedPane = new JTabbedPane();
         
@@ -85,11 +83,10 @@ public class SimulatorPanel extends JPanel {
         
         add(tabbedPane, BorderLayout.CENTER);
         
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("Badge Reader: " + (badgeReaderSimulator != null ? "Available" : "Unavailable")));
-        statusPanel.add(new JLabel("Event Simulator: " + (eventSimulator != null ? "Available" : "Unavailable")));
-        statusPanel.add(new JLabel("Router System: " + (routerSystem != null ? "Available" : "Unavailable")));
-        add(statusPanel, BorderLayout.SOUTH);
+        JLabel badgeStatus = new JLabel("Badge Reader: " + (badgeReaderSimulator != null ? "Available" : "Unavailable"));
+        JLabel eventStatus = new JLabel("Event Simulator: " + (eventSimulator != null ? "Available" : "Unavailable"));
+        JLabel routerStatus = new JLabel("Router System: " + (routerSystem != null ? "Available" : "Unavailable"));
+        add(UiTheme.footerBar(badgeStatus, eventStatus, routerStatus), BorderLayout.SOUTH);
     }
     
     private JPanel createBadgeReaderPanel() {

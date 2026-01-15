@@ -24,18 +24,24 @@ public class EmergencyControlPanel extends JPanel {
         logArea = new JTextArea(10, 60);
         logArea.setEditable(false);
         logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        logArea.setBackground(UiTheme.surface());
         JScrollPane scrollPane = new JScrollPane(logArea);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Activity Log"));
+        scrollPane.setBorder(BorderFactory.createTitledBorder(UiTheme.subtleBorder(), "Activity Log"));
         add(scrollPane, BorderLayout.SOUTH);
     }
 
     private JPanel createControlPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 12, 0);
 
-        JButton emergencyButton = UiTheme.primaryButton("Unlock All Doors");
-        emergencyButton.setBackground(new Color(220, 38, 38));
-        emergencyButton.setForeground(Color.WHITE);
+        JButton emergencyButton = UiTheme.dangerButton("Unlock All Doors");
         emergencyButton.setToolTipText("Set all doors to uncontrolled");
         emergencyButton.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
@@ -56,6 +62,7 @@ public class EmergencyControlPanel extends JPanel {
         });
 
         JPanel emergencyCard = UiTheme.cardPanel();
+        emergencyCard.add(new JLabel("Emergency Override"), BorderLayout.NORTH);
         emergencyCard.add(emergencyButton, BorderLayout.CENTER);
 
         JPanel typePanel = UiTheme.cardPanel();
@@ -133,9 +140,7 @@ public class EmergencyControlPanel extends JPanel {
         groupControls.add(setGroupControlledButton);
         groupPanel.add(groupControls, BorderLayout.CENTER);
 
-        JButton restoreButton = UiTheme.primaryButton("Restore All to Controlled");
-        restoreButton.setBackground(new Color(34, 197, 94));
-        restoreButton.setForeground(Color.BLACK);
+        JButton restoreButton = UiTheme.successButton("Restore All to Controlled");
         restoreButton.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                 "Restore all doors to controlled?",
@@ -154,13 +159,24 @@ public class EmergencyControlPanel extends JPanel {
             }
         });
 
-        panel.add(UiTheme.wrapContent(emergencyCard));
-        panel.add(Box.createVerticalStrut(12));
-        panel.add(UiTheme.wrapContent(typePanel));
-        panel.add(Box.createVerticalStrut(12));
-        panel.add(UiTheme.wrapContent(groupPanel));
-        panel.add(Box.createVerticalStrut(12));
-        panel.add(UiTheme.wrapContent(restoreButton));
+        panel.add(UiTheme.wrapContent(emergencyCard), gbc);
+
+        gbc.gridy++;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.5;
+        gbc.insets = new Insets(0, 0, 12, 6);
+        panel.add(UiTheme.wrapContent(typePanel), gbc);
+
+        gbc.gridx = 1;
+        gbc.insets = new Insets(0, 6, 12, 0);
+        panel.add(UiTheme.wrapContent(groupPanel), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        panel.add(UiTheme.wrapContent(restoreButton), gbc);
 
         return panel;
     }

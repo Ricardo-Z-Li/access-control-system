@@ -36,10 +36,9 @@ public class AdminPanel extends JPanel {
         tabbedPane.addTab("Profile Binding", createProfileBindingPanel());
         add(tabbedPane, BorderLayout.CENTER);
 
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("AdminService: " + (adminService != null ? "Available" : "Unavailable")));
-        statusPanel.add(new JLabel("ProfileFileService: " + (profileFileService != null ? "Available" : "Unavailable")));
-        add(statusPanel, BorderLayout.SOUTH);
+        JLabel adminStatus = new JLabel("AdminService: " + (adminService != null ? "Available" : "Unavailable"));
+        JLabel profileStatus = new JLabel("ProfileFileService: " + (profileFileService != null ? "Available" : "Unavailable"));
+        add(UiTheme.footerBar(adminStatus, profileStatus), BorderLayout.SOUTH);
     }
 
     private JPanel createEmployeePanel() {
@@ -77,7 +76,10 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
+        JTextArea logArea = new JTextArea(8, 50);
+        logArea.setEditable(false);
+        logArea.setBackground(UiTheme.surface());
+        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
 
         return panel;
     }
@@ -138,7 +140,10 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
+        JTextArea logArea = new JTextArea(8, 50);
+        logArea.setEditable(false);
+        logArea.setBackground(UiTheme.surface());
+        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
 
@@ -238,7 +243,10 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
+        JTextArea logArea = new JTextArea(8, 50);
+        logArea.setEditable(false);
+        logArea.setBackground(UiTheme.surface());
+        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
 
@@ -331,7 +339,10 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
+        JTextArea logArea = new JTextArea(8, 50);
+        logArea.setEditable(false);
+        logArea.setBackground(UiTheme.surface());
+        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
 
@@ -388,7 +399,10 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
+        JTextArea logArea = new JTextArea(8, 50);
+        logArea.setEditable(false);
+        logArea.setBackground(UiTheme.surface());
+        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
 
@@ -444,6 +458,7 @@ public class AdminPanel extends JPanel {
 
         JTextArea profileArea = new JTextArea(16, 60);
         profileArea.setEditable(false);
+        profileArea.setBackground(UiTheme.surface());
         panel.add(new JScrollPane(profileArea), BorderLayout.CENTER);
         return panel;
     }
@@ -540,6 +555,7 @@ public class AdminPanel extends JPanel {
 
         JTextArea resultArea = new JTextArea(12, 60);
         resultArea.setEditable(false);
+        resultArea.setBackground(UiTheme.surface());
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));

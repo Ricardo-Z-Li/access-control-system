@@ -36,9 +36,8 @@ public class TimeFilterPanel extends JPanel {
         tabbedPane.addTab("Rule Test", createRuleTestPanel());
         add(tabbedPane, BorderLayout.CENTER);
 
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("Service Status: " + (timeFilterService != null ? "OK" : "Unavailable")));
-        add(statusPanel, BorderLayout.SOUTH);
+        JLabel statusLabel = new JLabel("Service Status: " + (timeFilterService != null ? "OK" : "Unavailable"));
+        add(UiTheme.footerBar(statusLabel), BorderLayout.SOUTH);
     }
 
     private JPanel createRuleManagementPanel() {
@@ -118,6 +117,7 @@ public class TimeFilterPanel extends JPanel {
         resultArea = new JTextArea(20, 60);
         resultArea.setEditable(false);
         resultArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        resultArea.setBackground(UiTheme.surface());
 
         JPanel card = UiTheme.cardPanel();
         card.add(inputPanel, BorderLayout.NORTH);

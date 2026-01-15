@@ -138,7 +138,7 @@ public class MainApp extends JFrame {
         buildNavigation();
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(new Color(245, 247, 250));
+        root.setBackground(UiTheme.background());
         root.add(createHeaderBar(), BorderLayout.NORTH);
         root.add(createMainLayout(), BorderLayout.CENTER);
         root.add(createStatusPanel(), BorderLayout.SOUTH);
@@ -161,18 +161,19 @@ public class MainApp extends JFrame {
 
         navList = new JList<>(navModel);
         navList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        navList.setFixedCellHeight(42);
+        navList.setFixedCellHeight(44);
         navList.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        navList.setBackground(UiTheme.surface());
         navList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
             JLabel label = new JLabel(value.label);
             label.setOpaque(true);
-            label.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+            label.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
             if (isSelected) {
-                label.setBackground(new Color(37, 99, 235));
+                label.setBackground(UiTheme.accent());
                 label.setForeground(Color.WHITE);
             } else {
-                label.setBackground(new Color(245, 247, 250));
-                label.setForeground(new Color(33, 37, 41));
+                label.setBackground(UiTheme.surface());
+                label.setForeground(UiTheme.mutedText());
             }
             return label;
         });
@@ -211,9 +212,9 @@ public class MainApp extends JFrame {
             "About", JOptionPane.INFORMATION_MESSAGE));
 
         sectionTitle = new JLabel("Admin");
-        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD, 18f));
+        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD, 20f));
         sectionSubtitle = new JLabel("Manage people, permissions, and resources");
-        sectionSubtitle.setForeground(new Color(102, 107, 114));
+        sectionSubtitle.setForeground(UiTheme.mutedText());
 
         JPanel titlePanel = new JPanel();
         titlePanel.setOpaque(false);
@@ -223,8 +224,8 @@ public class MainApp extends JFrame {
         titlePanel.add(sectionSubtitle);
 
         JPanel header = new JPanel(new BorderLayout());
-        header.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
-        header.setBackground(new Color(245, 247, 250));
+        header.setBorder(BorderFactory.createEmptyBorder(14, 16, 12, 16));
+        header.setBackground(UiTheme.background());
         header.add(titlePanel, BorderLayout.WEST);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -238,17 +239,18 @@ public class MainApp extends JFrame {
 
     private JSplitPane createMainLayout() {
         JPanel navContainer = new JPanel(new BorderLayout());
-        navContainer.setBackground(new Color(245, 247, 250));
-        navContainer.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        navContainer.setBackground(UiTheme.background());
+        navContainer.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 4));
         navContainer.add(navList, BorderLayout.CENTER);
 
         JPanel contentWrapper = new JPanel(new BorderLayout());
-        contentWrapper.setBackground(new Color(245, 247, 250));
-        contentWrapper.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 8));
+        contentWrapper.setBackground(UiTheme.background());
+        contentWrapper.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 8));
         contentWrapper.add(contentPanel, BorderLayout.CENTER);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navContainer, contentWrapper);
-        splitPane.setDividerLocation(200);
+        splitPane.setDividerLocation(220);
+        splitPane.setResizeWeight(0.18);
         splitPane.setDividerSize(1);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         splitPane.setContinuousLayout(true);
@@ -327,7 +329,7 @@ public class MainApp extends JFrame {
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        panel.setBackground(new Color(245, 247, 250));
+        panel.setBackground(UiTheme.background());
 
         JLabel statusLabel = new JLabel("Ready");
         statusLabel.setHorizontalAlignment(SwingConstants.LEFT);

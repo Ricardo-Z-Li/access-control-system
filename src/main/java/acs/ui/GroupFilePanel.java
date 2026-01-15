@@ -35,9 +35,8 @@ public class GroupFilePanel extends JPanel {
         tabbedPane.addTab("Group Management", createGroupManagementPanel());
         add(tabbedPane, BorderLayout.CENTER);
 
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("Service Status: " + (groupFileService != null ? "OK" : "Unavailable")));
-        add(statusPanel, BorderLayout.SOUTH);
+        JLabel statusLabel = new JLabel("Service Status: " + (groupFileService != null ? "OK" : "Unavailable"));
+        add(UiTheme.footerBar(statusLabel), BorderLayout.SOUTH);
     }
 
     private JPanel createFileOperationsPanel() {
@@ -72,6 +71,7 @@ public class GroupFilePanel extends JPanel {
         resultArea = new JTextArea(20, 60);
         resultArea.setEditable(false);
         resultArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        resultArea.setBackground(UiTheme.surface());
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         return panel;

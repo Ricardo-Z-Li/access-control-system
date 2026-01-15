@@ -164,6 +164,7 @@ public class MonitorPanel extends JPanel {
         logArea = new JTextArea(20, 60);
         logArea.setEditable(false);
         logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        logArea.setBackground(UiTheme.surface());
         JPanel rightCard = UiTheme.cardPanel();
         rightCard.add(new JScrollPane(logArea), BorderLayout.CENTER);
 
@@ -171,6 +172,7 @@ public class MonitorPanel extends JPanel {
             UiTheme.wrapContent(leftCard),
             UiTheme.wrapContent(rightCard));
         splitPane.setDividerLocation(360);
+        splitPane.setResizeWeight(0.33);
         splitPane.setDividerSize(1);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         splitPane.setContinuousLayout(true);
@@ -189,8 +191,8 @@ public class MonitorPanel extends JPanel {
         stats.setOpaque(false);
         stats.setLayout(new BoxLayout(stats, BoxLayout.Y_AXIS));
 
-        cacheStatusLabel = UiTheme.statusPill("Unknown", new Color(229, 231, 235), new Color(55, 65, 81));
-        dbStatusLabel = UiTheme.statusPill("Unknown", new Color(229, 231, 235), new Color(55, 65, 81));
+        cacheStatusLabel = UiTheme.statusPill("Unknown", new Color(226, 232, 240), new Color(51, 65, 85));
+        dbStatusLabel = UiTheme.statusPill("Unknown", new Color(226, 232, 240), new Color(51, 65, 85));
         lastUpdateLabel = new JLabel("Unknown");
 
         stats.add(UiTheme.formRow("Cache", cacheStatusLabel));
@@ -296,11 +298,11 @@ public class MonitorPanel extends JPanel {
 
     private void refreshSystemStatus() {
         cacheStatusLabel.setText("OK");
-        cacheStatusLabel.setBackground(new Color(220, 252, 231));
-        cacheStatusLabel.setForeground(new Color(21, 128, 61));
+        cacheStatusLabel.setBackground(new Color(220, 244, 231));
+        cacheStatusLabel.setForeground(new Color(30, 120, 90));
         dbStatusLabel.setText("OK");
-        dbStatusLabel.setBackground(new Color(219, 234, 254));
-        dbStatusLabel.setForeground(new Color(30, 64, 175));
+        dbStatusLabel.setBackground(new Color(219, 232, 254));
+        dbStatusLabel.setForeground(new Color(30, 72, 160));
         lastUpdateLabel.setText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 

@@ -76,6 +76,7 @@ public class ScanPanel extends JPanel {
         resultArea = new JTextArea(16, 40);
         resultArea.setEditable(false);
         resultArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        resultArea.setBackground(UiTheme.surface());
         JScrollPane resultScroll = new JScrollPane(resultArea);
 
         JButton copyButton = UiTheme.secondaryButton("Copy Result");
@@ -92,6 +93,7 @@ public class ScanPanel extends JPanel {
             UiTheme.wrapContent(leftCard),
             UiTheme.wrapContent(rightCard));
         splitPane.setDividerLocation(360);
+        splitPane.setResizeWeight(0.38);
         splitPane.setDividerSize(1);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         splitPane.setContinuousLayout(true);
