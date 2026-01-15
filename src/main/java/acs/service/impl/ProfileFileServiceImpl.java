@@ -45,7 +45,7 @@ public class ProfileFileServiceImpl implements ProfileFileService {
             }
             return profiles;
         } catch (IOException e) {
-            throw new RuntimeException("加载JSON配置文件失败: " + filePath, e);
+            throw new RuntimeException("Failed to load JSON profile file: " + filePath, e);
         }
     }
 
@@ -61,7 +61,7 @@ public class ProfileFileServiceImpl implements ProfileFileService {
             }
             return filters;
         } catch (IOException e) {
-            throw new RuntimeException("加载JSON时间过滤器失败: " + filePath, e);
+            throw new RuntimeException("Failed to load JSON time filter file: " + filePath, e);
         }
     }
 

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 站点资源地图/访问可视化面板
+ * Site resource map / access visualization panel.
  */
 @Component
 @Profile("!test")
@@ -112,10 +112,8 @@ public class SiteMapPanel extends JPanel {
         add(headerPanel, BorderLayout.NORTH);
 
         mapCanvas = new MapCanvas();
-        JScrollPane scrollPane = new JScrollPane(mapCanvas);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getViewport().setBackground(CANVAS_BG);
-        add(scrollPane, BorderLayout.CENTER);
+        mapCanvas.setBorder(BorderFactory.createEmptyBorder());
+        add(mapCanvas, BorderLayout.CENTER);
 
         JPanel controlPanel = createControlPanel();
         add(controlPanel, BorderLayout.SOUTH);
@@ -138,12 +136,12 @@ public class SiteMapPanel extends JPanel {
         };
         headerPanel.setBorder(BorderFactory.createEmptyBorder(16, 18, 12, 18));
 
-        JLabel titleLabel = new JLabel("站点资源态势图");
+        JLabel titleLabel = new JLabel("Site Resource Map");
         titleLabel.setForeground(TEXT_PRIMARY);
         titleLabel.setFont(TITLE_FONT);
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
-        layoutLabel = new JLabel("布局: 站点");
+        layoutLabel = new JLabel("Layout: Site");
         layoutLabel.setForeground(TEXT_MUTED);
         layoutLabel.setFont(SUBTITLE_FONT);
         headerPanel.add(layoutLabel, BorderLayout.EAST);
@@ -156,14 +154,14 @@ public class SiteMapPanel extends JPanel {
         controlPanel.setBackground(new Color(18, 22, 32));
         controlPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(255, 255, 255, 24)));
 
-        JButton refreshButton = new JButton("刷新");
+        JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> loadResources());
         styleButton(refreshButton, new Color(32, 44, 62), TEXT_PRIMARY);
         controlPanel.add(refreshButton);
 
         ButtonGroup group = new ButtonGroup();
-        siteButton = new JToggleButton("站点布局");
-        officeButton = new JToggleButton("办公布局");
+        siteButton = new JToggleButton("Site Layout");
+        officeButton = new JToggleButton("Office Layout");
         group.add(siteButton);
         group.add(officeButton);
         styleToggleButton(siteButton, new Color(36, 44, 62));
@@ -173,7 +171,7 @@ public class SiteMapPanel extends JPanel {
         controlPanel.add(siteButton);
         controlPanel.add(officeButton);
 
-        hintLabel = new JLabel("悬停查看详情 · 左键切换状态 · 右键选择状态");
+        hintLabel = new JLabel("Hover for details - Left click to toggle - Right click for menu - Auto-fit image");
         hintLabel.setForeground(TEXT_ACCENT);
         hintLabel.setFont(SUBTITLE_FONT);
         controlPanel.add(hintLabel);
@@ -203,21 +201,16 @@ public class SiteMapPanel extends JPanel {
             officeButton.setSelected(type == LayoutType.OFFICE);
         }
         if (layoutLabel != null) {
-            layoutLabel.setText("布局: " + (type == LayoutType.SITE ? "站点" : "办公"));
+            layoutLabel.setText("Layout: " + (type == LayoutType.SITE ? "Site" : "Office"));
         }
         updateCanvasSize();
         repaint();
     }
 
     private void updateCanvasSize() {
-        Dimension size = new Dimension(1024, 720);
-        BufferedImage bg = currentLayout == LayoutType.OFFICE ? officeLayoutImage : siteLayoutImage;
-        if (bg != null) {
-            size = new Dimension(bg.getWidth(), bg.getHeight());
-        }
         if (mapCanvas != null) {
-            mapCanvas.setPreferredSize(size);
             mapCanvas.revalidate();
+            mapCanvas.repaint();
         }
     }
 
@@ -262,9 +255,10 @@ public class SiteMapPanel extends JPanel {
         int panelHeight = mapCanvas != null ? mapCanvas.getHeight() : getHeight();
 
         BufferedImage bg = currentLayout == LayoutType.OFFICE ? officeLayoutImage : siteLayoutImage;
+        LayoutMetrics metrics = calculateLayoutMetrics(bg, panelWidth, panelHeight);
         if (bg != null) {
-            g2.drawImage(bg, 0, 0, null);
-            paintOverlay(g2, bg.getWidth(), bg.getHeight());
+            g2.drawImage(bg, metrics.offsetX, metrics.offsetY, metrics.drawWidth, metrics.drawHeight, null);
+            paintOverlay(g2, metrics);
         } else {
             drawDynamicPlaceholder(g2, panelWidth, panelHeight);
         }
@@ -278,22 +272,27 @@ public class SiteMapPanel extends JPanel {
 
             int centerX;
             int centerY;
+            int baseX;
+            int baseY;
             if (coordX != null && coordY != null) {
-                centerX = coordX;
-                centerY = coordY;
+                baseX = coordX;
+                baseY = coordY;
             } else {
                 int col = fallbackIndex % 12;
                 int row = fallbackIndex / 12;
-                centerX = GRID_START_X + col * GRID_STEP_X;
-                centerY = GRID_START_Y + row * GRID_STEP_Y;
+                baseX = GRID_START_X + col * GRID_STEP_X;
+                baseY = GRID_START_Y + row * GRID_STEP_Y;
                 fallbackIndex++;
             }
 
+            centerX = metrics.offsetX + (int) Math.round(baseX * metrics.scale);
+            centerY = metrics.offsetY + (int) Math.round(baseY * metrics.scale);
+
             resourceCenters.put(resource.getResourceId(), new Point(centerX, centerY));
             resourceBounds.put(resource.getResourceId(),
-                new Rectangle(centerX - DOT_HIT_RADIUS, centerY - DOT_HIT_RADIUS, DOT_HIT_RADIUS * 2, DOT_HIT_RADIUS * 2));
+                new Rectangle(centerX - metrics.hitRadius, centerY - metrics.hitRadius, metrics.hitRadius * 2, metrics.hitRadius * 2));
 
-            drawResourceDot(g2, resource, centerX, centerY);
+            drawResourceDot(g2, resource, centerX, centerY, metrics.dotRadius, metrics.scale);
         }
 
         drawHoverInfo(g2);
@@ -301,14 +300,17 @@ public class SiteMapPanel extends JPanel {
         g2.dispose();
     }
 
-    private void drawResourceDot(Graphics2D g2, Resource resource, int centerX, int centerY) {
+    private void drawResourceDot(Graphics2D g2, Resource resource, int centerX, int centerY, int dotRadius, double scale) {
         Color stateColor = getResourceColor(resource);
 
-        Ellipse2D outerGlow = new Ellipse2D.Float(centerX - DOT_RADIUS * 2, centerY - DOT_RADIUS * 2, DOT_RADIUS * 4, DOT_RADIUS * 4);
+        int glowRadius = Math.max(dotRadius * 2, dotRadius + 4);
+        int ringOffset = Math.max(4, (int) Math.round(4 * scale));
+
+        Ellipse2D outerGlow = new Ellipse2D.Float(centerX - glowRadius, centerY - glowRadius, glowRadius * 2, glowRadius * 2);
         g2.setColor(new Color(stateColor.getRed(), stateColor.getGreen(), stateColor.getBlue(), 60));
         g2.fill(outerGlow);
 
-        Ellipse2D dot = new Ellipse2D.Float(centerX - DOT_RADIUS, centerY - DOT_RADIUS, DOT_RADIUS * 2, DOT_RADIUS * 2);
+        Ellipse2D dot = new Ellipse2D.Float(centerX - dotRadius, centerY - dotRadius, dotRadius * 2, dotRadius * 2);
         g2.setColor(stateColor);
         g2.fill(dot);
 
@@ -319,7 +321,8 @@ public class SiteMapPanel extends JPanel {
         if (resource.getResourceId() != null && resource.getResourceId().equals(hoveredResourceId)) {
             g2.setColor(new Color(255, 255, 255, 180));
             g2.setStroke(new BasicStroke(1.6f));
-            g2.draw(new Ellipse2D.Float(centerX - DOT_RADIUS - 4, centerY - DOT_RADIUS - 4, (DOT_RADIUS + 4) * 2, (DOT_RADIUS + 4) * 2));
+            g2.draw(new Ellipse2D.Float(centerX - dotRadius - ringOffset, centerY - dotRadius - ringOffset,
+                (dotRadius + ringOffset) * 2, (dotRadius + ringOffset) * 2));
         }
 
         if (shouldFlash(resource.getResourceId()) && flashOn) {
@@ -327,7 +330,9 @@ public class SiteMapPanel extends JPanel {
             Color flashColor = AccessDecision.ALLOW.equals(decision) ? new Color(50, 220, 120) : new Color(235, 80, 80);
             g2.setColor(new Color(flashColor.getRed(), flashColor.getGreen(), flashColor.getBlue(), 200));
             g2.setStroke(new BasicStroke(2.2f));
-            g2.draw(new Ellipse2D.Float(centerX - DOT_RADIUS - 6, centerY - DOT_RADIUS - 6, (DOT_RADIUS + 6) * 2, (DOT_RADIUS + 6) * 2));
+            int flashOffset = Math.max(6, (int) Math.round(6 * scale));
+            g2.draw(new Ellipse2D.Float(centerX - dotRadius - flashOffset, centerY - dotRadius - flashOffset,
+                (dotRadius + flashOffset) * 2, (dotRadius + flashOffset) * 2));
         }
 
         Long clickTime = clickTimes.get(resource.getResourceId());
@@ -336,11 +341,11 @@ public class SiteMapPanel extends JPanel {
             if (elapsed <= CLICK_PULSE_DURATION_MS) {
                 float progress = elapsed / (float) CLICK_PULSE_DURATION_MS;
                 int pulseAlpha = (int) (140 * (1 - progress));
-                int expand = (int) (10 * progress);
+                int expand = (int) Math.round(10 * progress * scale);
                 g2.setColor(new Color(255, 255, 255, pulseAlpha));
                 g2.setStroke(new BasicStroke(2f));
-                g2.draw(new Ellipse2D.Float(centerX - DOT_RADIUS - expand, centerY - DOT_RADIUS - expand,
-                    (DOT_RADIUS + expand) * 2, (DOT_RADIUS + expand) * 2));
+                g2.draw(new Ellipse2D.Float(centerX - dotRadius - expand, centerY - dotRadius - expand,
+                    (dotRadius + expand) * 2, (dotRadius + expand) * 2));
             }
         }
     }
@@ -384,8 +389,8 @@ public class SiteMapPanel extends JPanel {
 
         ResourceState state = resource.getResourceState();
         ResourceType type = resource.getResourceType();
-        String stateText = "状态: " + (state != null ? state.name() : "UNKNOWN");
-        String typeText = "类型: " + (type != null ? type.name() : "UNKNOWN");
+        String stateText = "State: " + (state != null ? state.name() : "UNKNOWN");
+        String typeText = "Type: " + (type != null ? type.name() : "UNKNOWN");
         g2.drawString(stateText, x + 12, y + 56 + (int) floatOffset);
         g2.drawString(typeText, x + 12, y + 72 + (int) floatOffset);
 
@@ -398,10 +403,10 @@ public class SiteMapPanel extends JPanel {
         drawDynamicPlaceholder(g2, w, h);
         g2.setColor(TEXT_PRIMARY);
         g2.setFont(TITLE_FONT);
-        g2.drawString("暂无资源数据", 80, 120);
+        g2.drawString("No resource data", 80, 120);
         g2.setFont(SUBTITLE_FONT);
         g2.setColor(TEXT_MUTED);
-        g2.drawString("请刷新或检查资源配置", 80, 150);
+        g2.drawString("Refresh or check resource configuration", 80, 150);
     }
 
     private void drawDynamicPlaceholder(Graphics2D g2, int w, int h) {
@@ -426,19 +431,69 @@ public class SiteMapPanel extends JPanel {
 
         g2.setColor(new Color(255, 255, 255, 120));
         g2.setFont(LABEL_FONT);
-        g2.drawString("布局占位图动态展示中", 60, 80);
+        g2.drawString("Layout placeholder rendering", 60, 80);
     }
 
-    private void paintOverlay(Graphics2D g2, int w, int h) {
+    private void paintOverlay(Graphics2D g2, LayoutMetrics metrics) {
         g2.setColor(new Color(0, 0, 0, 32));
-        g2.fillRect(0, 0, w, h);
+        g2.fillRect(metrics.offsetX, metrics.offsetY, metrics.drawWidth, metrics.drawHeight);
         g2.setColor(GRID_COLOR);
-        for (int x = 0; x < w; x += 120) {
-            g2.drawLine(x, 0, x, h);
+        for (int x = metrics.offsetX; x < metrics.offsetX + metrics.drawWidth; x += 120) {
+            g2.drawLine(x, metrics.offsetY, x, metrics.offsetY + metrics.drawHeight);
         }
-        for (int y = 0; y < h; y += 120) {
-            g2.drawLine(0, y, w, y);
+        for (int y = metrics.offsetY; y < metrics.offsetY + metrics.drawHeight; y += 120) {
+            g2.drawLine(metrics.offsetX, y, metrics.offsetX + metrics.drawWidth, y);
         }
+    }
+
+    private LayoutMetrics calculateLayoutMetrics(BufferedImage bg, int panelWidth, int panelHeight) {
+        LayoutMetrics metrics = new LayoutMetrics();
+        if (panelWidth <= 0 || panelHeight <= 0) {
+            metrics.scale = 1.0;
+            metrics.drawWidth = Math.max(panelWidth, 1);
+            metrics.drawHeight = Math.max(panelHeight, 1);
+            metrics.offsetX = 0;
+            metrics.offsetY = 0;
+            metrics.dotRadius = DOT_RADIUS;
+            metrics.hitRadius = DOT_HIT_RADIUS;
+            return metrics;
+        }
+
+        if (bg == null) {
+            metrics.scale = 1.0;
+            metrics.drawWidth = panelWidth;
+            metrics.drawHeight = panelHeight;
+            metrics.offsetX = 0;
+            metrics.offsetY = 0;
+            metrics.dotRadius = DOT_RADIUS;
+            metrics.hitRadius = DOT_HIT_RADIUS;
+            return metrics;
+        }
+
+        double scale = Math.min(panelWidth / (double) bg.getWidth(), panelHeight / (double) bg.getHeight());
+        int drawWidth = (int) Math.round(bg.getWidth() * scale);
+        int drawHeight = (int) Math.round(bg.getHeight() * scale);
+        int offsetX = (panelWidth - drawWidth) / 2;
+        int offsetY = (panelHeight - drawHeight) / 2;
+
+        metrics.scale = scale;
+        metrics.drawWidth = drawWidth;
+        metrics.drawHeight = drawHeight;
+        metrics.offsetX = offsetX;
+        metrics.offsetY = offsetY;
+        metrics.dotRadius = Math.max(4, (int) Math.round(DOT_RADIUS * scale));
+        metrics.hitRadius = Math.max(metrics.dotRadius + 6, (int) Math.round(DOT_HIT_RADIUS * scale));
+        return metrics;
+    }
+
+    private static final class LayoutMetrics {
+        private double scale;
+        private int drawWidth;
+        private int drawHeight;
+        private int offsetX;
+        private int offsetY;
+        private int dotRadius;
+        private int hitRadius;
     }
 
     private void drawToast(Graphics2D g2) {
@@ -549,9 +604,9 @@ public class SiteMapPanel extends JPanel {
 
     private String safeName(String value, int max) {
         if (value == null || value.isEmpty()) {
-            return "未命名";
+            return "Unnamed";
         }
-        return value.length() > max ? value.substring(0, max) + "…" : value;
+        return value.length() > max ? value.substring(0, max) + "..." : value;
     }
 
     private Resource findResourceById(String resourceId) {
@@ -591,7 +646,7 @@ public class SiteMapPanel extends JPanel {
         }
         ResourceState original = resource.getResourceState();
         if (targetState.equals(original)) {
-            toastMessage = "状态已是 " + targetState.name();
+            toastMessage = "Status already " + targetState.name();
             toastAt = System.currentTimeMillis();
             repaint();
             return;
@@ -599,14 +654,14 @@ public class SiteMapPanel extends JPanel {
         resource.setResourceState(targetState);
         try {
             resourceRepository.save(resource);
-            toastMessage = "已更新 " + resource.getResourceId() + " → " + targetState.name();
+            toastMessage = "Updated " + resource.getResourceId() + " -> " + targetState.name();
             toastAt = System.currentTimeMillis();
             loadResources();
         } catch (Exception ex) {
             resource.setResourceState(original);
             JOptionPane.showMessageDialog(this,
-                "更新资源状态失败: " + ex.getMessage(),
-                "错误", JOptionPane.ERROR_MESSAGE);
+                "Failed to update resource status: " + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -700,8 +755,8 @@ public class SiteMapPanel extends JPanel {
                 return null;
             }
             String state = resource.getResourceState() != null ? resource.getResourceState().name() : "UNKNOWN";
-            String name = resource.getResourceName() != null ? resource.getResourceName() : "未命名";
-            return name + " · " + resource.getResourceId() + " · " + state;
+            String name = resource.getResourceName() != null ? resource.getResourceName() : "Unnamed";
+            return name + " | " + resource.getResourceId() + " | " + state;
         }
     }
 }

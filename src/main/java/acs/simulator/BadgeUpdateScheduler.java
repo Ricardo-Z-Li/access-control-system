@@ -28,17 +28,17 @@ public class BadgeUpdateScheduler {
      */
     @Scheduled(cron = "0 0 2 * * ?")
     public void dailyBadgeUpdateCheck() {
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] 开始每日徽章更新检查...");
+        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Starting daily badge update check...");
         
         long startTime = System.currentTimeMillis();
         var badgesNeedingUpdate = badgeCodeUpdateService.checkAllBadgesForUpdate();
         long endTime = System.currentTimeMillis();
         
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] 每日徽章更新检查完成，耗时 " + (endTime - startTime) + " ms");
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] 需要更新的徽章数量: " + badgesNeedingUpdate.size());
+        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Daily badge update check completed, elapsed " + (endTime - startTime) + " ms");
+        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Badges needing update: " + badgesNeedingUpdate.size());
         
         if (!badgesNeedingUpdate.isEmpty()) {
-            System.out.println("[" + LocalDateTime.now().format(formatter) + "] 需要更新的徽章ID: " + badgesNeedingUpdate);
+            System.out.println("[" + LocalDateTime.now().format(formatter) + "] Badge IDs needing update: " + badgesNeedingUpdate);
         }
         
         // 打印统计信息
@@ -50,7 +50,7 @@ public class BadgeUpdateScheduler {
      */
     @Scheduled(cron = "0 0 * * * ?")
     public void hourlyUpdateNotificationCheck() {
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] 每小时徽章更新通知检查...");
+        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Hourly badge update notification check...");
         
         // 这里可以添加更精细的通知逻辑
         // 目前依赖checkAllBadgesForUpdate中的通知机制
@@ -62,7 +62,7 @@ public class BadgeUpdateScheduler {
      */
     @Scheduled(cron = "0 */30 * * * ?")
     public void monitorUpdateWindow() {
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] 检查更新窗口过期情况...");
+        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Checking update window expiry...");
         
         // 依赖checkAllBadgesForUpdate中的过期禁用逻辑
         badgeCodeUpdateService.checkAllBadgesForUpdate();

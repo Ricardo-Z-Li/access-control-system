@@ -60,69 +60,51 @@ public class AccessLimitPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-
-        JLabel titleLabel = new JLabel("访问限制与统计", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        add(titleLabel, BorderLayout.NORTH);
+        add(UiTheme.createHeader("Access Limits", "Review and maintain access count rules"), BorderLayout.NORTH);
 
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("限制校验", createLimitCheckPanel());
-        tabbedPane.addTab("员工统计", createEmployeeStatsPanel());
-        tabbedPane.addTab("资源限制", createResourceLimitPanel());
+        tabbedPane.addTab("Limit Check", createLimitCheckPanel());
+        tabbedPane.addTab("Employee Stats", createEmployeeStatsPanel());
+        tabbedPane.addTab("Resource Limits", createResourceLimitPanel());
 
         add(tabbedPane, BorderLayout.CENTER);
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("服务状态: " + (accessLimitService != null ? "正常" : "不可用")));
+        statusPanel.add(new JLabel("Service Status: " + (accessLimitService != null ? "OK" : "Unavailable")));
         add(statusPanel, BorderLayout.SOUTH);
     }
 
     private JPanel createLimitCheckPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
 
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("员工ID:"), gbc);
-
-        gbc.gridx = 1;
         employeeIdField = new JTextField(20);
         employeeIdField.setText("EMP001");
-        inputPanel.add(employeeIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("资源ID(可选):"), gbc);
-
-        gbc.gridx = 1;
         resourceIdCheckField = new JTextField(20);
-        inputPanel.add(resourceIdCheckField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        inputPanel.add(UiTheme.formRow("Employee ID", employeeIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Resource ID (optional)", resourceIdCheckField));
 
-        JButton checkAllButton = new JButton("检查全部限制");
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JButton checkAllButton = UiTheme.primaryButton("Check Limits");
         checkAllButton.addActionListener(e -> checkAllLimits());
-        buttonPanel.add(checkAllButton);
-
-        JButton getCountsButton = new JButton("查询访问次数");
+        JButton getCountsButton = UiTheme.secondaryButton("Access Stats");
         getCountsButton.addActionListener(e -> getAccessCounts());
+        buttonPanel.add(checkAllButton);
         buttonPanel.add(getCountsButton);
 
-        inputPanel.add(buttonPanel, gbc);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
         resultArea = new JTextArea(15, 60);
         resultArea.setEditable(false);
-        resultArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        resultArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         return panel;
@@ -131,7 +113,7 @@ public class AccessLimitPanel extends JPanel {
     private JPanel createEmployeeStatsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        String[] columns = {"员工ID", "姓名", "今日访问", "本周访问", "Profile数", "状态"};
+        String[] columns = {"Employee ID", "Name", "Today", "This Week", "Profiles", "Status"};
         limitTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -140,12 +122,13 @@ public class AccessLimitPanel extends JPanel {
         };
         limitTable = new JTable(limitTableModel);
         limitTable.setAutoCreateRowSorter(true);
+        UiTheme.styleTable(limitTable);
 
         JScrollPane scrollPane = new JScrollPane(limitTable);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton refreshButton = new JButton("刷新");
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JButton refreshButton = UiTheme.secondaryButton("Refresh");
         refreshButton.addActionListener(e -> refreshLimitTable());
         controlPanel.add(refreshButton);
 
@@ -157,74 +140,46 @@ public class AccessLimitPanel extends JPanel {
     private JPanel createResourceLimitPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("Profile ID:"), gbc);
-        gbc.gridx = 1;
         profileIdField = new JTextField(12);
-        inputPanel.add(profileIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("资源ID:"), gbc);
-        gbc.gridx = 1;
         resourceIdField = new JTextField(12);
-        inputPanel.add(resourceIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        inputPanel.add(new JLabel("每日上限:"), gbc);
-        gbc.gridx = 1;
         dailyLimitField = new JTextField(12);
-        inputPanel.add(dailyLimitField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        inputPanel.add(new JLabel("每周上限:"), gbc);
-        gbc.gridx = 1;
         weeklyLimitField = new JTextField(12);
-        inputPanel.add(weeklyLimitField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        inputPanel.add(new JLabel("是否启用:"), gbc);
-        gbc.gridx = 1;
         activeCheckBox = new JCheckBox();
         activeCheckBox.setSelected(true);
-        inputPanel.add(activeCheckBox, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(UiTheme.formRow("Profile ID", profileIdField));
+        inputPanel.add(Box.createVerticalStrut(6));
+        inputPanel.add(UiTheme.formRow("Resource ID", resourceIdField));
+        inputPanel.add(Box.createVerticalStrut(6));
+        inputPanel.add(UiTheme.formRow("Daily Limit", dailyLimitField));
+        inputPanel.add(Box.createVerticalStrut(6));
+        inputPanel.add(UiTheme.formRow("Weekly Limit", weeklyLimitField));
+        inputPanel.add(Box.createVerticalStrut(6));
+        inputPanel.add(UiTheme.formRow("Active", activeCheckBox));
 
-        JButton upsertButton = new JButton("新增/更新");
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JButton upsertButton = UiTheme.primaryButton("Add/Update");
         upsertButton.addActionListener(e -> upsertResourceLimit());
-        buttonPanel.add(upsertButton);
-
-        JButton deactivateButton = new JButton("停用");
+        JButton deactivateButton = UiTheme.secondaryButton("Deactivate");
         deactivateButton.addActionListener(e -> deactivateResourceLimit());
-        buttonPanel.add(deactivateButton);
-
-        JButton deleteButton = new JButton("删除");
+        JButton deleteButton = UiTheme.secondaryButton("Delete");
         deleteButton.addActionListener(e -> deleteResourceLimit());
-        buttonPanel.add(deleteButton);
-
-        JButton refreshButton = new JButton("刷新");
+        JButton refreshButton = UiTheme.secondaryButton("Refresh");
         refreshButton.addActionListener(e -> refreshResourceLimitTable());
+        buttonPanel.add(upsertButton);
+        buttonPanel.add(deactivateButton);
+        buttonPanel.add(deleteButton);
         buttonPanel.add(refreshButton);
 
-        inputPanel.add(buttonPanel, gbc);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
-        String[] columns = {"ID", "Profile", "资源", "每日上限", "每周上限", "启用"};
+        String[] columns = {"ID", "Profile", "Resource", "Daily Limit", "Weekly Limit", "Active"};
         resourceLimitTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -233,6 +188,7 @@ public class AccessLimitPanel extends JPanel {
         };
         resourceLimitTable = new JTable(resourceLimitTableModel);
         resourceLimitTable.setAutoCreateRowSorter(true);
+        UiTheme.styleTable(resourceLimitTable);
         resourceLimitTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
@@ -250,7 +206,7 @@ public class AccessLimitPanel extends JPanel {
         String profileId = profileIdField.getText().trim();
         String resourceId = resourceIdField.getText().trim();
         if (profileId.isEmpty() || resourceId.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "请输入 Profile ID 和资源ID");
+            JOptionPane.showMessageDialog(this, "Enter profile ID and resource ID");
             return;
         }
 
@@ -258,9 +214,9 @@ public class AccessLimitPanel extends JPanel {
         Integer weekly = parseOptionalInt(weeklyLimitField.getText().trim());
 
         Profile profile = profileRepository.findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException("Profile 不存在: " + profileId));
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found: " + profileId));
         Resource resource = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new IllegalArgumentException("资源不存在: " + resourceId));
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found: " + resourceId));
 
         Optional<ProfileResourceLimit> existing = profileResourceLimitRepository
                 .findByProfileAndResource(profile, resource);
@@ -278,11 +234,11 @@ public class AccessLimitPanel extends JPanel {
     private void deactivateResourceLimit() {
         Long id = getSelectedLimitId();
         if (id == null) {
-            JOptionPane.showMessageDialog(this, "请选择要操作的限制记录");
+            JOptionPane.showMessageDialog(this, "Select a limit record");
             return;
         }
         ProfileResourceLimit limit = profileResourceLimitRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("资源限制不存在: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Resource limit not found: " + id));
         limit.setIsActive(false);
         profileResourceLimitRepository.save(limit);
         refreshResourceLimitTable();
@@ -291,7 +247,7 @@ public class AccessLimitPanel extends JPanel {
     private void deleteResourceLimit() {
         Long id = getSelectedLimitId();
         if (id == null) {
-            JOptionPane.showMessageDialog(this, "请选择要操作的限制记录");
+            JOptionPane.showMessageDialog(this, "Select a limit record to delete");
             return;
         }
         profileResourceLimitRepository.deleteById(id);
@@ -353,21 +309,21 @@ public class AccessLimitPanel extends JPanel {
         try {
             return Integer.valueOf(value.trim());
         } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("无效整数: " + value);
+            throw new IllegalArgumentException("Invalid integer: " + value);
         }
     }
 
     private void checkAllLimits() {
         String employeeId = employeeIdField.getText().trim();
         if (employeeId.isEmpty()) {
-            resultArea.setText("错误: 请输入员工ID");
+            resultArea.setText("Error: enter employee ID");
             return;
         }
 
         try {
             Employee employeeWithGroups = employeeRepository.findByIdWithGroups(employeeId).orElse(null);
             if (employeeWithGroups == null) {
-                resultArea.setText("错误: 未找到员工 - " + employeeId);
+                resultArea.setText("Error: employee not found - " + employeeId);
                 return;
             }
 
@@ -377,7 +333,7 @@ public class AccessLimitPanel extends JPanel {
             if (hasResource) {
                 resource = resourceRepository.findById(resourceId).orElse(null);
                 if (resource == null) {
-                    resultArea.setText("错误: 未找到资源 - " + resourceId);
+                    resultArea.setText("Error: resource not found - " + resourceId);
                     return;
                 }
             }
@@ -387,31 +343,30 @@ public class AccessLimitPanel extends JPanel {
             int weekCount = accessLimitService.getWeekAccessCount(employeeWithGroups);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("访问限制检查结果\n");
-            sb.append("员工: ").append(employeeId).append(" (")
+            sb.append("Access Limit Check\n");
+            sb.append("Employee: ").append(employeeId).append(" (")
                 .append(employeeWithGroups.getEmployeeName()).append(")\n");
-            sb.append("今日访问次数: ").append(todayCount).append("\n");
-            sb.append("本周访问次数: ").append(weekCount).append("\n");
-            sb.append("是否达标: ").append(withinAllLimits ? "是" : "否").append("\n");
+            sb.append("Today Count: ").append(todayCount).append("\n");
+            sb.append("Week Count: ").append(weekCount).append("\n");
+            sb.append("Within Limits: ").append(withinAllLimits ? "Yes" : "No").append("\n");
 
             Set<Profile> profiles = getProfilesForEmployee(employeeWithGroups);
-            sb.append("\nProfile 列表 (").append(profiles.size()).append(")\n");
+            sb.append("\nProfiles (").append(profiles.size()).append(")\n");
 
             if (profiles.isEmpty()) {
-                sb.append("  无\n");
+                sb.append("  None\n");
             } else {
                 for (Profile profile : profiles) {
                     sb.append("  - ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");
-                    sb.append("    每日上限: ")
-                        .append(profile.getMaxDailyAccess() != null ? profile.getMaxDailyAccess() : "不限")
+                    sb.append("    Daily Limit: ")
+                        .append(profile.getMaxDailyAccess() != null ? profile.getMaxDailyAccess() : "Unlimited")
                         .append("\n");
-                    sb.append("    每周上限: ")
-                        .append(profile.getMaxWeeklyAccess() != null ? profile.getMaxWeeklyAccess() : "不限")
+                    sb.append("    Weekly Limit: ")
+                        .append(profile.getMaxWeeklyAccess() != null ? profile.getMaxWeeklyAccess() : "Unlimited")
                         .append("\n");
                 }
             }
-
 
             List<ProfileResourceLimit> activeLimits = new ArrayList<>();
             for (Profile profile : profiles) {
@@ -419,7 +374,7 @@ public class AccessLimitPanel extends JPanel {
             }
 
             if (!activeLimits.isEmpty()) {
-                sb.append("\n资源限制明细\n");
+                sb.append("\nResource Limits\n");
                 for (ProfileResourceLimit limit : activeLimits) {
                     if (limit == null || limit.getResource() == null) {
                         continue;
@@ -435,23 +390,23 @@ public class AccessLimitPanel extends JPanel {
                     int usedWeek = accessLimitService.getWeekAccessCount(employeeWithGroups, limitResource);
                     boolean dayOk = dailyLimit == null || dailyLimit <= 0 || usedDay < dailyLimit;
                     boolean weekOk = weeklyLimit == null || weeklyLimit <= 0 || usedWeek < weeklyLimit;
-                    String status = (dayOk && weekOk) ? "达标" : "超限";
+                    String status = (dayOk && weekOk) ? "OK" : "Exceeded";
                     sb.append("  - Profile ").append(profileId)
-                        .append(" / 资源 ").append(limitResource.getResourceId())
+                        .append(" / Resource ").append(limitResource.getResourceId())
                         .append(" (").append(limitResource.getResourceName()).append(")")
-                        .append(" | 每日上限=").append(dailyLimit != null ? dailyLimit : "不限")
-                        .append(" | 今日已用=").append(usedDay)
-                        .append(" | 每周上限=").append(weeklyLimit != null ? weeklyLimit : "不限")
-                        .append(" | 本周已用=").append(usedWeek)
-                        .append(" | 状态=").append(status)
+                        .append(" | Daily Limit=").append(dailyLimit != null ? dailyLimit : "Unlimited")
+                        .append(" | Used Today=").append(usedDay)
+                        .append(" | Weekly Limit=").append(weeklyLimit != null ? weeklyLimit : "Unlimited")
+                        .append(" | Used This Week=").append(usedWeek)
+                        .append(" | Status: ").append(status)
                         .append("\n");
                 }
             } else {
-                sb.append("\n资源限制: 无\n");
+                sb.append("\nResource Limits: None\n");
             }
             resultArea.setText(sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("查询失败: " + ex.getMessage());
+            resultArea.setText("Query failed: " + ex.getMessage());
         }
     }
 
@@ -459,14 +414,14 @@ public class AccessLimitPanel extends JPanel {
         String employeeId = employeeIdField.getText().trim();
         String resourceId = resourceIdCheckField == null ? "" : resourceIdCheckField.getText().trim();
         if (employeeId.isEmpty()) {
-            resultArea.setText("错误: 请输入员工ID");
+            resultArea.setText("Error: enter employee ID");
             return;
         }
 
         try {
             Employee employeeWithGroups = employeeRepository.findByIdWithGroups(employeeId).orElse(null);
             if (employeeWithGroups == null) {
-                resultArea.setText("错误: 未找到员工 - " + employeeId);
+                resultArea.setText("Error: employee not found - " + employeeId);
                 return;
             }
 
@@ -479,7 +434,7 @@ public class AccessLimitPanel extends JPanel {
             if (!resourceId.isEmpty()) {
                 resource = resourceRepository.findById(resourceId).orElse(null);
                 if (resource == null) {
-                    resultArea.setText("错误: 未找到资源 - " + resourceId);
+                    resultArea.setText("Error: resource not found - " + resourceId);
                     return;
                 }
                 todayResourceCount = accessLimitService.getTodayAccessCount(employeeWithGroups, resource);
@@ -487,20 +442,20 @@ public class AccessLimitPanel extends JPanel {
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("访问次数统计\n");
-            sb.append("员工: ").append(employeeId).append(" (")
+            sb.append("Access Counts\n");
+            sb.append("Employee: ").append(employeeId).append(" (")
                 .append(employeeWithGroups.getEmployeeName()).append(")\n");
-            sb.append("今日访问次数: ").append(todayCount).append("\n");
-            sb.append("本周访问次数: ").append(weekCount).append("\n");
+            sb.append("Today Count: ").append(todayCount).append("\n");
+            sb.append("Week Count: ").append(weekCount).append("\n");
 
             if (resource != null) {
-                sb.append("资源: ").append(resource.getResourceId())
+                sb.append("Resource: ").append(resource.getResourceId())
                     .append(" (").append(resource.getResourceName()).append(")\n");
-                sb.append("今日访问次数: ").append(todayResourceCount).append("\n");
-                sb.append("本周访问次数: ").append(weekResourceCount).append("\n");
+                sb.append("Today Count: ").append(todayResourceCount).append("\n");
+                sb.append("Week Count: ").append(weekResourceCount).append("\n");
             }
 
-            sb.append("统计时间: ").append(java.time.LocalDateTime.now()).append("\n");
+            sb.append("Timestamp: ").append(java.time.LocalDateTime.now()).append("\n");
 
             Set<Profile> profiles = getProfilesForEmployee(employeeWithGroups);
             if (!profiles.isEmpty()) {
@@ -524,23 +479,22 @@ public class AccessLimitPanel extends JPanel {
 
                 if (strictestDailyLimit != null) {
                     double dailyPercentage = (double) todayCount / strictestDailyLimit * 100;
-                    sb.append("最严格每日上限: ").append(strictestDailyLimit).append("\n");
-                    sb.append("占比: ").append(String.format("%.1f%%", dailyPercentage)).append("\n");
+                    sb.append("Strictest Daily Limit: ").append(strictestDailyLimit).append("\n");
+                    sb.append("Usage: ").append(String.format("%.1f%%", dailyPercentage)).append("\n");
                     if (dailyPercentage >= 90) {
-                        sb.append("提示: 接近上限\n");
+                        sb.append("Note: near limit\n");
                     }
                 }
 
                 if (strictestWeeklyLimit != null) {
                     double weeklyPercentage = (double) weekCount / strictestWeeklyLimit * 100;
-                    sb.append("最严格每周上限: ").append(strictestWeeklyLimit).append("\n");
-                    sb.append("占比: ").append(String.format("%.1f%%", weeklyPercentage)).append("\n");
+                    sb.append("Strictest Weekly Limit: ").append(strictestWeeklyLimit).append("\n");
+                    sb.append("Usage: ").append(String.format("%.1f%%", weeklyPercentage)).append("\n");
                     if (weeklyPercentage >= 90) {
-                        sb.append("提示: 接近上限\n");
+                        sb.append("Note: near limit\n");
                     }
                 }
             }
-
 
             List<ProfileResourceLimit> activeLimits = new ArrayList<>();
             for (Profile profile : profiles) {
@@ -548,7 +502,7 @@ public class AccessLimitPanel extends JPanel {
             }
 
             if (!activeLimits.isEmpty()) {
-                sb.append("\n资源限制明细\n");
+                sb.append("\nResource Limits\n");
                 for (ProfileResourceLimit limit : activeLimits) {
                     if (limit == null || limit.getResource() == null) {
                         continue;
@@ -563,20 +517,20 @@ public class AccessLimitPanel extends JPanel {
                     int usedDay = accessLimitService.getTodayAccessCount(employeeWithGroups, limitResource);
                     int usedWeek = accessLimitService.getWeekAccessCount(employeeWithGroups, limitResource);
                     sb.append("  - Profile ").append(profileId)
-                        .append(" / 资源 ").append(limitResource.getResourceId())
+                        .append(" / Resource ").append(limitResource.getResourceId())
                         .append(" (").append(limitResource.getResourceName()).append(")")
-                        .append(" | 每日上限=").append(dailyLimit != null ? dailyLimit : "不限")
-                        .append(" | 今日已用=").append(usedDay)
-                        .append(" | 每周上限=").append(weeklyLimit != null ? weeklyLimit : "不限")
-                        .append(" | 本周已用=").append(usedWeek)
+                        .append(" | Daily Limit=").append(dailyLimit != null ? dailyLimit : "Unlimited")
+                        .append(" | Used Today=").append(usedDay)
+                        .append(" | Weekly Limit=").append(weeklyLimit != null ? weeklyLimit : "Unlimited")
+                        .append(" | Used This Week=").append(usedWeek)
                         .append("\n");
                 }
             } else {
-                sb.append("\n资源限制: 无\n");
+                sb.append("\nResource Limits: None\n");
             }
             resultArea.setText(sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("查询失败: " + ex.getMessage());
+            resultArea.setText("Query failed: " + ex.getMessage());
         }
     }
 
@@ -598,21 +552,21 @@ public class AccessLimitPanel extends JPanel {
                         Set<Profile> profiles = getProfilesForEmployee(employee);
                         int profileCount = profiles.size();
 
-                        String status = "正常";
+                        String status = "OK";
                         boolean withinLimits = accessLimitService.checkAllLimits(employee);
                         if (!withinLimits) {
-                            status = "超限";
+                            status = "Exceeded";
                         } else if (!profiles.isEmpty()) {
                             for (Profile profile : profiles) {
                                 Integer dailyLimit = profile.getMaxDailyAccess();
                                 Integer weeklyLimit = profile.getMaxWeeklyAccess();
 
                                 if (dailyLimit != null && dailyLimit > 0 && todayCount >= dailyLimit * 0.8) {
-                                    status = "接近上限";
+                                    status = "Near Limit";
                                     break;
                                 }
                                 if (weeklyLimit != null && weeklyLimit > 0 && weekCount >= weeklyLimit * 0.8) {
-                                    status = "接近上限";
+                                    status = "Near Limit";
                                     break;
                                 }
                             }
@@ -628,10 +582,10 @@ public class AccessLimitPanel extends JPanel {
                         });
                     }
 
-                    resultArea.setText("员工数量: " + employees.size());
+                    resultArea.setText("Employees: " + employees.size());
                 });
             } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> resultArea.setText("刷新失败: " + ex.getMessage()));
+                SwingUtilities.invokeLater(() -> resultArea.setText("Refresh failed: " + ex.getMessage()));
             }
         }).start();
     }

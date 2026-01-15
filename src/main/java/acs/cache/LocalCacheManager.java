@@ -75,11 +75,11 @@ public class LocalCacheManager {
         loadResources();
         loadLogs(); 
         // 日志输出
-        System.out.println("缓存初始化完成 - 徽章数: " + badgeCache.size() 
-            + ", 员工数: " + employeeCache.size()
-            + ", 组数: " + groupCache.size()
-            + ", 资源数: " + resourceCache.size()
-            + ", 日志数: " + logCache.size());
+        System.out.println("Cache initialized - badges: " + badgeCache.size()
+            + ", employees: " + employeeCache.size()
+            + ", groups: " + groupCache.size()
+            + ", resources: " + resourceCache.size()
+            + ", logs: " + logCache.size());
     }
 
     // 从数据库加载所有徽章到缓存
@@ -174,19 +174,19 @@ public class LocalCacheManager {
     @Transactional
     public void updateEmployee(Employee employee) {
         if (employee.getEmployeeId() == null) {
-            System.err.println("错误：尝试更新没有ID的Employee对象");
-            System.err.println("Employee对象详情: " + employee);
-            System.err.println("Employee名称: " + employee.getEmployeeName());
+            System.err.println("Error: attempt to update Employee without ID");
+            System.err.println("Employee details: " + employee);
+            System.err.println("Employee name: " + employee.getEmployeeName());
 
-            System.err.println("关联的Badge: " + (employee.getBadge() != null ? employee.getBadge().getBadgeId() : "null"));
+            System.err.println("Related badge: " + (employee.getBadge() != null ? employee.getBadge().getBadgeId() : "null"));
             
             // 打印调用堆栈以确定问题来源
-            System.err.println("调用堆栈:");
+            System.err.println("Call stack:");
             for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
                 System.err.println("    " + element);
             }
             
-            throw new IllegalArgumentException("Employee ID不能为null");
+            throw new IllegalArgumentException("Employee ID cannot be null");
         }
         employeeRepository.save(employee);
         employeeCache.put(employee.getEmployeeId(), employee);

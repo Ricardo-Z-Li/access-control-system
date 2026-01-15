@@ -59,9 +59,9 @@ public class RouterSystemImpl implements RouterSystem {
                 ExecutionChainTracker.getInstance().addStep(chainId, 
                         ExecutionChainTracker.StepType.ROUTER_SELECT_NODE,
                         eventId, readerId, badgeId, resourceId, null, 
-                        "无可用服务节点");
+                        "No available service nodes");
             }
-            return createErrorResult("无可用服务节点");
+            return createErrorResult("No available service nodes");
         }
         
         // 记录执行链步骤：路由选择节点
@@ -69,7 +69,7 @@ public class RouterSystemImpl implements RouterSystem {
             ExecutionChainTracker.getInstance().addStep(chainId, 
                     ExecutionChainTracker.StepType.ROUTER_SELECT_NODE,
                     eventId, readerId, badgeId, resourceId, selectedNode, 
-                    "选择节点: " + selectedNode);
+                    "Selected node: " + selectedNode);
         }
         
         int attempt = 0;
@@ -85,9 +85,9 @@ public class RouterSystemImpl implements RouterSystem {
                     ExecutionChainTracker.getInstance().addStep(chainId, 
                             ExecutionChainTracker.StepType.ROUTER_SELECT_NODE,
                             eventId, readerId, badgeId, resourceId, null, 
-                            "重试期间无可用服务节点");
+                            "No available service nodes during retry");
                 }
-                return createErrorResult("重试期间无可用服务节点");
+                return createErrorResult("No available service nodes during retry");
             }
             
             try {
@@ -103,7 +103,7 @@ public class RouterSystemImpl implements RouterSystem {
                     ExecutionChainTracker.getInstance().addStep(chainId, 
                             ExecutionChainTracker.StepType.ROUTER_FORWARD_REQUEST,
                             eventId, readerId, badgeId, resourceId, selectedNode, 
-                            "转发请求到节点: " + selectedNode + " (尝试: " + attempt + ")");
+                            "Forwarded request to node: " + selectedNode + " (attempt: " + attempt + ")");
                 }
                 
                 // 调用真实服务（所有节点共享同一个服务实例，但模拟分布式环境）
@@ -117,13 +117,13 @@ public class RouterSystemImpl implements RouterSystem {
                     ExecutionChainTracker.getInstance().addStep(chainId, 
                             ExecutionChainTracker.StepType.ACCESS_CONTROL_DECISION,
                             eventId, readerId, badgeId, resourceId, selectedNode, 
-                            "决策: " + result.getDecision() + ", 原因: " + result.getReasonCode());
+                            "Decision: " + result.getDecision() + ", Reason: " + result.getReasonCode());
                     
                     // 记录执行链步骤：路由返回响应
                     ExecutionChainTracker.getInstance().addStep(chainId, 
                             ExecutionChainTracker.StepType.ROUTER_RETURN_RESPONSE,
                             eventId, readerId, badgeId, resourceId, selectedNode, 
-                            "返回响应到读卡器");
+                            "Returned response to reader");
                 }
                 
                 // 如果节点之前故障，现在成功，可以考虑恢复
@@ -142,7 +142,7 @@ public class RouterSystemImpl implements RouterSystem {
                     ExecutionChainTracker.getInstance().addStep(chainId, 
                             ExecutionChainTracker.StepType.ROUTER_FORWARD_REQUEST,
                             eventId, readerId, badgeId, resourceId, selectedNode, 
-                            "节点故障: " + e.getMessage());
+                            "Node failure: " + e.getMessage());
                 }
                 
                 if (attempt < MAX_RETRY_ATTEMPTS) {
@@ -155,14 +155,14 @@ public class RouterSystemImpl implements RouterSystem {
                         ExecutionChainTracker.getInstance().addStep(chainId, 
                                 ExecutionChainTracker.StepType.ROUTER_RETURN_RESPONSE,
                                 eventId, readerId, badgeId, resourceId, null, 
-                                "所有重试尝试均失败");
+                                "All retry attempts failed");
                     }
-                    return createErrorResult("所有重试尝试均失败: " + e.getMessage());
+                    return createErrorResult("All retry attempts failed: " + e.getMessage());
                 }
             }
         }
         
-        return result != null ? result : createErrorResult("未知错误");
+        return result != null ? result : createErrorResult("Unknown error");
     }
 
     @Override
@@ -198,7 +198,7 @@ public class RouterSystemImpl implements RouterSystem {
         if (strategy.equals("ROUND_ROBIN") || strategy.equals("RANDOM") || strategy.equals("LEAST_CONNECTIONS")) {
             this.loadBalanceStrategy = strategy;
         } else {
-            throw new IllegalArgumentException("不支持的负载均衡策略: " + strategy);
+            throw new IllegalArgumentException("Unsupported load balance strategy: " + strategy);
         }
     }
 

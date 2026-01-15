@@ -41,7 +41,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
         // 支持组合逻辑：ALL.ALL.Monday-Friday.EXCEPT 12:00-14:00
         String[] parts = rawRule.split("\\.");
         if (parts.length != 4) {
-            throw new IllegalArgumentException("时间规则格式错误，必须包含4个部分: " + rawRule);
+            throw new IllegalArgumentException("Invalid time rule format, expected 4 parts: " + rawRule);
         }
 
         // 1. 年
@@ -51,7 +51,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
                 int year = Integer.parseInt(yearPart);
                 timeFilter.setYear(year);
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("无效的年份: " + yearPart);
+                throw new IllegalArgumentException("Invalid year: " + yearPart);
             }
         }
 
@@ -227,7 +227,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
             case "oct": return Month.OCTOBER;
             case "nov": return Month.NOVEMBER;
             case "dec": return Month.DECEMBER;
-            default: throw new IllegalArgumentException("无效的月份缩写: " + abbreviation);
+            default: throw new IllegalArgumentException("Invalid month abbreviation: " + abbreviation);
         }
     }
 
@@ -250,7 +250,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
             case "friday": case "fri": return 5;
             case "saturday": case "sat": return 6;
             case "sunday": case "sun": return 7;
-            default: throw new IllegalArgumentException("无效的星期: " + day);
+            default: throw new IllegalArgumentException("Invalid weekday: " + day);
         }
     }
 
@@ -293,7 +293,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
             if (part.contains("-")) {
                 String[] range = part.split("-");
                 if (range.length != 2) {
-                    throw new IllegalArgumentException("无效的数字范围: " + part);
+                    throw new IllegalArgumentException("Invalid numeric range: " + part);
                 }
                 int start = Integer.parseInt(range[0].trim());
                 int end = Integer.parseInt(range[1].trim());
@@ -338,7 +338,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
                 // 范围，例如 "1-12" 或 "January-March"
                 String[] range = item.split("-");
                 if (range.length != 2) {
-                    throw new IllegalArgumentException("无效的月份范围: " + item);
+                    throw new IllegalArgumentException("Invalid month range: " + item);
                 }
                 Month start = parseMonth(range[0].trim());
                 Month end = parseMonth(range[1].trim());
@@ -368,7 +368,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
             if (item.contains("-")) {
                 String[] range = item.split("-");
                 if (range.length != 2) {
-                    throw new IllegalArgumentException("无效的星期范围: " + item);
+                    throw new IllegalArgumentException("Invalid weekday range: " + item);
                 }
                 int start = parseDayOfWeek(range[0]);
                 int end = parseDayOfWeek(range[1]);
@@ -395,7 +395,7 @@ public class TimeFilterServiceImpl implements TimeFilterService {
             if (rangeStr.isEmpty()) continue;
             String[] times = rangeStr.split("-");
             if (times.length != 2) {
-                throw new IllegalArgumentException("无效的时间区间: " + rangeStr);
+                throw new IllegalArgumentException("Invalid time range: " + rangeStr);
             }
             LocalTime start = LocalTime.parse(times[0].trim(), DateTimeFormatter.ofPattern("H:mm"));
             LocalTime end = LocalTime.parse(times[1].trim(), DateTimeFormatter.ofPattern("H:mm"));

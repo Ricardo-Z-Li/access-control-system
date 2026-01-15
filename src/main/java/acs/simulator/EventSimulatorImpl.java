@@ -67,7 +67,7 @@ public class EventSimulatorImpl implements EventSimulator {
     @Override
     public void startSimulation(int numEvents, int concurrencyLevel) {
         if (status == SimulationStatus.RUNNING) {
-            throw new IllegalStateException("模拟器已在运行中");
+            throw new IllegalStateException("Simulator is already running");
         }
         
         setSimulationStatus(SimulationStatus.RUNNING);
@@ -79,7 +79,7 @@ public class EventSimulatorImpl implements EventSimulator {
         // 获取可用的读卡器列表
         List<String> readerIds = getAvailableReaderIds();
         if (readerIds.isEmpty()) {
-            throw new IllegalStateException("没有可用的读卡器进行模拟");
+            throw new IllegalStateException("No available readers for simulation");
         }
         
         // 获取可用的徽章列表（模拟数据）
@@ -140,7 +140,7 @@ public class EventSimulatorImpl implements EventSimulator {
     @Override
     public void setTimeAcceleration(double factor) {
         if (factor <= 0) {
-            throw new IllegalArgumentException("时间加速因子必须大于0");
+            throw new IllegalArgumentException("Time acceleration factor must be > 0");
         }
         this.timeAccelerationFactor = factor;
     }
@@ -242,7 +242,7 @@ public class EventSimulatorImpl implements EventSimulator {
                 }
                 
                 // 输出最终统计信息
-                System.out.println("模拟完成: " + getPerformanceMetrics());
+                System.out.println("Simulation completed: " + getPerformanceMetrics());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 setSimulationStatus(SimulationStatus.ERROR);

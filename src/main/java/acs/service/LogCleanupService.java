@@ -27,10 +27,10 @@ public class LogCleanupService {
 
         // 1. 清理数据库中的过期日志
         long deletedDbCount = accessLogRepository.deleteByTimestampBefore(sevenDaysAgo);
-        System.out.println("清理数据库日志数量：" + deletedDbCount);
+        System.out.println("Deleted DB logs: " + deletedDbCount);
 
         // 2. 清理缓存中的过期日志
         int deletedCacheCount = cacheManager.clearExpiredLogs(sevenDaysAgo);
-        System.out.println("清理缓存日志数量：" + deletedCacheCount);
+        System.out.println("Deleted cache logs: " + deletedCacheCount);
     }
 }

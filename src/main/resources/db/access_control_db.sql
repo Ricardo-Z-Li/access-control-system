@@ -1,4 +1,4 @@
--- Active: 1743492883641@@127.0.0.1@3328@mysql
+-- Active: 1766819106838@@127.0.0.1@3306@mysql
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS access_control_db;
 

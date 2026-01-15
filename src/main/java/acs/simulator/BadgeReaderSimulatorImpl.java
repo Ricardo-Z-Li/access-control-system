@@ -69,29 +69,29 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         
         // 1. 模拟读卡器读取徽章代码
         tracker.addStep(chainId, ExecutionChainTracker.StepType.BADGE_READ_START, 
-                actualEventId, readerId, badgeId, null, null, "开始读取徽章代码");
+                actualEventId, readerId, badgeId, null, null, "Start reading badge code");
         String badgeCode = readBadgeCode(readerId, badgeId);
         if (badgeCode == null) {
             stats.incrementFailedReads();
             tracker.addStep(chainId, ExecutionChainTracker.StepType.BADGE_READ_COMPLETE,
-                    actualEventId, readerId, badgeId, null, null, "徽章读取失败");
-            return createErrorResult("无法读取徽章代码");
+                    actualEventId, readerId, badgeId, null, null, "Badge read failed");
+            return createErrorResult("Unable to read badge code");
         }
         tracker.addStep(chainId, ExecutionChainTracker.StepType.BADGE_READ_COMPLETE,
-                actualEventId, readerId, badgeId, null, null, "徽章代码: " + badgeCode);
+                actualEventId, readerId, badgeId, null, null, "Badge code: " + badgeCode);
         
         // 2. 模拟网络延迟（发送请求）
         Thread.sleep(NETWORK_DELAY_MS);
         tracker.addStep(chainId, ExecutionChainTracker.StepType.REQUEST_TO_ROUTER,
-                actualEventId, readerId, badgeId, null, null, "请求发送到路由系统");
+                actualEventId, readerId, badgeId, null, null, "Request sent to router");
         
         // 3. 获取读卡器关联的资源ID
         String resourceId = getResourceForReader(readerId);
         if (resourceId == null) {
             stats.incrementFailedRequests();
             tracker.addStep(chainId, ExecutionChainTracker.StepType.CHAIN_COMPLETE,
-                    actualEventId, readerId, badgeId, null, null, "读卡器未关联资源，执行链终止");
-            return createErrorResult("读卡器未关联资源");
+                    actualEventId, readerId, badgeId, null, null, "Reader has no resource mapped, chain stopped");
+            return createErrorResult("Reader has no resource mapped");
         }
         
         // 4. 创建访问请求
@@ -102,36 +102,36 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         
         // 6. 调用访问控制服务（通过路由系统）
         tracker.addStep(chainId, ExecutionChainTracker.StepType.ROUTER_FORWARD_REQUEST,
-                actualEventId, readerId, badgeId, resourceId, null, "路由转发请求到访问控制系统");
+                actualEventId, readerId, badgeId, resourceId, null, "Router forwarded request to access control");
         AccessResult result = routerSystem.routeRequest(request, actualEventId, chainId, 
                 readerId, badgeId, resourceId);
         
         // 读卡器接收响应
         tracker.addStep(chainId, ExecutionChainTracker.StepType.READER_RECEIVE_RESPONSE,
                 actualEventId, readerId, badgeId, resourceId, null, 
-                "收到响应: " + result.getDecision() + ", 原因: " + result.getReasonCode());
+                "Response received: " + result.getDecision() + ", Reason: " + result.getReasonCode());
         
         // 7. 根据访问结果控制资源
         if (result.getDecision() == AccessDecision.ALLOW) {
             stats.incrementGrants();
             try {
                 tracker.addStep(chainId, ExecutionChainTracker.StepType.RESOURCE_CONTROL_START,
-                        actualEventId, readerId, badgeId, resourceId, null, "开始解锁资源");
+                        actualEventId, readerId, badgeId, resourceId, null, "Start unlocking resource");
                 resourceController.unlockResource(resourceId);
                 tracker.addStep(chainId, ExecutionChainTracker.StepType.RESOURCE_CONTROL_COMPLETE,
-                        actualEventId, readerId, badgeId, resourceId, null, "资源解锁成功");
+                        actualEventId, readerId, badgeId, resourceId, null, "Resource unlocked");
                 // 模拟门自动重新锁定（在后台线程中）
                 scheduleAutoLock(resourceId);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 stats.incrementResourceControlFailures();
                 tracker.addStep(chainId, ExecutionChainTracker.StepType.RESOURCE_CONTROL_COMPLETE,
-                        actualEventId, readerId, badgeId, resourceId, null, "资源控制被中断");
+                        actualEventId, readerId, badgeId, resourceId, null, "Resource control interrupted");
             }
         } else {
             stats.incrementDenials();
             tracker.addStep(chainId, ExecutionChainTracker.StepType.RESOURCE_CONTROL_COMPLETE,
-                    actualEventId, readerId, badgeId, resourceId, null, "访问被拒绝，无需资源控制");
+                    actualEventId, readerId, badgeId, resourceId, null, "Access denied, no resource control");
         }
         
         // 8. 更新读卡器最后通信时间
@@ -143,7 +143,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         // 标记执行链完成
         tracker.addStep(chainId, ExecutionChainTracker.StepType.CHAIN_COMPLETE,
                 actualEventId, readerId, badgeId, resourceId, null, 
-                "执行链完成，总耗时: " + (endTime - startTime) + "ms");
+                "Chain complete, total time: " + (endTime - startTime) + "ms");
         
         return result;
     }
@@ -171,10 +171,10 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
     public String getSimulationStats(String readerId) {
         ReaderStats stats = readerStats.get(readerId);
         if (stats == null) {
-            return "读卡器 " + readerId + " 暂无统计信息";
+            return "Reader " + readerId + " has no stats";
         }
         
-        return String.format("读卡器 %s 统计: 总刷卡次数=%d, 授权=%d, 拒绝=%d, 平均处理时间=%.2fms",
+        return String.format("Reader %s stats: total swipes=%d, grants=%d, denials=%d, avg processing=%.2fms",
                 readerId, stats.getTotalSwipes(), stats.getGrants(), stats.getDenials(),
                 stats.getAverageProcessingTime());
     }

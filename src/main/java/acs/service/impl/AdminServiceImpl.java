@@ -47,7 +47,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void registerEmployee(String employeeId, String name) {
         if (employeeRepository.existsById(employeeId)) {
-            throw new IllegalStateException("员工ID已存在: " + employeeId);
+            throw new IllegalStateException("Employee ID already exists: " + employeeId);
         }
         Employee employee = new Employee(employeeId, name);
         employeeRepository.save(employee);
@@ -59,22 +59,22 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void issueBadge(String employeeId, String badgeId) {
         if (employeeId == null || employeeId.trim().isEmpty()) {
-            throw new IllegalArgumentException("员工ID不能为空");
+            throw new IllegalArgumentException("Employee ID cannot be empty");
         }
         if (badgeId == null || badgeId.trim().isEmpty()) {
-            throw new IllegalArgumentException("徽章ID不能为空");
+            throw new IllegalArgumentException("Badge ID cannot be empty");
         }
         
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new IllegalArgumentException("员工不存在: " + employeeId));
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + employeeId));
         
         // 验证employee对象是否有有效的ID
         if (employee.getEmployeeId() == null) {
-            throw new IllegalStateException("从数据库获取的员工对象ID为null: " + employeeId);
+            throw new IllegalStateException("Employee ID from database is null: " + employeeId);
         }
         
         if (badgeRepository.existsById(badgeId)) {
-            throw new IllegalStateException("徽章ID已存在: " + badgeId);
+            throw new IllegalStateException("Badge ID already exists: " + badgeId);
         }
         
         // 创建Badge并建立双向关系
@@ -89,9 +89,9 @@ public class AdminServiceImpl implements AdminService {
         
         // 重新从数据库加载以保证关联正确建立
         Badge persistedBadge = badgeRepository.findById(badgeId)
-                .orElseThrow(() -> new IllegalStateException("保存后无法找到徽章: " + badgeId));
+                .orElseThrow(() -> new IllegalStateException("Badge not found after save: " + badgeId));
         Employee persistedEmployee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new IllegalStateException("保存后无法找到员工: " + employeeId));
+                .orElseThrow(() -> new IllegalStateException("Employee not found after save: " + employeeId));
         
         // 同步缓存
         cacheManager.updateBadge(persistedBadge);
@@ -102,7 +102,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void setBadgeStatus(String badgeId, BadgeStatus status) {
         Badge badge = badgeRepository.findById(badgeId)
-                .orElseThrow(() -> new IllegalArgumentException("徽章不存在: " + badgeId));
+                .orElseThrow(() -> new IllegalArgumentException("Badge not found: " + badgeId));
         badge.setStatus(status);
         badgeRepository.save(badge);
         // 同步缓存
@@ -113,7 +113,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void createGroup(String groupId, String groupName) {
         if (groupRepository.existsById(groupId)) {
-            throw new IllegalStateException("组ID已存在: " + groupId);
+            throw new IllegalStateException("Group ID already exists: " + groupId);
         }
         Group group = new Group(groupId, groupName);
         groupRepository.save(group);
@@ -125,9 +125,9 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void assignEmployeeToGroup(String employeeId, String groupId) {
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new IllegalArgumentException("员工不存在: " + employeeId));
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + employeeId));
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("组不存在: " + groupId));
+                .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
         
         employee.getGroups().add(group);
         group.getEmployees().add(employee);
@@ -143,9 +143,9 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void removeEmployeeFromGroup(String employeeId, String groupId) {
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new IllegalArgumentException("员工不存在: " + employeeId));
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + employeeId));
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("组不存在: " + groupId));
+                .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
         
         employee.getGroups().remove(group);
         group.getEmployees().remove(employee);
@@ -161,7 +161,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void registerResource(String resourceId, String name, ResourceType type) {
         if (resourceRepository.existsById(resourceId)) {
-            throw new IllegalStateException("资源ID已存在: " + resourceId);
+            throw new IllegalStateException("Resource ID already exists: " + resourceId);
         }
         // 新资源默认状态为可用
         Resource resource = new Resource(resourceId, name, type, ResourceState.AVAILABLE);
@@ -174,7 +174,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void setResourceState(String resourceId, ResourceState state) {
         Resource resource = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new IllegalArgumentException("资源不存在: " + resourceId));
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found: " + resourceId));
         resource.setResourceState(state);
         resourceRepository.save(resource);
         // 同步缓存
@@ -200,9 +200,9 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void grantGroupAccessToResource(String groupId, String resourceId) {
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("组不存在: " + groupId));
+                .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
         Resource resource = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new IllegalArgumentException("资源不存在: " + resourceId));
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found: " + resourceId));
         
         group.getResources().add(resource);
         resource.getGroups().add(group);
@@ -218,9 +218,9 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void revokeGroupAccessToResource(String groupId, String resourceId) {
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("组不存在: " + groupId));
+                .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
         Resource resource = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new IllegalArgumentException("资源不存在: " + resourceId));
+                .orElseThrow(() -> new IllegalArgumentException("Resource not found: " + resourceId));
         
         group.getResources().remove(resource);
         resource.getGroups().remove(group);

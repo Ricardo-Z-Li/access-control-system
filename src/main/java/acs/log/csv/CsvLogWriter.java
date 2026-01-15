@@ -52,7 +52,7 @@ public class CsvLogWriter {
         try {
             Files.createDirectories(baseLogDir);
         } catch (IOException e) {
-            throw new RuntimeException("无法创建日志目录: " + baseLogDir, e);
+            throw new RuntimeException("Failed to create log directory: " + baseLogDir, e);
         }
     }
     

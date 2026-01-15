@@ -1,9 +1,7 @@
 package acs.ui;
 
 import javax.swing.*;
-import javax.swing.plaf.FontUIResource;
 import java.awt.*;
-import java.util.Enumeration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -33,7 +31,12 @@ import acs.service.LogCleanupService;
 @Component
 @Profile("!test")
 public class MainApp extends JFrame {
-    private JTabbedPane tabbedPane;
+    private CardLayout cardLayout;
+    private JPanel contentPanel;
+    private JList<NavItem> navList;
+    private DefaultListModel<NavItem> navModel;
+    private JLabel sectionTitle;
+    private JLabel sectionSubtitle;
 
     @Autowired
     private AccessControlService accessControlService;
@@ -117,13 +120,11 @@ public class MainApp extends JFrame {
     }
 
     private void initUI() {
-        applyTheme();
-        setTitle("门禁控制系统 - 控制台");
+        UiTheme.apply();
+        setTitle("Access Control System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 800);
+        setSize(1280, 820);
         setLocationRelativeTo(null);
-
-        tabbedPane = new JTabbedPane();
 
         adminPanel = new AdminPanel(adminService, profileFileService);
         scanPanel = new ScanPanel(accessControlService, badgeCodeUpdateService, clockService);
@@ -134,110 +135,185 @@ public class MainApp extends JFrame {
         groupFilePanel = new GroupFilePanel(groupFileService, groupRepository);
         emergencyControlPanel = new EmergencyControlPanel(emergencyControlService);
 
-        tabbedPane.addTab("管理", adminPanel);
-        tabbedPane.addTab("刷卡", scanPanel);
-        tabbedPane.addTab("监控", monitorPanel);
-        tabbedPane.addTab("模拟器", simulatorPanel);
-        tabbedPane.addTab("访问限制", accessLimitPanel);
-        tabbedPane.addTab("时间过滤", timeFilterPanel);
-        tabbedPane.addTab("群组文件", groupFilePanel);
-        tabbedPane.addTab("应急控制", emergencyControlPanel);
+        buildNavigation();
 
-        add(tabbedPane, BorderLayout.CENTER);
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(new Color(245, 247, 250));
+        root.add(createHeaderBar(), BorderLayout.NORTH);
+        root.add(createMainLayout(), BorderLayout.CENTER);
+        root.add(createStatusPanel(), BorderLayout.SOUTH);
+        add(root, BorderLayout.CENTER);
 
         JMenuBar menuBar = createMenuBar();
         setJMenuBar(menuBar);
-
-        JPanel statusPanel = createStatusPanel();
-        add(statusPanel, BorderLayout.SOUTH);
     }
 
-    private void applyTheme() {
-        Font baseFont = new Font("Microsoft YaHei UI", Font.PLAIN, 13);
-        if (!"Microsoft YaHei UI".equals(baseFont.getFamily())) {
-            baseFont = UIManager.getFont("Label.font");
-        }
-        if (baseFont == null) {
-            baseFont = new Font(Font.SANS_SERIF, Font.PLAIN, 13);
-        }
-        setGlobalFont(baseFont);
-    }
+    private void buildNavigation() {
+        navModel = new DefaultListModel<>();
+        navModel.addElement(new NavItem("admin", "Admin"));
+        navModel.addElement(new NavItem("scan", "Scan"));
+        navModel.addElement(new NavItem("monitor", "Monitor"));
+        navModel.addElement(new NavItem("simulator", "Simulator"));
+        navModel.addElement(new NavItem("limits", "Access Limits"));
+        navModel.addElement(new NavItem("filters", "Time Filters"));
+        navModel.addElement(new NavItem("groups", "Group Files"));
+        navModel.addElement(new NavItem("emergency", "Emergency"));
 
-    private void setGlobalFont(Font font) {
-        FontUIResource resource = new FontUIResource(font);
-        Enumeration<Object> keys = UIManager.getDefaults().keys();
-        while (keys.hasMoreElements()) {
-            Object key = keys.nextElement();
-            Object value = UIManager.get(key);
-            if (value instanceof FontUIResource) {
-                UIManager.put(key, resource);
+        navList = new JList<>(navModel);
+        navList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        navList.setFixedCellHeight(42);
+        navList.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        navList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JLabel label = new JLabel(value.label);
+            label.setOpaque(true);
+            label.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+            if (isSelected) {
+                label.setBackground(new Color(37, 99, 235));
+                label.setForeground(Color.WHITE);
+            } else {
+                label.setBackground(new Color(245, 247, 250));
+                label.setForeground(new Color(33, 37, 41));
             }
-        }
+            return label;
+        });
+        navList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                NavItem selected = navList.getSelectedValue();
+                if (selected != null) {
+                    showSection(selected);
+                }
+            }
+        });
+
+        cardLayout = new CardLayout();
+        contentPanel = new JPanel(cardLayout);
+        contentPanel.add(adminPanel, "admin");
+        contentPanel.add(scanPanel, "scan");
+        contentPanel.add(monitorPanel, "monitor");
+        contentPanel.add(simulatorPanel, "simulator");
+        contentPanel.add(accessLimitPanel, "limits");
+        contentPanel.add(timeFilterPanel, "filters");
+        contentPanel.add(groupFilePanel, "groups");
+        contentPanel.add(emergencyControlPanel, "emergency");
+    }
+
+    private JPanel createHeaderBar() {
+        JButton refreshButton = UiTheme.secondaryButton("Refresh Cache");
+        refreshButton.addActionListener(e -> refreshCache());
+        refreshButton.setEnabled(localCacheManager != null);
+
+        JButton resetClockButton = UiTheme.secondaryButton("Reset Time");
+        resetClockButton.addActionListener(e -> clockService.resetToRealTime());
+
+        JButton aboutButton = UiTheme.secondaryButton("About");
+        aboutButton.addActionListener(e -> JOptionPane.showMessageDialog(this,
+            "Access Control System\nPrototype UI",
+            "About", JOptionPane.INFORMATION_MESSAGE));
+
+        sectionTitle = new JLabel("Admin");
+        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD, 18f));
+        sectionSubtitle = new JLabel("Manage people, permissions, and resources");
+        sectionSubtitle.setForeground(new Color(102, 107, 114));
+
+        JPanel titlePanel = new JPanel();
+        titlePanel.setOpaque(false);
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+        titlePanel.add(sectionTitle);
+        titlePanel.add(Box.createVerticalStrut(4));
+        titlePanel.add(sectionSubtitle);
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+        header.setBackground(new Color(245, 247, 250));
+        header.add(titlePanel, BorderLayout.WEST);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actions.setOpaque(false);
+        actions.add(refreshButton);
+        actions.add(resetClockButton);
+        actions.add(aboutButton);
+        header.add(actions, BorderLayout.EAST);
+        return header;
+    }
+
+    private JSplitPane createMainLayout() {
+        JPanel navContainer = new JPanel(new BorderLayout());
+        navContainer.setBackground(new Color(245, 247, 250));
+        navContainer.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        navContainer.add(navList, BorderLayout.CENTER);
+
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.setBackground(new Color(245, 247, 250));
+        contentWrapper.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 8));
+        contentWrapper.add(contentPanel, BorderLayout.CENTER);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, navContainer, contentWrapper);
+        splitPane.setDividerLocation(200);
+        splitPane.setDividerSize(1);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        splitPane.setContinuousLayout(true);
+
+        navList.setSelectedIndex(0);
+        return splitPane;
+    }
+
+    private void showSection(NavItem item) {
+        cardLayout.show(contentPanel, item.id);
+        sectionTitle.setText(item.label);
+        sectionSubtitle.setText(getSubtitle(item.id));
     }
 
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
-        JMenu fileMenu = new JMenu("文件");
-        JMenuItem exitItem = new JMenuItem("退出");
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.addActionListener(e -> System.exit(0));
         fileMenu.add(exitItem);
 
-        JMenu viewMenu = new JMenu("视图");
-        JMenuItem adminViewItem = new JMenuItem("管理面板");
-        adminViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(0));
+        JMenu viewMenu = new JMenu("View");
+        JMenuItem adminViewItem = new JMenuItem("Admin");
+        adminViewItem.addActionListener(e -> navList.setSelectedIndex(0));
         viewMenu.add(adminViewItem);
 
-        JMenuItem scanViewItem = new JMenuItem("刷卡面板");
-        scanViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(1));
+        JMenuItem scanViewItem = new JMenuItem("Scan");
+        scanViewItem.addActionListener(e -> navList.setSelectedIndex(1));
         viewMenu.add(scanViewItem);
 
-        JMenuItem monitorViewItem = new JMenuItem("监控面板");
-        monitorViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(2));
+        JMenuItem monitorViewItem = new JMenuItem("Monitor");
+        monitorViewItem.addActionListener(e -> navList.setSelectedIndex(2));
         viewMenu.add(monitorViewItem);
 
-        JMenuItem simulatorViewItem = new JMenuItem("模拟器面板");
-        simulatorViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(3));
+        JMenuItem simulatorViewItem = new JMenuItem("Simulator");
+        simulatorViewItem.addActionListener(e -> navList.setSelectedIndex(3));
         viewMenu.add(simulatorViewItem);
 
-        JMenuItem limitViewItem = new JMenuItem("访问限制面板");
-        limitViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(4));
+        JMenuItem limitViewItem = new JMenuItem("Access Limits");
+        limitViewItem.addActionListener(e -> navList.setSelectedIndex(4));
         viewMenu.add(limitViewItem);
 
-        JMenuItem filterViewItem = new JMenuItem("时间过滤面板");
-        filterViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(5));
+        JMenuItem filterViewItem = new JMenuItem("Time Filters");
+        filterViewItem.addActionListener(e -> navList.setSelectedIndex(5));
         viewMenu.add(filterViewItem);
 
-        JMenuItem groupViewItem = new JMenuItem("群组文件面板");
-        groupViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(6));
+        JMenuItem groupViewItem = new JMenuItem("Group Files");
+        groupViewItem.addActionListener(e -> navList.setSelectedIndex(6));
         viewMenu.add(groupViewItem);
 
-        JMenuItem emergencyViewItem = new JMenuItem("应急控制面板");
-        emergencyViewItem.addActionListener(e -> tabbedPane.setSelectedIndex(7));
+        JMenuItem emergencyViewItem = new JMenuItem("Emergency");
+        emergencyViewItem.addActionListener(e -> navList.setSelectedIndex(7));
         viewMenu.add(emergencyViewItem);
 
-        JMenu toolsMenu = new JMenu("工具");
-        JMenuItem reloadItem = new JMenuItem("刷新缓存");
-        reloadItem.addActionListener(e -> {
-            try {
-                if (localCacheManager == null) {
-                    JOptionPane.showMessageDialog(this, "缓存管理器不可用", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                localCacheManager.refreshAllCache();
-                JOptionPane.showMessageDialog(this, "缓存已刷新", "提示", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "刷新缓存失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            }
-        });
+        JMenu toolsMenu = new JMenu("Tools");
+        JMenuItem reloadItem = new JMenuItem("Refresh Cache");
+        reloadItem.addActionListener(e -> refreshCache());
         toolsMenu.add(reloadItem);
 
-        JMenu helpMenu = new JMenu("帮助");
-        JMenuItem aboutItem = new JMenuItem("关于");
-        aboutItem.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "门禁控制系统 v2.0\n基于 Spring Boot 的示例应用");
-        });
+        JMenu helpMenu = new JMenu("Help");
+        JMenuItem aboutItem = new JMenuItem("About");
+        aboutItem.addActionListener(e ->
+            JOptionPane.showMessageDialog(this, "Access Control System\nPrototype UI", "About", JOptionPane.INFORMATION_MESSAGE)
+        );
         helpMenu.add(aboutItem);
 
         menuBar.add(fileMenu);
@@ -250,20 +326,49 @@ public class MainApp extends JFrame {
 
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEtchedBorder());
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        panel.setBackground(new Color(245, 247, 250));
 
-        JLabel statusLabel = new JLabel("就绪");
+        JLabel statusLabel = new JLabel("Ready");
         statusLabel.setHorizontalAlignment(SwingConstants.LEFT);
         panel.add(statusLabel, BorderLayout.WEST);
 
-        JLabel timeLabel = new JLabel("当前时间: " + java.time.LocalDateTime.now());
+        JLabel timeLabel = new JLabel("Current Time: " + java.time.LocalDateTime.now());
         timeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         panel.add(timeLabel, BorderLayout.EAST);
 
-        Timer timer = new Timer(1000, e -> timeLabel.setText("当前时间: " + java.time.LocalDateTime.now()));
+        Timer timer = new Timer(1000, e -> timeLabel.setText("Current Time: " + java.time.LocalDateTime.now()));
         timer.start();
 
         return panel;
+    }
+
+    private void refreshCache() {
+        try {
+            if (localCacheManager == null) {
+                JOptionPane.showMessageDialog(this, "Cache manager unavailable", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            localCacheManager.refreshAllCache();
+            JOptionPane.showMessageDialog(this, "Cache refreshed", "Info", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Refresh failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    private String getSubtitle(String id) {
+        return switch (id) {
+            case "admin" -> "Manage people, permissions, and resources";
+            case "scan" -> "Simulate badge scan and update flow";
+            case "monitor" -> "Real-time monitoring and log search";
+            case "simulator" -> "Simulator control and system load test";
+            case "limits" -> "Access count and resource limit management";
+            case "filters" -> "Time rule parsing and testing";
+            case "groups" -> "Group file import and management";
+            case "emergency" -> "Emergency status and resource control";
+            default -> "";
+        };
     }
 
     public void showUI() {
@@ -271,5 +376,15 @@ public class MainApp extends JFrame {
             initUI();
             setVisible(true);
         });
+    }
+
+    private static class NavItem {
+        private final String id;
+        private final String label;
+
+        private NavItem(String id, String label) {
+            this.id = id;
+            this.label = label;
+        }
     }
 }

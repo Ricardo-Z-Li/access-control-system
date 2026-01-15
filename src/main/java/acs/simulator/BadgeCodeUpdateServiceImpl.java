@@ -17,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 徽章代码更新服务实现，模拟徽章更新工作流程。
- * 包含过期检查、新代码生成、更新通知等功能。
+ * Badge code update service implementation for simulating update workflows.
+ * Includes expiry checks, new code generation, and update notifications.
  */
 @Service
 public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
@@ -26,16 +26,16 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
     private final BadgeRepository badgeRepository;
     private final Random random = new Random();
     
-    // 更新统计信息
+    // Update statistics
     private final AtomicInteger totalChecks = new AtomicInteger(0);
     private final AtomicInteger updatesTriggered = new AtomicInteger(0);
     private final AtomicInteger notificationsSent = new AtomicInteger(0);
     private final ConcurrentHashMap<String, Integer> updateAttempts = new ConcurrentHashMap<>();
     
-    // 配置参数
-    private static final int DAYS_BEFORE_EXPIRY_TO_NOTIFY = 30; // 过期前30天开始通知
-    private static final int UPDATE_WINDOW_DAYS = 14; // 更新窗口14天
-    private static final int BADGE_CODE_LENGTH = 16; // 新徽章代码长度
+    // Configuration parameters
+    private static final int DAYS_BEFORE_EXPIRY_TO_NOTIFY = 30; // Start notifying 30 days before expiry
+    private static final int UPDATE_WINDOW_DAYS = 14; // Update window in days
+    private static final int BADGE_CODE_LENGTH = 16; // New badge code length
     
     @Autowired
     public BadgeCodeUpdateServiceImpl(BadgeRepository badgeRepository) {
@@ -65,7 +65,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
 
     @Override
     public String generateNewBadgeCode(String badgeId) {
-        // 生成随机徽章代码（模拟真实系统）
+        // Generate a random badge code (simulating a real system)
         StringBuilder code = new StringBuilder();
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         
@@ -73,7 +73,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
             code.append(chars.charAt(random.nextInt(chars.length())));
         }
         
-        // 添加前缀和后缀以增强唯一性
+        // Add prefix/suffix to increase uniqueness
         return "UPD_" + code.toString() + "_" + System.currentTimeMillis();
     }
 
@@ -83,30 +83,30 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
         
         return badgeRepository.findById(badgeId)
                 .map(badge -> {
-                    // 检查是否真的需要更新
+                    // Check whether an update is actually needed
                     if (!checkBadgeNeedsUpdate(badgeId)) {
-                        return null; // 不需要更新
+                        return null; // No update needed
                     }
                     
-                    // 生成新徽章代码
+                    // Generate a new badge code
                     String newCode = generateNewBadgeCode(badgeId);
                     
-                    // 更新徽章
+                    // Update badge
                     badge.setBadgeCode(newCode);
                     badge.setLastUpdated(java.time.Instant.now());
                     badge.setLastCodeUpdate(java.time.Instant.now());
                     
-                    // 延长过期日期（模拟：延长一年）
+                    // Extend expiry date (simulate: +1 year)
                     LocalDate newExpiryDate = LocalDate.now().plusYears(1);
                     badge.setExpirationDate(newExpiryDate);
-                    // 同时延长代码过期日期
+                    // Extend code expiry date as well
                     badge.setCodeExpirationDate(newExpiryDate);
                     
-                    // 重置更新标志和截止日期
+                    // Reset update flag and due date
                     badge.setNeedsUpdate(false);
                     badge.setUpdateDueDate(null);
                     
-                    // 保存更新
+                    // Save update
                     Badge updatedBadge = badgeRepository.save(badge);
                     updatesTriggered.incrementAndGet();
                     
@@ -130,25 +130,25 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
 
     @Override
     public void simulateUpdateNotification(String badgeId, int daysUntilExpiry) {
-        // 模拟发送通知（在实际系统中可能是邮件、短信或UI通知）
+        // Simulate sending a notification (email, SMS, or UI in real systems)
         String message;
         if (daysUntilExpiry > 0) {
-            message = String.format("徽章 %s 将在 %d 天后过期，请及时更新。", badgeId, daysUntilExpiry);
+            message = String.format("Badge %s will expire in %d days. Please update.", badgeId, daysUntilExpiry);
         } else if (daysUntilExpiry == 0) {
-            message = String.format("徽章 %s 今天过期，请立即更新。", badgeId);
+            message = String.format("Badge %s expires today. Please update now.", badgeId);
         } else {
-            message = String.format("徽章 %s 已过期 %d 天，请立即更新。", badgeId, -daysUntilExpiry);
+            message = String.format("Badge %s expired %d days ago. Please update now.", badgeId, -daysUntilExpiry);
         }
         
-        // 在实际系统中，这里会调用通知服务
-        // 现在只是记录日志
-        System.out.println("[徽章更新通知] " + message);
+        // In a real system, this would call a notification service.
+        // For now, log the message.
+        System.out.println("[Badge Update Notification] " + message);
         notificationsSent.incrementAndGet();
     }
 
     @Override
     public String getUpdateStats() {
-        return String.format("徽章更新统计: 总检查次数=%d, 触发更新=%d, 发送通知=%d, 尝试更新徽章数=%d",
+        return String.format("Badge update stats: total checks=%d, updates triggered=%d, notifications sent=%d, badges attempted=%d",
                 totalChecks.get(), updatesTriggered.get(), notificationsSent.get(), updateAttempts.size());
     }
     
@@ -203,7 +203,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
     }
 
     /**
-     * 重置统计信息（用于测试）
+     * Reset statistics (for testing).
      */
     public void resetStats() {
         totalChecks.set(0);
@@ -213,7 +213,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
     }
     
     /**
-     * 获取特定徽章的更新尝试次数
+     * Get update attempt count for a badge.
      */
     public int getUpdateAttempts(String badgeId) {
         return updateAttempts.getOrDefault(badgeId, 0);

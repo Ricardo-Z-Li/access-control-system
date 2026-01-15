@@ -43,7 +43,7 @@ public class SimulatorPanel extends JPanel {
     private JButton resetTimeButton;
     private JLabel currentTimeLabel;
     
-    // 执行链追踪相关
+    // Execution chain tracking
     private JTextArea executionChainArea;
     private JTable executionChainTable;
     private DefaultTableModel executionChainTableModel;
@@ -71,24 +71,24 @@ public class SimulatorPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout());
         
-        JLabel titleLabel = new JLabel("模拟器控制面板", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 18));
+        JLabel titleLabel = new JLabel("Simulator Control Panel", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         add(titleLabel, BorderLayout.NORTH);
         
         tabbedPane = new JTabbedPane();
         
-        tabbedPane.addTab("读卡器模拟", createBadgeReaderPanel());
-        tabbedPane.addTab("事件模拟", createEventSimulatorPanel());
-        tabbedPane.addTab("路由系统", createRouterSystemPanel());
-        tabbedPane.addTab("系统监控", createSystemMonitorPanel());
-        tabbedPane.addTab("执行链追踪", createExecutionChainPanel());
+        tabbedPane.addTab("Badge Reader", createBadgeReaderPanel());
+        tabbedPane.addTab("Event Simulator", createEventSimulatorPanel());
+        tabbedPane.addTab("Router System", createRouterSystemPanel());
+        tabbedPane.addTab("System Monitor", createSystemMonitorPanel());
+        tabbedPane.addTab("Execution Chain", createExecutionChainPanel());
         
         add(tabbedPane, BorderLayout.CENTER);
         
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("读卡器模拟器: " + (badgeReaderSimulator != null ? "可用" : "不可用")));
-        statusPanel.add(new JLabel("事件模拟器: " + (eventSimulator != null ? "可用" : "不可用")));
-        statusPanel.add(new JLabel("路由系统: " + (routerSystem != null ? "可用" : "不可用")));
+        statusPanel.add(new JLabel("Badge Reader: " + (badgeReaderSimulator != null ? "Available" : "Unavailable")));
+        statusPanel.add(new JLabel("Event Simulator: " + (eventSimulator != null ? "Available" : "Unavailable")));
+        statusPanel.add(new JLabel("Router System: " + (routerSystem != null ? "Available" : "Unavailable")));
         add(statusPanel, BorderLayout.SOUTH);
     }
     
@@ -102,7 +102,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 0;
-        inputPanel.add(new JLabel("读卡器ID:"), gbc);
+        inputPanel.add(new JLabel("Reader ID:"), gbc);
         
         gbc.gridx = 1;
         readerIdField = new JTextField(20);
@@ -111,7 +111,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 1;
-        inputPanel.add(new JLabel("徽章ID:"), gbc);
+        inputPanel.add(new JLabel("Badge ID:"), gbc);
         
         gbc.gridx = 1;
         badgeIdField = new JTextField(20);
@@ -124,7 +124,7 @@ public class SimulatorPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout());
         
-        JButton swipeButton = new JButton("模拟刷卡");
+        JButton swipeButton = new JButton("Simulate Swipe");
         swipeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -133,7 +133,7 @@ public class SimulatorPanel extends JPanel {
         });
         buttonPanel.add(swipeButton);
         
-        JButton readButton = new JButton("模拟读卡");
+        JButton readButton = new JButton("Simulate Read");
         readButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -142,7 +142,7 @@ public class SimulatorPanel extends JPanel {
         });
         buttonPanel.add(readButton);
         
-        JButton statusButton = new JButton("获取统计");
+        JButton statusButton = new JButton("Get Stats");
         statusButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -157,7 +157,7 @@ public class SimulatorPanel extends JPanel {
         
         simulatorLogArea = new JTextArea(15, 60);
         simulatorLogArea.setEditable(false);
-        simulatorLogArea.setFont(new Font("宋体", Font.PLAIN, 12));
+        simulatorLogArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         panel.add(new JScrollPane(simulatorLogArea), BorderLayout.CENTER);
         
         return panel;
@@ -173,7 +173,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 0;
-        controlPanel.add(new JLabel("事件总数:"), gbc);
+        controlPanel.add(new JLabel("Total Events:"), gbc);
         
         gbc.gridx = 1;
         JTextField numEventsField = new JTextField(10);
@@ -182,7 +182,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 1;
-        controlPanel.add(new JLabel("并发级别:"), gbc);
+        controlPanel.add(new JLabel("Concurrency:"), gbc);
         
         gbc.gridx = 1;
         JTextField concurrencyField = new JTextField(10);
@@ -191,7 +191,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 2;
-        controlPanel.add(new JLabel("时间加速:"), gbc);
+        controlPanel.add(new JLabel("Time Acceleration:"), gbc);
         
         gbc.gridx = 1;
         JTextField timeAccelField = new JTextField(10);
@@ -200,7 +200,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 3;
-        controlPanel.add(new JLabel("绝对时间 (yyyy-MM-dd HH:mm):"), gbc);
+        controlPanel.add(new JLabel("Absolute Time (yyyy-MM-dd HH:mm):"), gbc);
         
         gbc.gridx = 1;
         absoluteTimeField = new JTextField(20);
@@ -213,7 +213,7 @@ public class SimulatorPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel timeButtonPanel = new JPanel(new FlowLayout());
         
-        setTimeButton = new JButton("设置模拟时间");
+        setTimeButton = new JButton("Set Sim Time");
         setTimeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -222,7 +222,7 @@ public class SimulatorPanel extends JPanel {
         });
         timeButtonPanel.add(setTimeButton);
         
-        resetTimeButton = new JButton("重置为真实时间");
+        resetTimeButton = new JButton("Reset to Real Time");
         resetTimeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -231,7 +231,7 @@ public class SimulatorPanel extends JPanel {
         });
         timeButtonPanel.add(resetTimeButton);
         
-        currentTimeLabel = new JLabel("当前时间: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        currentTimeLabel = new JLabel("Current Time: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         timeButtonPanel.add(currentTimeLabel);
         
         controlPanel.add(timeButtonPanel, gbc);
@@ -242,7 +242,7 @@ public class SimulatorPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout());
         
-        JButton startButton = new JButton("启动模拟");
+        JButton startButton = new JButton("Start Simulation");
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -252,13 +252,13 @@ public class SimulatorPanel extends JPanel {
                     double acceleration = Double.parseDouble(timeAccelField.getText());
                     startEventSimulation(numEvents, concurrency, acceleration);
                 } catch (NumberFormatException ex) {
-                    logMessage("错误: 请输入有效的数字");
+                    logMessage("Error: enter valid numbers");
                 }
             }
         });
         buttonPanel.add(startButton);
         
-        JButton stopButton = new JButton("停止模拟");
+        JButton stopButton = new JButton("Stop Simulation");
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -267,7 +267,7 @@ public class SimulatorPanel extends JPanel {
         });
         buttonPanel.add(stopButton);
         
-        JButton resetButton = new JButton("重置模拟");
+        JButton resetButton = new JButton("Reset Simulation");
         resetButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -276,7 +276,7 @@ public class SimulatorPanel extends JPanel {
         });
         buttonPanel.add(resetButton);
         
-        JButton metricsButton = new JButton("获取指标");
+        JButton metricsButton = new JButton("Get Metrics");
         metricsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -289,7 +289,7 @@ public class SimulatorPanel extends JPanel {
         
         panel.add(controlPanel, BorderLayout.NORTH);
         
-        String[] columns = {"时间", "事件类型", "读卡器", "徽章", "资源", "结果"};
+        String[] columns = {"Time", "Event", "Reader", "Badge", "Resource", "Result"};
         eventTableModel = new DefaultTableModel(columns, 0);
         eventTable = new JTable(eventTableModel);
         eventTable.setAutoCreateRowSorter(true);
@@ -298,7 +298,7 @@ public class SimulatorPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
         
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        simulationStatusLabel = new JLabel("状态: 未启动");
+        simulationStatusLabel = new JLabel("Status: Not Started");
         statusPanel.add(simulationStatusLabel);
         panel.add(statusPanel, BorderLayout.SOUTH);
         
@@ -315,7 +315,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 0;
-        controlPanel.add(new JLabel("节点ID:"), gbc);
+        controlPanel.add(new JLabel("Node ID:"), gbc);
         
         gbc.gridx = 1;
         JTextField nodeIdField = new JTextField(15);
@@ -328,7 +328,7 @@ public class SimulatorPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout());
         
-        JButton failButton = new JButton("标记节点故障");
+        JButton failButton = new JButton("Mark Node Failed");
         failButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -337,7 +337,7 @@ public class SimulatorPanel extends JPanel {
         });
         buttonPanel.add(failButton);
         
-        JButton recoverButton = new JButton("恢复节点");
+        JButton recoverButton = new JButton("Recover Node");
         recoverButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -346,7 +346,7 @@ public class SimulatorPanel extends JPanel {
         });
         buttonPanel.add(recoverButton);
         
-        JButton statsButton = new JButton("获取负载统计");
+        JButton statsButton = new JButton("Get Load Stats");
         statsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -356,14 +356,14 @@ public class SimulatorPanel extends JPanel {
         buttonPanel.add(statsButton);
         
         JComboBox<String> strategyCombo = new JComboBox<>(new String[]{"ROUND_ROBIN", "RANDOM", "LEAST_CONNECTIONS"});
-        JButton setStrategyButton = new JButton("设置策略");
+        JButton setStrategyButton = new JButton("Set Strategy");
         setStrategyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 setLoadBalanceStrategy((String) strategyCombo.getSelectedItem());
             }
         });
-        buttonPanel.add(new JLabel("负载策略:"));
+        buttonPanel.add(new JLabel("Strategy:"));
         buttonPanel.add(strategyCombo);
         buttonPanel.add(setStrategyButton);
         
@@ -373,7 +373,7 @@ public class SimulatorPanel extends JPanel {
         
         JTextArea routerInfoArea = new JTextArea(15, 60);
         routerInfoArea.setEditable(false);
-        routerInfoArea.setFont(new Font("宋体", Font.PLAIN, 12));
+        routerInfoArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         
         updateRouterInfo();
         
@@ -390,29 +390,29 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panel.add(new JLabel("系统监控", SwingConstants.CENTER), gbc);
+        panel.add(new JLabel("System Monitor", SwingConstants.CENTER), gbc);
         
         gbc.gridy++;
         panel.add(new JSeparator(), gbc);
         
         gbc.gridy++;
-        panel.add(new JLabel("系统健康状态:"), gbc);
+        panel.add(new JLabel("System Health:"), gbc);
         gbc.gridx = 1;
-        systemHealthLabel = new JLabel("未知");
+        systemHealthLabel = new JLabel("Unknown");
         panel.add(systemHealthLabel, gbc);
         
         gbc.gridx = 0;
         gbc.gridy++;
-        panel.add(new JLabel("负载均衡状态:"), gbc);
+        panel.add(new JLabel("Load Balance:"), gbc);
         gbc.gridx = 1;
-        loadBalanceLabel = new JLabel("未知");
+        loadBalanceLabel = new JLabel("Unknown");
         panel.add(loadBalanceLabel, gbc);
         
         gbc.gridx = 0;
         gbc.gridy++;
-        panel.add(new JLabel("可用节点数:"), gbc);
+        panel.add(new JLabel("Available Nodes:"), gbc);
         gbc.gridx = 1;
-        JLabel nodesLabel = new JLabel("未知");
+        JLabel nodesLabel = new JLabel("Unknown");
         panel.add(nodesLabel, gbc);
         
         gbc.gridx = 0;
@@ -421,7 +421,7 @@ public class SimulatorPanel extends JPanel {
         
         gbc.gridy++;
         gbc.gridwidth = 2;
-        JButton refreshButton = new JButton("刷新监控数据");
+        JButton refreshButton = new JButton("Refresh Monitor Data");
         refreshButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -438,25 +438,25 @@ public class SimulatorPanel extends JPanel {
         String badgeId = badgeIdField.getText().trim();
         
         if (readerId.isEmpty() || badgeId.isEmpty()) {
-            logMessage("错误: 请输入读卡器ID和徽章ID");
+            logMessage("Error: enter reader ID and badge ID");
             return;
         }
-        
+
         if (badgeReaderSimulator == null) {
-            logMessage("错误: 读卡器模拟器不可用");
+            logMessage("Error: badge reader simulator unavailable");
             return;
         }
         
         new Thread(() -> {
             try {
-                logMessage("开始模拟刷卡: 读卡器=" + readerId + ", 徽章=" + badgeId);
+                logMessage("Starting swipe simulation: reader=" + readerId + ", badge=" + badgeId);
                 var result = badgeReaderSimulator.simulateBadgeSwipe(readerId, badgeId);
-                logMessage("刷卡结果: 决策=" + result.getDecision() + ", 原因=" + result.getReasonCode());
-                logMessage("消息: " + result.getMessage());
+                logMessage("Swipe result: decision=" + result.getDecision() + ", reason=" + result.getReasonCode());
+                logMessage("Message: " + result.getMessage());
             } catch (InterruptedException ex) {
-                logMessage("模拟被中断: " + ex.getMessage());
+                logMessage("Simulation interrupted: " + ex.getMessage());
             } catch (Exception ex) {
-                logMessage("模拟失败: " + ex.getMessage());
+                logMessage("Simulation failed: " + ex.getMessage());
             }
         }).start();
     }
@@ -466,24 +466,24 @@ public class SimulatorPanel extends JPanel {
         String badgeId = badgeIdField.getText().trim();
         
         if (readerId.isEmpty() || badgeId.isEmpty()) {
-            logMessage("错误: 请输入读卡器ID和徽章ID");
+            logMessage("Error: enter reader ID and badge ID");
             return;
         }
-        
+
         if (badgeReaderSimulator == null) {
-            logMessage("错误: 读卡器模拟器不可用");
+            logMessage("Error: badge reader simulator unavailable");
             return;
         }
         
         new Thread(() -> {
             try {
-                logMessage("开始模拟读卡: 读卡器=" + readerId + ", 徽章=" + badgeId);
+                logMessage("Starting read simulation: reader=" + readerId + ", badge=" + badgeId);
                 var code = badgeReaderSimulator.readBadgeCode(readerId, badgeId);
-                logMessage("读卡结果: 徽章代码=" + (code != null ? code : "读取失败"));
+                logMessage("Read result: badge code=" + (code != null ? code : "Read failed"));
             } catch (InterruptedException ex) {
-                logMessage("模拟被中断: " + ex.getMessage());
+                logMessage("Simulation interrupted: " + ex.getMessage());
             } catch (Exception ex) {
-                logMessage("模拟失败: " + ex.getMessage());
+                logMessage("Simulation failed: " + ex.getMessage());
             }
         }).start();
     }
@@ -492,26 +492,26 @@ public class SimulatorPanel extends JPanel {
         String readerId = readerIdField.getText().trim();
         
         if (readerId.isEmpty()) {
-            logMessage("错误: 请输入读卡器ID");
+            logMessage("Error: enter reader ID");
             return;
         }
-        
+
         if (badgeReaderSimulator == null) {
-            logMessage("错误: 读卡器模拟器不可用");
+            logMessage("Error: badge reader simulator unavailable");
             return;
         }
         
         try {
             String stats = badgeReaderSimulator.getSimulationStats(readerId);
-            logMessage("读卡器统计: " + stats);
+            logMessage("Reader stats: " + stats);
         } catch (Exception ex) {
-            logMessage("获取统计失败: " + ex.getMessage());
+            logMessage("Failed to get stats: " + ex.getMessage());
         }
     }
     
     private void startEventSimulation(int numEvents, int concurrency, double acceleration) {
         if (eventSimulator == null) {
-            logMessage("错误: 事件模拟器不可用");
+            logMessage("Error: event simulator unavailable");
             return;
         }
         
@@ -519,134 +519,134 @@ public class SimulatorPanel extends JPanel {
             try {
                 eventSimulator.setTimeAcceleration(acceleration);
                 eventSimulator.startSimulation(numEvents, concurrency);
-                logMessage("事件模拟已启动: 事件数=" + numEvents + ", 并发级别=" + concurrency + ", 时间加速=" + acceleration);
+                logMessage("Event simulation started: events=" + numEvents + ", concurrency=" + concurrency + ", acceleration=" + acceleration);
             } catch (Exception ex) {
-                logMessage("启动模拟失败: " + ex.getMessage());
+                logMessage("Failed to start simulation: " + ex.getMessage());
             }
         }).start();
     }
     
     private void stopEventSimulation() {
         if (eventSimulator == null) {
-            logMessage("错误: 事件模拟器不可用");
+            logMessage("Error: event simulator unavailable");
             return;
         }
         
         try {
             eventSimulator.stopSimulation();
-            logMessage("事件模拟已停止");
+            logMessage("Event simulation stopped");
         } catch (Exception ex) {
-            logMessage("停止模拟失败: " + ex.getMessage());
+            logMessage("Failed to stop simulation: " + ex.getMessage());
         }
     }
     
     private void resetEventSimulation() {
         if (eventSimulator == null) {
-            logMessage("错误: 事件模拟器不可用");
+            logMessage("Error: event simulator unavailable");
             return;
         }
         
         try {
             eventSimulator.resetSimulation();
-            logMessage("事件模拟已重置");
+            logMessage("Event simulation reset");
         } catch (Exception ex) {
-            logMessage("重置模拟失败: " + ex.getMessage());
+            logMessage("Failed to reset simulation: " + ex.getMessage());
         }
     }
     
     private void getPerformanceMetrics() {
         if (eventSimulator == null) {
-            logMessage("错误: 事件模拟器不可用");
+            logMessage("Error: event simulator unavailable");
             return;
         }
         
         try {
             Map<String, Object> metrics = eventSimulator.getPerformanceMetrics();
             StringBuilder sb = new StringBuilder();
-            sb.append("性能指标:\n");
+            sb.append("Performance Metrics:\n");
             for (Map.Entry<String, Object> entry : metrics.entrySet()) {
                 sb.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
             }
             logMessage(sb.toString());
         } catch (Exception ex) {
-            logMessage("获取指标失败: " + ex.getMessage());
+            logMessage("Failed to get metrics: " + ex.getMessage());
         }
     }
     
     private void markNodeAsFailed(String nodeId) {
         if (routerSystem == null) {
-            logMessage("错误: 路由系统不可用");
+            logMessage("Error: router system unavailable");
             return;
         }
         
         try {
             routerSystem.markNodeAsFailed(nodeId);
-            logMessage("节点标记为故障: " + nodeId);
+            logMessage("Node marked failed: " + nodeId);
             updateRouterInfo();
         } catch (Exception ex) {
-            logMessage("标记节点故障失败: " + ex.getMessage());
+            logMessage("Failed to mark node failed: " + ex.getMessage());
         }
     }
     
     private void recoverNode(String nodeId) {
         if (routerSystem == null) {
-            logMessage("错误: 路由系统不可用");
+            logMessage("Error: router system unavailable");
             return;
         }
         
         try {
             routerSystem.recoverNode(nodeId);
-            logMessage("节点已恢复: " + nodeId);
+            logMessage("Node recovered: " + nodeId);
             updateRouterInfo();
         } catch (Exception ex) {
-            logMessage("恢复节点失败: " + ex.getMessage());
+            logMessage("Failed to recover node: " + ex.getMessage());
         }
     }
     
     private void getLoadBalanceStats() {
         if (routerSystem == null) {
-            logMessage("错误: 路由系统不可用");
+            logMessage("Error: router system unavailable");
             return;
         }
         
         try {
                 LoadBalanceStats stats = routerSystem.getLoadBalanceStats();
                 StringBuilder sb = new StringBuilder();
-                sb.append("负载均衡统计:\n");
-                sb.append("  总请求数: ").append(stats.getTotalRequests()).append("\n");
-                sb.append("  失败请求: ").append(stats.getFailedRequests()).append("\n");
-                sb.append("  重路由请求: ").append(stats.getReroutedRequests()).append("\n");
-                sb.append("  失败率: ").append(String.format("%.2f%%", stats.getFailureRate() * 100)).append("\n");
-                sb.append("  请求分布: ").append(stats.getRequestsDistribution()).append("\n");
+                sb.append("Load Balance Stats:\n");
+                sb.append("  Total Requests: ").append(stats.getTotalRequests()).append("\n");
+                sb.append("  Failed Requests: ").append(stats.getFailedRequests()).append("\n");
+                sb.append("  Rerouted Requests: ").append(stats.getReroutedRequests()).append("\n");
+                sb.append("  Failure Rate: ").append(String.format("%.2f%%", stats.getFailureRate() * 100)).append("\n");
+                sb.append("  Request Distribution: ").append(stats.getRequestsDistribution()).append("\n");
             logMessage(sb.toString());
         } catch (Exception ex) {
-            logMessage("获取负载统计失败: " + ex.getMessage());
+                logMessage("Failed to get load stats: " + ex.getMessage());
         }
     }
     
     private void setLoadBalanceStrategy(String strategy) {
         if (routerSystem == null) {
-            logMessage("错误: 路由系统不可用");
+            logMessage("Error: router system unavailable");
             return;
         }
         
         try {
             routerSystem.setLoadBalanceStrategy(strategy);
-            logMessage("负载均衡策略已设置为: " + strategy);
+            logMessage("Load balance strategy set to: " + strategy);
         } catch (Exception ex) {
-            logMessage("设置策略失败: " + ex.getMessage());
+            logMessage("Failed to set strategy: " + ex.getMessage());
         }
     }
     
     private void updateRouterInfo() {
-        // 这个方法需要访问routerSystem来获取信息
-        // 由于routerInfoArea不在当前作用域，我们暂时用logMessage代替
+        // This method needs routerSystem to read the current nodes.
+        // routerInfoArea is not in scope here, so we log the info instead.
         if (routerSystem != null) {
             try {
                 var nodes = routerSystem.getAvailableNodes();
-                logMessage("可用节点: " + String.join(", ", nodes));
+                logMessage("Available nodes: " + String.join(", ", nodes));
             } catch (Exception ex) {
-                logMessage("获取节点信息失败: " + ex.getMessage());
+                logMessage("Failed to get node info: " + ex.getMessage());
             }
         }
     }
@@ -655,29 +655,29 @@ public class SimulatorPanel extends JPanel {
         if (routerSystem != null) {
             try {
                 SystemHealth health = routerSystem.getSystemHealth();
-                systemHealthLabel.setText(health.toString() + " - 故障率: " + String.format("%.1f%%", routerSystem.getLoadBalanceStats().getFailureRate() * 100));
+                systemHealthLabel.setText(health.toString() + " - Failure Rate: " + String.format("%.1f%%", routerSystem.getLoadBalanceStats().getFailureRate() * 100));
                 
                 LoadBalanceStats stats = routerSystem.getLoadBalanceStats();
-                loadBalanceLabel.setText("总请求: " + stats.getTotalRequests() + ", 失败: " + stats.getFailedRequests());
+                loadBalanceLabel.setText("Total: " + stats.getTotalRequests() + ", Failed: " + stats.getFailedRequests());
                 
                 var nodes = routerSystem.getAvailableNodes();
-                // 更新节点数标签
+                // Update node count label
                 Component[] components = ((Container) tabbedPane.getComponentAt(3)).getComponents();
                 for (Component comp : components) {
                     if (comp instanceof JPanel) {
                         Component[] subComps = ((Container) comp).getComponents();
                         for (Component subComp : subComps) {
-                            if (subComp instanceof JLabel && ((JLabel) subComp).getText().startsWith("可用节点数:")) {
-                                // 找到相邻的标签
+                            if (subComp instanceof JLabel && ((JLabel) subComp).getText().startsWith("Available Nodes:")) {
+                                // Find the adjacent label
                                 continue;
                             }
                         }
                     }
                 }
                 
-                logMessage("系统监控数据已刷新");
+                logMessage("Monitor data refreshed");
             } catch (Exception ex) {
-                logMessage("刷新监控数据失败: " + ex.getMessage());
+                logMessage("Failed to refresh monitor data: " + ex.getMessage());
             }
         }
     }
@@ -708,10 +708,10 @@ public class SimulatorPanel extends JPanel {
             try {
                 SimulationStatus status = eventSimulator.getSimulationStatus();
                 SwingUtilities.invokeLater(() -> {
-                    simulationStatusLabel.setText("状态: " + status.toString());
+                    simulationStatusLabel.setText("Status: " + status.toString());
                 });
             } catch (Exception ex) {
-                // 忽略状态更新错误
+                // Ignore status update errors.
             }
         }
     }
@@ -719,7 +719,7 @@ public class SimulatorPanel extends JPanel {
     private void setSimulatedTime() {
         String timeText = absoluteTimeField.getText().trim();
         if (timeText.isEmpty()) {
-            logMessage("错误: 请输入时间 (格式: yyyy-MM-dd HH:mm)");
+            logMessage("Error: enter time (format: yyyy-MM-dd HH:mm)");
             return;
         }
         
@@ -727,48 +727,48 @@ public class SimulatorPanel extends JPanel {
             java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(timeText, 
                 java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
             clockService.setSimulatedTime(dateTime);
-            logMessage("模拟时间已设置为: " + dateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            logMessage("Simulated time set to: " + dateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             updateCurrentTimeLabel();
         } catch (java.time.format.DateTimeParseException e) {
-            logMessage("错误: 时间格式不正确，请使用 yyyy-MM-dd HH:mm 格式");
+            logMessage("Error: invalid time format, use yyyy-MM-dd HH:mm");
         }
     }
     
     private void resetSimulatedTime() {
         clockService.resetToRealTime();
         absoluteTimeField.setText(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
-        logMessage("已重置为真实系统时间");
+        logMessage("Reset to real system time");
         updateCurrentTimeLabel();
     }
     
     private void updateCurrentTimeLabel() {
         if (currentTimeLabel != null) {
             SwingUtilities.invokeLater(() -> {
-                currentTimeLabel.setText("当前时间: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                currentTimeLabel.setText("Current Time: " + clockService.localNow().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             });
         }
     }
     
     /**
-     * 创建执行链追踪面板
+     * Create the execution chain panel.
      */
     private JPanel createExecutionChainPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         
-        // 控制面板
+        // Control panel
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton clearButton = new JButton("清除执行链");
+        JButton clearButton = new JButton("Clear Chains");
         clearButton.addActionListener(e -> clearExecutionChains());
         controlPanel.add(clearButton);
         
-        JButton refreshButton = new JButton("刷新");
+        JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> refreshExecutionChains());
         controlPanel.add(refreshButton);
         
         panel.add(controlPanel, BorderLayout.NORTH);
         
-        // 执行链表格
-        String[] columns = {"时间", "步骤", "读卡器", "徽章", "资源", "节点", "详细信息"};
+        // Execution chain table
+        String[] columns = {"Time", "Step", "Reader", "Badge", "Resource", "Node", "Details"};
         executionChainTableModel = new DefaultTableModel(columns, 0);
         executionChainTable = new JTable(executionChainTableModel);
         executionChainTable.setAutoCreateRowSorter(true);
@@ -776,35 +776,35 @@ public class SimulatorPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(executionChainTable);
         panel.add(scrollPane, BorderLayout.CENTER);
         
-        // 执行链文本区域（详细视图）
+        // Execution chain detail area
         executionChainArea = new JTextArea(10, 60);
         executionChainArea.setEditable(false);
-        executionChainArea.setFont(new Font("宋体", Font.PLAIN, 12));
+        executionChainArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         JPanel areaPanel = new JPanel(new BorderLayout());
-        areaPanel.add(new JLabel("执行链详细信息:"), BorderLayout.NORTH);
+        areaPanel.add(new JLabel("Execution Chain Details:"), BorderLayout.NORTH);
         areaPanel.add(new JScrollPane(executionChainArea), BorderLayout.CENTER);
         panel.add(areaPanel, BorderLayout.SOUTH);
         
-        // 注册执行链监听器
+        // Register execution chain listener
         ExecutionChainTracker.getInstance().addListener(new ExecutionChainListenerImpl());
         
         return panel;
     }
     
     /**
-     * 清除执行链显示
+     * Clear execution chain display.
      */
     private void clearExecutionChains() {
         SwingUtilities.invokeLater(() -> {
             executionChainTableModel.setRowCount(0);
             executionChainArea.setText("");
             ExecutionChainTracker.getInstance().clearAllChains();
-            logMessage("执行链已清除");
+            logMessage("Execution chains cleared");
         });
     }
     
     /**
-     * 刷新执行链显示
+     * Refresh execution chain display.
      */
     private void refreshExecutionChains() {
         SwingUtilities.invokeLater(() -> {
@@ -820,12 +820,12 @@ public class SimulatorPanel extends JPanel {
                 }
             }
             
-            logMessage("执行链已刷新，共 " + chains.size() + " 条执行链");
+            logMessage("Execution chains refreshed: " + chains.size());
         });
     }
     
     /**
-     * 添加执行链步骤到表格
+     * Add chain step to the table.
      */
     private void addExecutionChainStepToTable(ExecutionChainTracker.ChainStep step) {
         SwingUtilities.invokeLater(() -> {
@@ -839,7 +839,7 @@ public class SimulatorPanel extends JPanel {
                 step.getAdditionalInfo() != null ? step.getAdditionalInfo() : ""
             });
             
-            // 自动滚动到最后一行
+            // Auto-scroll to the last row.
             executionChainTable.scrollRectToVisible(
                 executionChainTable.getCellRect(executionChainTableModel.getRowCount()-1, 0, true)
             );
@@ -847,16 +847,16 @@ public class SimulatorPanel extends JPanel {
     }
     
     /**
-     * 更新执行链文本区域
+     * Update execution chain text area.
      */
     private void updateExecutionChainArea(ExecutionChainTracker.ExecutionChain chain) {
         SwingUtilities.invokeLater(() -> {
             StringBuilder sb = new StringBuilder();
-            sb.append("执行链: ").append(chain.getChainId()).append("\n");
-            sb.append("事件ID: ").append(chain.getEventId()).append("\n");
-            sb.append("状态: ").append(chain.isCompleted() ? "完成" : "进行中").append("\n");
-            sb.append("步骤数: ").append(chain.getSteps().size()).append("\n");
-            sb.append("步骤详情:\n");
+            sb.append("Chain: ").append(chain.getChainId()).append("\n");
+            sb.append("Event ID: ").append(chain.getEventId()).append("\n");
+            sb.append("Status: ").append(chain.isCompleted() ? "Completed" : "In Progress").append("\n");
+            sb.append("Steps: ").append(chain.getSteps().size()).append("\n");
+            sb.append("Step Details:\n");
             
             for (ExecutionChainTracker.ChainStep step : chain.getSteps()) {
                 sb.append("  ").append(step.toString()).append("\n");
@@ -867,12 +867,12 @@ public class SimulatorPanel extends JPanel {
     }
     
     /**
-     * 执行链监听器实现
+     * Execution chain listener.
      */
     private class ExecutionChainListenerImpl implements ExecutionChainTracker.ExecutionChainListener {
         @Override
         public void onChainStarted(ExecutionChainTracker.ExecutionChain chain) {
-            logMessage("执行链开始: " + chain.getChainId() + " (事件: " + chain.getEventId() + ")");
+            logMessage("Chain started: " + chain.getChainId() + " (Event: " + chain.getEventId() + ")");
             updateExecutionChainArea(chain);
         }
         
@@ -885,7 +885,7 @@ public class SimulatorPanel extends JPanel {
         
         @Override
         public void onChainCompleted(ExecutionChainTracker.ExecutionChain chain) {
-            logMessage("执行链完成: " + chain.getChainId() + " (事件: " + chain.getEventId() + ")");
+            logMessage("Chain completed: " + chain.getChainId() + " (Event: " + chain.getEventId() + ")");
             updateExecutionChainArea(chain);
         }
     }
@@ -900,7 +900,7 @@ public class SimulatorPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        topPanel.add(new JLabel("启用:"), gbc);
+        topPanel.add(new JLabel("Enabled:"), gbc);
         gbc.gridx = 1;
         scenarioEnabledCheck = new JCheckBox();
         scenarioEnabledCheck.setSelected(true);
@@ -908,7 +908,7 @@ public class SimulatorPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        topPanel.add(new JLabel("步骤延迟(ms):"), gbc);
+        topPanel.add(new JLabel("Step Delay (ms):"), gbc);
         gbc.gridx = 1;
         scenarioStepDelayField = new JTextField(10);
         topPanel.add(scenarioStepDelayField, gbc);
@@ -919,15 +919,15 @@ public class SimulatorPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout());
 
-        JButton loadButton = new JButton("加载");
+        JButton loadButton = new JButton("Load");
         loadButton.addActionListener(e -> loadScenarioConfig());
         buttonPanel.add(loadButton);
 
-        JButton saveButton = new JButton("保存");
+        JButton saveButton = new JButton("Save");
         saveButton.addActionListener(e -> saveScenarioConfig());
         buttonPanel.add(saveButton);
 
-        JButton validateButton = new JButton("校验");
+        JButton validateButton = new JButton("Validate");
         validateButton.addActionListener(e -> validateScenarioConfig());
         buttonPanel.add(validateButton);
 
@@ -935,7 +935,7 @@ public class SimulatorPanel extends JPanel {
 
         panel.add(topPanel, BorderLayout.NORTH);
 
-        String[] columns = {"路径名", "资源ID列表(逗号分隔)"};
+        String[] columns = {"Path Name", "Resource IDs (comma-separated)"};
         scenarioTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -947,18 +947,18 @@ public class SimulatorPanel extends JPanel {
         panel.add(new JScrollPane(scenarioTable), BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bottomPanel.add(new JLabel("路径名:"));
+        bottomPanel.add(new JLabel("Path Name:"));
         scenarioNameField = new JTextField(12);
         bottomPanel.add(scenarioNameField);
-        bottomPanel.add(new JLabel("资源ID列表:"));
+        bottomPanel.add(new JLabel("Resource IDs:"));
         scenarioResourcesField = new JTextField(30);
         bottomPanel.add(scenarioResourcesField);
 
-        JButton addPathButton = new JButton("添加路径");
+        JButton addPathButton = new JButton("Add Path");
         addPathButton.addActionListener(e -> addScenarioPath());
         bottomPanel.add(addPathButton);
 
-        JButton removePathButton = new JButton("移除路径");
+        JButton removePathButton = new JButton("Remove Path");
         removePathButton.addActionListener(e -> removeScenarioPath());
         bottomPanel.add(removePathButton);
 
@@ -972,7 +972,7 @@ public class SimulatorPanel extends JPanel {
         String name = scenarioNameField.getText().trim();
         String resources = scenarioResourcesField.getText().trim();
         if (name.isEmpty() || resources.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "请输入路径名和资源ID列表");
+            JOptionPane.showMessageDialog(this, "Enter path name and resource IDs");
             return;
         }
         scenarioTableModel.addRow(new Object[]{name, resources});
@@ -983,7 +983,7 @@ public class SimulatorPanel extends JPanel {
     private void removeScenarioPath() {
         int row = scenarioTable.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "请选择要移除的行。");
+            JOptionPane.showMessageDialog(this, "Select a row to remove.");
             return;
         }
         int modelRow = scenarioTable.convertRowIndexToModel(row);
@@ -993,7 +993,7 @@ public class SimulatorPanel extends JPanel {
     private void loadScenarioConfig() {
         SimulationScenarioConfig config = readScenarioConfig();
         if (config == null) {
-            JOptionPane.showMessageDialog(this, "未找到场景配置。");
+            JOptionPane.showMessageDialog(this, "Scenario config not found.");
             return;
         }
         scenarioEnabledCheck.setSelected(config.isEnabled());
@@ -1041,9 +1041,9 @@ public class SimulatorPanel extends JPanel {
             config.setPaths(paths);
 
             writeScenarioConfig(config);
-            JOptionPane.showMessageDialog(this, "保存成功。");
+            JOptionPane.showMessageDialog(this, "Saved successfully.");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "保存失败: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Save failed: " + ex.getMessage());
         }
     }
 
@@ -1051,12 +1051,12 @@ public class SimulatorPanel extends JPanel {
         try {
             SimulationScenarioConfig config = buildScenarioConfigFromUI();
             if (config.getPaths() == null || config.getPaths().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "未配置任何路径。");
+                JOptionPane.showMessageDialog(this, "No paths configured.");
                 return;
             }
-            JOptionPane.showMessageDialog(this, "校验通过。");
+            JOptionPane.showMessageDialog(this, "Validation passed.");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "校验失败: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Validation failed: " + ex.getMessage());
         }
     }
 

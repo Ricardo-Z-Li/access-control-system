@@ -76,7 +76,7 @@ public class AccessControlServiceImpl implements AccessControlService {
         if (request.getBadgeId() == null || request.getBadgeId().trim().isEmpty() ||
                 request.getResourceId() == null || request.getResourceId().trim().isEmpty() ||
                 request.getTimestamp() == null) {
-            AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.INVALID_REQUEST, "无效的访问请求参数");
+            AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.INVALID_REQUEST, "Invalid access request parameters");
             recordLog(null, null, null, result, request);
             return result;
         }
@@ -85,14 +85,14 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 2. 验证徽章存在性 - 从缓存获取
             Badge badge = cacheManager.getBadge(request.getBadgeId());
             if (badge == null) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_NOT_FOUND, "徽章不存在");
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_NOT_FOUND, "Badge not found");
                 recordLog(null, null, null, result, request);
                 return result;
             }
 
             // 3. 验证徽章状态
             if (badge.getStatus() != BadgeStatus.ACTIVE) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_INACTIVE, "徽章不可用（已禁用或挂失）");
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_INACTIVE, "Badge is inactive (disabled or reported lost)");
                 recordLog(badge, null, null, result, request);
                 return result;
             }
@@ -127,7 +127,7 @@ public class AccessControlServiceImpl implements AccessControlService {
             Employee employee = badge.getEmployee() != null ? 
                 cacheManager.getEmployee(badge.getEmployee().getEmployeeId()) : null;
             if (employee == null) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.EMPLOYEE_NOT_FOUND, "徽章未绑定有效员工");
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.EMPLOYEE_NOT_FOUND, "Badge not linked to a valid employee");
                 recordLog(badge, null, null, result, request);
                 return result;
             }
@@ -135,7 +135,7 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 5. 验证资源存在性 - 从缓存获取
             Resource resource = cacheManager.getResource(request.getResourceId());
             if (resource == null) {
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_NOT_FOUND, "访问的资源不存在");
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_NOT_FOUND, "Resource not found");
                 recordLog(badge, employee, null, result, request);
                 return result;
             }
@@ -143,7 +143,7 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 6. 验证权限（员工所属组是否有权限访问该资源）- 仅当资源受控时检查
             if (resource.getIsControlled() != null && resource.getIsControlled()) {
                 if (employee.getGroups() == null || employee.getGroups().isEmpty()) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "员工未分配任何权限组");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Employee has no assigned groups");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
@@ -153,7 +153,7 @@ public class AccessControlServiceImpl implements AccessControlService {
                         .anyMatch(r -> r.getResourceId().equals(resource.getResourceId()));
 
                 if (!hasPermission) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "没有访问该资源的权限");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "No permission to access this resource");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
@@ -162,17 +162,17 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 7. 验证资源状态（仅当资源受控时检查）
             if (resource.getIsControlled() != null && resource.getIsControlled()) {
                 if (resource.getResourceState() == ResourceState.LOCKED) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "资源已被锁定");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "Resource is locked");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
                 if (resource.getResourceState() == ResourceState.OCCUPIED) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_OCCUPIED, "资源当前被占用");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_OCCUPIED, "Resource is occupied");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
                 if (resource.getResourceState() == ResourceState.OFFLINE || resource.getResourceState() == ResourceState.PENDING) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "资源当前不可用");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.RESOURCE_LOCKED, "Resource is unavailable");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
@@ -190,7 +190,7 @@ public class AccessControlServiceImpl implements AccessControlService {
                     if (timeFilters != null && !timeFilters.isEmpty()) {
                         LocalDateTime accessTime = LocalDateTime.ofInstant(request.getTimestamp(), ZoneId.systemDefault());
                         if (!timeFilterService.matchesAny(new ArrayList<>(timeFilters), accessTime)) {
-                            AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "当前时间不允许访问");
+                            AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Access not allowed at this time");
                             recordLog(badge, employee, resource, result, request);
                             return result;
                         }
@@ -203,12 +203,12 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 9. 访问次数限制检查（仅当资源受控时检查）
             if (resource.getIsControlled() != null && resource.getIsControlled()) {
                 if (!accessLimitService.checkAllLimits(employee, request.getTimestamp())) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "超过每日/每周访问限制");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Daily/weekly access limit exceeded");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
                 if (!accessLimitService.checkResourceLimits(employee, resource, request.getTimestamp())) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "超过资源访问次数限制");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Resource access count limit exceeded");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
@@ -218,21 +218,21 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 10. 优先级规则检查（资源依赖关系）- 仅当资源受控时检查
             if (resource.getIsControlled() != null && resource.getIsControlled()) {
                 if (!checkPriorityRules(employee, resource, request.getTimestamp())) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "未满足先决访问条件");
+                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Prerequisite access not satisfied");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
             }
 
             // 11. 所有验证通过，允许访问
-            AccessResult result = new AccessResult(AccessDecision.ALLOW, ReasonCode.ALLOW, "允许访问");
+            AccessResult result = new AccessResult(AccessDecision.ALLOW, ReasonCode.ALLOW, "Access allowed");
             recordLog(badge, employee, resource, result, request);
             return result;
 
         } catch (Exception e) {
             // 处理系统异常
             e.printStackTrace();
-            AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.SYSTEM_ERROR, "系统内部错误");
+            AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.SYSTEM_ERROR, "Internal system error");
             recordLog(null, null, null, result, request);
             return result;
         }

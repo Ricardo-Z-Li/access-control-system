@@ -16,178 +16,151 @@ public class EmergencyControlPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-
-        JLabel titleLabel = new JLabel("应急控制 - 一键解锁", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        titleLabel.setForeground(Color.RED);
-        add(titleLabel, BorderLayout.NORTH);
+        add(UiTheme.createHeader("Emergency Control", "Unlock all or restore controlled state"), BorderLayout.NORTH);
 
         JPanel controlPanel = createControlPanel();
         add(controlPanel, BorderLayout.CENTER);
 
         logArea = new JTextArea(10, 60);
         logArea.setEditable(false);
-        logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         JScrollPane scrollPane = new JScrollPane(logArea);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("操作日志"));
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Activity Log"));
         add(scrollPane, BorderLayout.SOUTH);
     }
 
     private JPanel createControlPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        JButton emergencyButton = new JButton("一键解除门禁控制");
-        emergencyButton.setFont(new Font("SansSerif", Font.BOLD, 14));
-        emergencyButton.setBackground(Color.RED);
+        JButton emergencyButton = UiTheme.primaryButton("Unlock All Doors");
+        emergencyButton.setBackground(new Color(220, 38, 38));
         emergencyButton.setForeground(Color.WHITE);
-        emergencyButton.setToolTipText("将所有门禁设置为不受控状态");
+        emergencyButton.setToolTipText("Set all doors to uncontrolled");
         emergencyButton.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
-                "确认执行应急解锁操作？\n该操作会将所有门禁设置为不受控状态。\n是否继续？",
-                "确认应急解锁",
+                "Confirm emergency unlock?\nAll doors will be set to uncontrolled.\nContinue?",
+                "Confirm Emergency Unlock",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     emergencyControlService.setAllDoorsUncontrolled();
-                    log("已执行应急解锁");
-                    JOptionPane.showMessageDialog(this, "应急操作已执行，所有门禁已设置为不受控。", "提示", JOptionPane.INFORMATION_MESSAGE);
+                    log("Emergency unlock executed");
+                    JOptionPane.showMessageDialog(this, "Emergency action completed. All doors set to uncontrolled.", "Info", JOptionPane.INFORMATION_MESSAGE);
                 } catch (Exception ex) {
-                    log("应急操作失败: " + ex.getMessage());
-                    JOptionPane.showMessageDialog(this, "应急操作失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                    log("Emergency action failed: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(this, "Emergency action failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
-        panel.add(emergencyButton, gbc);
 
-        gbc.gridy++;
-        panel.add(new JSeparator(), gbc);
+        JPanel emergencyCard = UiTheme.cardPanel();
+        emergencyCard.add(emergencyButton, BorderLayout.CENTER);
 
-        gbc.gridwidth = 1;
-        gbc.gridy++;
-        gbc.gridx = 0;
-        panel.add(new JLabel("资源类型:"), gbc);
+        JPanel typePanel = UiTheme.cardPanel();
+        typePanel.add(new JLabel("Control by Resource Type"), BorderLayout.NORTH);
 
-        gbc.gridx = 1;
+        JPanel typeControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         JComboBox<ResourceType> typeCombo = new JComboBox<>(ResourceType.values());
         typeCombo.removeItem(ResourceType.PENDING);
-        panel.add(typeCombo, gbc);
-
-        gbc.gridy++;
-        gbc.gridx = 0;
-        JButton setUncontrolledButton = new JButton("设为不受控");
+        JButton setUncontrolledButton = UiTheme.secondaryButton("Set Uncontrolled");
         setUncontrolledButton.addActionListener(e -> {
             ResourceType selectedType = (ResourceType) typeCombo.getSelectedItem();
             try {
                 emergencyControlService.setResourcesControlledByType(selectedType, false);
-                log("已将类型 " + selectedType + " 设置为不受控");
+                log("Set type " + selectedType + " to uncontrolled");
             } catch (Exception ex) {
-                log("操作失败: " + ex.getMessage());
-                JOptionPane.showMessageDialog(this, "操作失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                log("Action failed: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Action failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-        panel.add(setUncontrolledButton, gbc);
-
-        gbc.gridx = 1;
-        JButton setControlledButton = new JButton("设为受控");
+        JButton setControlledButton = UiTheme.secondaryButton("Set Controlled");
         setControlledButton.addActionListener(e -> {
             ResourceType selectedType = (ResourceType) typeCombo.getSelectedItem();
             try {
                 emergencyControlService.setResourcesControlledByType(selectedType, true);
-                log("已将类型 " + selectedType + " 设置为受控");
+                log("Set type " + selectedType + " to controlled");
             } catch (Exception ex) {
-                log("操作失败: " + ex.getMessage());
-                JOptionPane.showMessageDialog(this, "操作失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                log("Action failed: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Action failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-        panel.add(setControlledButton, gbc);
+        typeControls.add(new JLabel("Resource Type:"));
+        typeControls.add(typeCombo);
+        typeControls.add(setUncontrolledButton);
+        typeControls.add(setControlledButton);
+        typePanel.add(typeControls, BorderLayout.CENTER);
 
-        gbc.gridy++;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        panel.add(new JSeparator(), gbc);
-
-        gbc.gridwidth = 1;
-        gbc.gridy++;
-        gbc.gridx = 0;
-        panel.add(new JLabel("群组ID:"), gbc);
-
-        gbc.gridx = 1;
+        JPanel groupPanel = UiTheme.cardPanel();
+        groupPanel.add(new JLabel("Control by Group"), BorderLayout.NORTH);
         JTextField groupIdField = new JTextField(15);
-        panel.add(groupIdField, gbc);
-
-        gbc.gridy++;
-        gbc.gridx = 0;
-        JButton setGroupUncontrolledButton = new JButton("群组设为不受控");
+        JButton setGroupUncontrolledButton = UiTheme.secondaryButton("Set Group Uncontrolled");
         setGroupUncontrolledButton.addActionListener(e -> {
             String groupId = groupIdField.getText().trim();
             if (groupId.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "请输入群组ID", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Enter group ID", "Info", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             try {
                 emergencyControlService.setGroupResourcesControlled(groupId, false);
-                log("已将群组 " + groupId + " 设置为不受控");
+                log("Set group " + groupId + " to uncontrolled");
             } catch (Exception ex) {
-                log("操作失败: " + ex.getMessage());
-                JOptionPane.showMessageDialog(this, "操作失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                log("Action failed: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Action failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-        panel.add(setGroupUncontrolledButton, gbc);
-
-        gbc.gridx = 1;
-        JButton setGroupControlledButton = new JButton("群组设为受控");
+        JButton setGroupControlledButton = UiTheme.secondaryButton("Set Group Controlled");
         setGroupControlledButton.addActionListener(e -> {
             String groupId = groupIdField.getText().trim();
             if (groupId.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "请输入群组ID", "提示", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Enter group ID", "Info", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             try {
                 emergencyControlService.setGroupResourcesControlled(groupId, true);
-                log("已将群组 " + groupId + " 设置为受控");
+                log("Set group " + groupId + " to controlled");
             } catch (Exception ex) {
-                log("操作失败: " + ex.getMessage());
-                JOptionPane.showMessageDialog(this, "操作失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                log("Action failed: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Action failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-        panel.add(setGroupControlledButton, gbc);
 
-        gbc.gridy++;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        panel.add(new JSeparator(), gbc);
+        JPanel groupControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        groupControls.add(new JLabel("Group ID:"));
+        groupControls.add(groupIdField);
+        groupControls.add(setGroupUncontrolledButton);
+        groupControls.add(setGroupControlledButton);
+        groupPanel.add(groupControls, BorderLayout.CENTER);
 
-        gbc.gridy++;
-        gbc.gridwidth = 2;
-        JButton restoreButton = new JButton("恢复全部为受控");
-        restoreButton.setFont(new Font("SansSerif", Font.BOLD, 14));
-        restoreButton.setBackground(Color.GREEN);
+        JButton restoreButton = UiTheme.primaryButton("Restore All to Controlled");
+        restoreButton.setBackground(new Color(34, 197, 94));
         restoreButton.setForeground(Color.BLACK);
         restoreButton.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
-                "确认恢复全部门禁为受控？",
-                "确认",
+                "Restore all doors to controlled?",
+                "Confirm",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     emergencyControlService.restoreAllToControlled();
-                    log("已恢复全部门禁为受控");
-                    JOptionPane.showMessageDialog(this, "恢复完成", "提示", JOptionPane.INFORMATION_MESSAGE);
+                    log("Restored all doors to controlled");
+                    JOptionPane.showMessageDialog(this, "Restore completed", "Info", JOptionPane.INFORMATION_MESSAGE);
                 } catch (Exception ex) {
-                    log("操作失败: " + ex.getMessage());
-                    JOptionPane.showMessageDialog(this, "操作失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                    log("Action failed: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(this, "Action failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
-        panel.add(restoreButton, gbc);
+
+        panel.add(UiTheme.wrapContent(emergencyCard));
+        panel.add(Box.createVerticalStrut(12));
+        panel.add(UiTheme.wrapContent(typePanel));
+        panel.add(Box.createVerticalStrut(12));
+        panel.add(UiTheme.wrapContent(groupPanel));
+        panel.add(Box.createVerticalStrut(12));
+        panel.add(UiTheme.wrapContent(restoreButton));
 
         return panel;
     }

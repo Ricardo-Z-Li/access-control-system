@@ -15,18 +15,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ExecutionChainTracker {
     
     public enum StepType {
-        BADGE_READ_START("读卡器开始读取徽章"),
-        BADGE_READ_COMPLETE("读卡器读取徽章完成"),
-        REQUEST_TO_ROUTER("请求发送到路由系统"),
-        ROUTER_SELECT_NODE("路由系统选择节点"),
-        ROUTER_FORWARD_REQUEST("路由转发请求到访问控制系统"),
-        ACCESS_CONTROL_PROCESSING("访问控制系统处理请求"),
-        ACCESS_CONTROL_DECISION("访问控制系统做出决策"),
-        ROUTER_RETURN_RESPONSE("路由系统返回响应"),
-        READER_RECEIVE_RESPONSE("读卡器接收响应"),
-        RESOURCE_CONTROL_START("资源控制开始执行"),
-        RESOURCE_CONTROL_COMPLETE("资源控制执行完成"),
-        CHAIN_COMPLETE("执行链完成");
+        BADGE_READ_START("Reader starts reading badge"),
+        BADGE_READ_COMPLETE("Reader finished reading badge"),
+        REQUEST_TO_ROUTER("Request sent to router"),
+        ROUTER_SELECT_NODE("Router selected node"),
+        ROUTER_FORWARD_REQUEST("Router forwarded request to access control"),
+        ACCESS_CONTROL_PROCESSING("Access control processing"),
+        ACCESS_CONTROL_DECISION("Access control decision"),
+        ROUTER_RETURN_RESPONSE("Router returned response"),
+        READER_RECEIVE_RESPONSE("Reader received response"),
+        RESOURCE_CONTROL_START("Resource control started"),
+        RESOURCE_CONTROL_COMPLETE("Resource control completed"),
+        CHAIN_COMPLETE("Chain completed");
         
         private final String description;
         
@@ -105,7 +105,7 @@ public class ExecutionChainTracker {
         
         @Override
         public String toString() {
-            return String.format("[%s] %s | 读卡器: %s | 徽章: %s | 资源: %s | 节点: %s | %s",
+            return String.format("[%s] %s | Reader: %s | Badge: %s | Resource: %s | Node: %s | %s",
                     getFormattedTimestamp(),
                     stepType.getDescription(),
                     readerId != null ? readerId : "N/A",
@@ -158,9 +158,9 @@ public class ExecutionChainTracker {
             ChainStep firstStep = steps.isEmpty() ? null : steps.get(0);
             ChainStep lastStep = steps.isEmpty() ? null : steps.get(steps.size() - 1);
             
-            return String.format("执行链 %s (事件: %s) - 步骤数: %d, 状态: %s, 开始: %s, 结束: %s",
+            return String.format("Chain %s (Event: %s) - Steps: %d, Status: %s, Start: %s, End: %s",
                     chainId, eventId, steps.size(),
-                    completed ? "完成" : "进行中",
+                    completed ? "Completed" : "In Progress",
                     firstStep != null ? firstStep.getFormattedTimestamp() : "N/A",
                     lastStep != null ? lastStep.getFormattedTimestamp() : "N/A");
         }
@@ -189,7 +189,7 @@ public class ExecutionChainTracker {
         ExecutionChain chain = new ExecutionChain(chainId, eventId);
         
         ChainStep firstStep = new ChainStep(StepType.BADGE_READ_START, eventId, 
-                readerId, badgeId, null, null, "开始执行链");
+                readerId, badgeId, null, null, "Chain started");
         chain.addStep(firstStep);
         
         chains.add(chain);

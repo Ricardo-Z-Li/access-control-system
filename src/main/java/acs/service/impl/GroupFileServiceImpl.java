@@ -69,7 +69,7 @@ public class GroupFileServiceImpl implements GroupFileService {
                 }
                 String[] parts = line.split(":");
                 if (parts.length < 3) {
-                    throw new IllegalArgumentException("无效的行格式: " + line);
+                    throw new IllegalArgumentException("Invalid line format: " + line);
                 }
                 String groupId = parts[0].trim();
                 String groupName = parts[1].trim();
@@ -81,7 +81,7 @@ public class GroupFileServiceImpl implements GroupFileService {
                 mapping.put(groupId, resourceIds);
             }
         } catch (IOException e) {
-            throw new RuntimeException("读取组文件失败: " + filePath, e);
+            throw new RuntimeException("Failed to read group file: " + filePath, e);
         }
         return mapping;
     }

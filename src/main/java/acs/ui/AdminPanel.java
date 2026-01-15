@@ -24,77 +24,60 @@ public class AdminPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-
-        JLabel titleLabel = new JLabel("管理员控制台", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        add(titleLabel, BorderLayout.NORTH);
+        add(UiTheme.createHeader("Admin Panel", "People, badges, resources, and permissions"), BorderLayout.NORTH);
 
         tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("员工", createEmployeePanel());
-        tabbedPane.addTab("徽章", createBadgePanel());
-        tabbedPane.addTab("资源", createResourcePanel());
-        tabbedPane.addTab("群组", createGroupPanel());
-        tabbedPane.addTab("权限", createPermissionPanel());
-        tabbedPane.addTab("Profile", createProfilePanel());
-        tabbedPane.addTab("Profile绑定", createProfileBindingPanel());
+        tabbedPane.addTab("Employees", createEmployeePanel());
+        tabbedPane.addTab("Badges", createBadgePanel());
+        tabbedPane.addTab("Resources", createResourcePanel());
+        tabbedPane.addTab("Groups", createGroupPanel());
+        tabbedPane.addTab("Permissions", createPermissionPanel());
+        tabbedPane.addTab("Profile Files", createProfilePanel());
+        tabbedPane.addTab("Profile Binding", createProfileBindingPanel());
         add(tabbedPane, BorderLayout.CENTER);
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusPanel.add(new JLabel("AdminService: " + (adminService != null ? "正常" : "不可用")));
-        statusPanel.add(new JLabel("ProfileFileService: " + (profileFileService != null ? "正常" : "不可用")));
+        statusPanel.add(new JLabel("AdminService: " + (adminService != null ? "Available" : "Unavailable")));
+        statusPanel.add(new JLabel("ProfileFileService: " + (profileFileService != null ? "Available" : "Unavailable")));
         add(statusPanel, BorderLayout.SOUTH);
     }
 
     private JPanel createEmployeePanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("员工ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField empIdField = new JTextField(20);
-        inputPanel.add(empIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("姓名:"), gbc);
-
-        gbc.gridx = 1;
         JTextField nameField = new JTextField(20);
-        inputPanel.add(nameField, gbc);
+        inputPanel.add(UiTheme.formRow("Employee ID", empIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Name", nameField));
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JButton registerButton = new JButton("注册员工");
+        JButton registerButton = UiTheme.primaryButton("Register Employee");
         registerButton.addActionListener(e -> {
             String empId = empIdField.getText().trim();
             String name = nameField.getText().trim();
             if (empId.isEmpty() || name.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入员工ID和姓名");
+                JOptionPane.showMessageDialog(panel, "Enter employee ID and name");
                 return;
             }
             try {
                 adminService.registerEmployee(empId, name);
-                JOptionPane.showMessageDialog(panel, "员工已注册: " + empId);
+                JOptionPane.showMessageDialog(panel, "Employee registered: " + empId);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "注册失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Register failed: " + ex.getMessage());
             }
         });
-        inputPanel.add(registerButton, gbc);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(registerButton);
 
-        JTextArea logArea = new JTextArea(10, 50);
-        logArea.setEditable(false);
-        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
+
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
+        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
 
         return panel;
     }
@@ -102,203 +85,130 @@ public class AdminPanel extends JPanel {
     private JPanel createBadgePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("员工ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField empIdField = new JTextField(15);
-        inputPanel.add(empIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("徽章ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField badgeIdField = new JTextField(15);
-        inputPanel.add(badgeIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        inputPanel.add(new JLabel("状态:"), gbc);
-
-        gbc.gridx = 1;
         JComboBox<BadgeStatus> statusCombo = new JComboBox<>(BadgeStatus.values());
-        inputPanel.add(statusCombo, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(UiTheme.formRow("Employee ID", empIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Badge ID", badgeIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Status", statusCombo));
 
-        JButton issueButton = new JButton("发放徽章");
+        JButton issueButton = UiTheme.primaryButton("Issue Badge");
         issueButton.addActionListener(e -> {
             String empId = empIdField.getText().trim();
             String badgeId = badgeIdField.getText().trim();
             if (empId.isEmpty() || badgeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入员工ID和徽章ID");
+                JOptionPane.showMessageDialog(panel, "Enter employee ID and badge ID");
                 return;
             }
             try {
                 adminService.issueBadge(empId, badgeId);
-                JOptionPane.showMessageDialog(panel, "徽章发放成功");
+                JOptionPane.showMessageDialog(panel, "Badge issued");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "发放失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Issue failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(issueButton);
 
-        JButton statusButton = new JButton("更新状态");
+        JButton statusButton = UiTheme.secondaryButton("Update Status");
         statusButton.addActionListener(e -> {
             String badgeId = badgeIdField.getText().trim();
             if (badgeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入徽章ID");
+                JOptionPane.showMessageDialog(panel, "Enter badge ID");
                 return;
             }
             BadgeStatus status = (BadgeStatus) statusCombo.getSelectedItem();
             try {
                 adminService.setBadgeStatus(badgeId, status);
-                JOptionPane.showMessageDialog(panel, "徽章状态已更新");
+                JOptionPane.showMessageDialog(panel, "Badge status updated");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "更新失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Update failed: " + ex.getMessage());
             }
         });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(issueButton);
         buttonPanel.add(statusButton);
 
-        inputPanel.add(buttonPanel, gbc);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
-
-        JTextArea logArea = new JTextArea(10, 50);
-        logArea.setEditable(false);
-        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
-
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
+        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createResourcePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("资源ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField resIdField = new JTextField(15);
-        inputPanel.add(resIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("资源名称:"), gbc);
-
-        gbc.gridx = 1;
         JTextField nameField = new JTextField(15);
-        inputPanel.add(nameField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        inputPanel.add(new JLabel("状态:"), gbc);
-
-        gbc.gridx = 1;
         JComboBox<ResourceState> stateCombo = new JComboBox<>(ResourceState.values());
-        inputPanel.add(stateCombo, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        inputPanel.add(new JLabel("楼栋:"), gbc);
-
-        gbc.gridx = 1;
         JTextField buildingField = new JTextField(15);
-        inputPanel.add(buildingField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        inputPanel.add(new JLabel("楼层:"), gbc);
-
-        gbc.gridx = 1;
         JTextField floorField = new JTextField(15);
-        inputPanel.add(floorField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        inputPanel.add(new JLabel("坐标X:"), gbc);
-
-        gbc.gridx = 1;
         JTextField coordXField = new JTextField(15);
-        inputPanel.add(coordXField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        inputPanel.add(new JLabel("坐标Y:"), gbc);
-
-        gbc.gridx = 1;
         JTextField coordYField = new JTextField(15);
-        inputPanel.add(coordYField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        inputPanel.add(new JLabel("位置描述:"), gbc);
-
-        gbc.gridx = 1;
         JTextField locationField = new JTextField(15);
-        inputPanel.add(locationField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 8;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(UiTheme.formRow("Resource ID", resIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Resource Name", nameField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Status", stateCombo));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Building", buildingField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Floor", floorField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Coord X", coordXField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Coord Y", coordYField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Location", locationField));
 
-        JButton registerButton = new JButton("注册资源");
+        JButton registerButton = UiTheme.primaryButton("Register Resource");
         registerButton.addActionListener(e -> {
             String resId = resIdField.getText().trim();
             String name = nameField.getText().trim();
             if (resId.isEmpty() || name.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入资源ID和资源名称");
+                JOptionPane.showMessageDialog(panel, "Enter resource ID and name");
                 return;
             }
             try {
                 adminService.registerResource(resId, name, ResourceType.PENDING);
-                JOptionPane.showMessageDialog(panel, "资源已注册");
+                JOptionPane.showMessageDialog(panel, "Resource registered");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "注册失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Register failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(registerButton);
 
-        JButton stateButton = new JButton("更新状态");
+        JButton stateButton = UiTheme.secondaryButton("Update Status");
         stateButton.addActionListener(e -> {
             String resId = resIdField.getText().trim();
             ResourceState state = (ResourceState) stateCombo.getSelectedItem();
             if (resId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入资源ID");
+                JOptionPane.showMessageDialog(panel, "Enter resource ID");
                 return;
             }
             try {
                 adminService.setResourceState(resId, state);
-                JOptionPane.showMessageDialog(panel, "资源状态已更新");
+                JOptionPane.showMessageDialog(panel, "Resource status updated");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "更新失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Update failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(stateButton);
 
-        JButton locationButton = new JButton("更新位置");
+        JButton locationButton = UiTheme.secondaryButton("Update Location");
         locationButton.addActionListener(e -> {
             String resId = resIdField.getText().trim();
             if (resId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入资源ID");
+                JOptionPane.showMessageDialog(panel, "Enter resource ID");
                 return;
             }
             try {
@@ -312,21 +222,23 @@ public class AdminPanel extends JPanel {
                         coordY,
                         emptyToNull(locationField.getText())
                 );
-                JOptionPane.showMessageDialog(panel, "资源位置已更新");
+                JOptionPane.showMessageDialog(panel, "Resource location updated");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "更新失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Update failed: " + ex.getMessage());
             }
         });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(registerButton);
+        buttonPanel.add(stateButton);
         buttonPanel.add(locationButton);
 
-        inputPanel.add(buttonPanel, gbc);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
-
-        JTextArea logArea = new JTextArea(10, 50);
-        logArea.setEditable(false);
-        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
-
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
+        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
         return panel;
     }
 
@@ -349,388 +261,333 @@ public class AdminPanel extends JPanel {
     private JPanel createGroupPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("群组ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField groupIdField = new JTextField(15);
-        inputPanel.add(groupIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("群组名称:"), gbc);
-
-        gbc.gridx = 1;
         JTextField groupNameField = new JTextField(15);
-        inputPanel.add(groupNameField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        inputPanel.add(new JLabel("员工ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField empIdField = new JTextField(15);
-        inputPanel.add(empIdField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(UiTheme.formRow("Group ID", groupIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Group Name", groupNameField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Employee ID", empIdField));
 
-        JButton createGroupButton = new JButton("创建群组");
+        JButton createGroupButton = UiTheme.primaryButton("Create Group");
         createGroupButton.addActionListener(e -> {
             String groupId = groupIdField.getText().trim();
             String groupName = groupNameField.getText().trim();
             if (groupId.isEmpty() || groupName.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入群组ID和群组名称");
+                JOptionPane.showMessageDialog(panel, "Enter group ID and name");
                 return;
             }
             try {
                 adminService.createGroup(groupId, groupName);
-                JOptionPane.showMessageDialog(panel, "群组已创建");
+                JOptionPane.showMessageDialog(panel, "Group created");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "创建失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Create failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(createGroupButton);
 
-        JButton assignButton = new JButton("添加成员");
+        JButton assignButton = UiTheme.secondaryButton("Add Member");
         assignButton.addActionListener(e -> {
             String empId = empIdField.getText().trim();
             String groupId = groupIdField.getText().trim();
             if (empId.isEmpty() || groupId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入员工ID和群组ID");
+                JOptionPane.showMessageDialog(panel, "Enter employee ID and group ID");
                 return;
             }
             try {
                 adminService.assignEmployeeToGroup(empId, groupId);
-                JOptionPane.showMessageDialog(panel, "员工已加入群组");
+                JOptionPane.showMessageDialog(panel, "Employee added to group");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "添加失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Add failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(assignButton);
 
-        JButton removeButton = new JButton("移除成员");
+        JButton removeButton = UiTheme.secondaryButton("Remove Member");
         removeButton.addActionListener(e -> {
             String empId = empIdField.getText().trim();
             String groupId = groupIdField.getText().trim();
             if (empId.isEmpty() || groupId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入员工ID和群组ID");
+                JOptionPane.showMessageDialog(panel, "Enter employee ID and group ID");
                 return;
             }
             try {
                 adminService.removeEmployeeFromGroup(empId, groupId);
-                JOptionPane.showMessageDialog(panel, "员工已移除");
+                JOptionPane.showMessageDialog(panel, "Employee removed");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "移除失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Remove failed: " + ex.getMessage());
             }
         });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(createGroupButton);
+        buttonPanel.add(assignButton);
         buttonPanel.add(removeButton);
 
-        inputPanel.add(buttonPanel, gbc);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
-
-        JTextArea logArea = new JTextArea(10, 50);
-        logArea.setEditable(false);
-        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
-
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
+        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createPermissionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("群组ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField groupIdField = new JTextField(15);
-        inputPanel.add(groupIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("资源ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField resourceIdField = new JTextField(15);
-        inputPanel.add(resourceIdField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(UiTheme.formRow("Group ID", groupIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Resource ID", resourceIdField));
 
-        JButton grantButton = new JButton("授权");
+        JButton grantButton = UiTheme.primaryButton("Grant");
         grantButton.addActionListener(e -> {
             String groupId = groupIdField.getText().trim();
             String resourceId = resourceIdField.getText().trim();
             if (groupId.isEmpty() || resourceId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入群组ID和资源ID");
+                JOptionPane.showMessageDialog(panel, "Enter group ID and resource ID");
                 return;
             }
             try {
                 adminService.grantGroupAccessToResource(groupId, resourceId);
-                JOptionPane.showMessageDialog(panel, "授权成功");
+                JOptionPane.showMessageDialog(panel, "Granted");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "授权失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Grant failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(grantButton);
 
-        JButton revokeButton = new JButton("撤销授权");
+        JButton revokeButton = UiTheme.secondaryButton("Revoke");
         revokeButton.addActionListener(e -> {
             String groupId = groupIdField.getText().trim();
             String resourceId = resourceIdField.getText().trim();
             if (groupId.isEmpty() || resourceId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入群组ID和资源ID");
+                JOptionPane.showMessageDialog(panel, "Enter group ID and resource ID");
                 return;
             }
             try {
                 adminService.revokeGroupAccessToResource(groupId, resourceId);
-                JOptionPane.showMessageDialog(panel, "已撤销授权");
+                JOptionPane.showMessageDialog(panel, "Revoked");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "撤销失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Revoke failed: " + ex.getMessage());
             }
         });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(grantButton);
         buttonPanel.add(revokeButton);
 
-        inputPanel.add(buttonPanel, gbc);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
-
-        JTextArea logArea = new JTextArea(10, 50);
-        logArea.setEditable(false);
-        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
-
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
+        panel.add(new JScrollPane(new JTextArea(8, 50)), BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createProfilePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField filePathField = new JTextField(30);
         filePathField.setText("src/main/resources/profiles.json");
-        controlPanel.add(new JLabel("Profile 文件路径:"));
-        controlPanel.add(filePathField);
 
-        JButton loadButton = new JButton("加载");
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(UiTheme.formRow("Profile File Path", filePathField));
+
+        JButton loadButton = UiTheme.primaryButton("Load");
         loadButton.addActionListener(e -> {
             String filePath = filePathField.getText().trim();
             if (filePath.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入文件路径");
+                JOptionPane.showMessageDialog(panel, "Enter file path");
                 return;
             }
             try {
                 List<Profile> profiles = profileFileService.loadProfilesFromJson(filePath);
-                JOptionPane.showMessageDialog(panel, "已加载 Profile 数量: " + profiles.size());
+                JOptionPane.showMessageDialog(panel, "Profiles loaded: " + profiles.size());
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "加载失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Load failed: " + ex.getMessage());
             }
         });
-        controlPanel.add(loadButton);
 
-        JButton validateButton = new JButton("校验");
+        JButton validateButton = UiTheme.secondaryButton("Validate");
         validateButton.addActionListener(e -> {
             String filePath = filePathField.getText().trim();
             if (filePath.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入文件路径");
+                JOptionPane.showMessageDialog(panel, "Enter file path");
                 return;
             }
             try {
                 boolean valid = profileFileService.validateJsonFile(filePath);
-                JOptionPane.showMessageDialog(panel, "校验结果: " + (valid ? "通过" : "未通过"));
+                JOptionPane.showMessageDialog(panel, "Validation: " + (valid ? "Passed" : "Failed"));
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "校验失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Validation failed: " + ex.getMessage());
             }
         });
-        controlPanel.add(validateButton);
 
-        panel.add(controlPanel, BorderLayout.NORTH);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(loadButton);
+        buttonPanel.add(validateButton);
 
-        JTextArea profileArea = new JTextArea(20, 60);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
+
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
+
+        JTextArea profileArea = new JTextArea(16, 60);
         profileArea.setEditable(false);
         panel.add(new JScrollPane(profileArea), BorderLayout.CENTER);
-
         return panel;
     }
 
     private JPanel createProfileBindingPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("Profile ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField profileIdField = new JTextField(15);
-        inputPanel.add(profileIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("员工ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField employeeIdField = new JTextField(15);
-        inputPanel.add(employeeIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        inputPanel.add(new JLabel("徽章ID:"), gbc);
-
-        gbc.gridx = 1;
         JTextField badgeIdField = new JTextField(15);
-        inputPanel.add(badgeIdField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.Y_AXIS));
+        inputPanel.add(UiTheme.formRow("Profile ID", profileIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Employee ID", employeeIdField));
+        inputPanel.add(Box.createVerticalStrut(8));
+        inputPanel.add(UiTheme.formRow("Badge ID", badgeIdField));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton bindEmployeeButton = new JButton("绑定员工");
+        JButton bindEmployeeButton = UiTheme.primaryButton("Bind Employee");
         bindEmployeeButton.addActionListener(e -> {
             String profileId = profileIdField.getText().trim();
             String employeeId = employeeIdField.getText().trim();
             if (profileId.isEmpty() || employeeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和员工ID");
+                JOptionPane.showMessageDialog(panel, "Enter profile ID and employee ID");
                 return;
             }
             try {
                 adminService.assignProfileToEmployee(profileId, employeeId);
-                JOptionPane.showMessageDialog(panel, "绑定成功");
+                JOptionPane.showMessageDialog(panel, "Bind succeeded");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "绑定失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Bind failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(bindEmployeeButton);
 
-        JButton unbindEmployeeButton = new JButton("解绑员工");
+        JButton unbindEmployeeButton = UiTheme.secondaryButton("Unbind Employee");
         unbindEmployeeButton.addActionListener(e -> {
             String profileId = profileIdField.getText().trim();
             String employeeId = employeeIdField.getText().trim();
             if (profileId.isEmpty() || employeeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和员工ID");
+                JOptionPane.showMessageDialog(panel, "Enter profile ID and employee ID");
                 return;
             }
             try {
                 adminService.removeProfileFromEmployee(profileId, employeeId);
-                JOptionPane.showMessageDialog(panel, "解绑成功");
+                JOptionPane.showMessageDialog(panel, "Unbind succeeded");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "解绑失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Unbind failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(unbindEmployeeButton);
 
-        JButton bindBadgeButton = new JButton("绑定徽章");
+        JButton bindBadgeButton = UiTheme.secondaryButton("Bind Badge");
         bindBadgeButton.addActionListener(e -> {
             String profileId = profileIdField.getText().trim();
             String badgeId = badgeIdField.getText().trim();
             if (profileId.isEmpty() || badgeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和徽章ID");
+                JOptionPane.showMessageDialog(panel, "Enter profile ID and badge ID");
                 return;
             }
             try {
                 adminService.assignProfileToBadge(profileId, badgeId);
-                JOptionPane.showMessageDialog(panel, "绑定成功");
+                JOptionPane.showMessageDialog(panel, "Bind succeeded");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "绑定失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Bind failed: " + ex.getMessage());
             }
         });
-        buttonPanel.add(bindBadgeButton);
 
-        JButton unbindBadgeButton = new JButton("解绑徽章");
+        JButton unbindBadgeButton = UiTheme.secondaryButton("Unbind Badge");
         unbindBadgeButton.addActionListener(e -> {
             String profileId = profileIdField.getText().trim();
             String badgeId = badgeIdField.getText().trim();
             if (profileId.isEmpty() || badgeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入 Profile ID 和徽章ID");
+                JOptionPane.showMessageDialog(panel, "Enter profile ID and badge ID");
                 return;
             }
             try {
                 adminService.removeProfileFromBadge(profileId, badgeId);
-                JOptionPane.showMessageDialog(panel, "解绑成功");
+                JOptionPane.showMessageDialog(panel, "Unbind succeeded");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(panel, "解绑失败: " + ex.getMessage());
+                JOptionPane.showMessageDialog(panel, "Unbind failed: " + ex.getMessage());
             }
         });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttonPanel.add(bindEmployeeButton);
+        buttonPanel.add(unbindEmployeeButton);
+        buttonPanel.add(bindBadgeButton);
         buttonPanel.add(unbindBadgeButton);
 
-        inputPanel.add(buttonPanel, gbc);
-        panel.add(inputPanel, BorderLayout.NORTH);
+        JPanel card = UiTheme.cardPanel();
+        card.add(inputPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
-        JTextArea resultArea = new JTextArea(14, 60);
+        JTextArea resultArea = new JTextArea(12, 60);
         resultArea.setEditable(false);
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
-        JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton viewEmployeeProfiles = new JButton("查看员工 Profile");
+        JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JButton viewEmployeeProfiles = UiTheme.secondaryButton("View Employee Profiles");
         viewEmployeeProfiles.addActionListener(e -> {
             String employeeId = employeeIdField.getText().trim();
             if (employeeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入员工ID");
+                JOptionPane.showMessageDialog(panel, "Enter employee ID");
                 return;
             }
             try {
                 List<Profile> profiles = adminService.getProfilesForEmployee(employeeId);
                 StringBuilder sb = new StringBuilder();
-                sb.append("Profile 列表(").append(profiles.size()).append(")\n");
+                sb.append("Profiles (").append(profiles.size()).append(")\n");
                 for (Profile profile : profiles) {
                     sb.append("- ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");
                 }
                 resultArea.setText(sb.toString());
             } catch (Exception ex) {
-                resultArea.setText("查询失败: " + ex.getMessage());
+                resultArea.setText("Query failed: " + ex.getMessage());
             }
         });
         viewPanel.add(viewEmployeeProfiles);
 
-        JButton viewBadgeProfiles = new JButton("查看徽章 Profile");
+        JButton viewBadgeProfiles = UiTheme.secondaryButton("View Badge Profiles");
         viewBadgeProfiles.addActionListener(e -> {
             String badgeId = badgeIdField.getText().trim();
             if (badgeId.isEmpty()) {
-                JOptionPane.showMessageDialog(panel, "请输入徽章ID");
+                JOptionPane.showMessageDialog(panel, "Enter badge ID");
                 return;
             }
             try {
                 List<Profile> profiles = adminService.getProfilesForBadge(badgeId);
                 StringBuilder sb = new StringBuilder();
-                sb.append("Profile 列表(").append(profiles.size()).append(")\n");
+                sb.append("Profiles (").append(profiles.size()).append(")\n");
                 for (Profile profile : profiles) {
                     sb.append("- ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");
                 }
                 resultArea.setText(sb.toString());
             } catch (Exception ex) {
-                resultArea.setText("查询失败: " + ex.getMessage());
+                resultArea.setText("Query failed: " + ex.getMessage());
             }
         });
         viewPanel.add(viewBadgeProfiles);
 
         panel.add(viewPanel, BorderLayout.SOUTH);
-
         return panel;
     }
 }

@@ -2,6 +2,7 @@ package acs.ui;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import acs.service.AccessControlService;
 import acs.service.ClockService;
 import acs.domain.AccessRequest;
@@ -19,8 +20,8 @@ public class ScanPanel extends JPanel {
     private JTextField resourceIdField;
     private JComboBox<String> modeComboBox;
     private JTextArea resultArea;
-    private static final String MODE_SWIPE = "刷卡";
-    private static final String MODE_UPDATE = "码更新";
+    private static final String MODE_SWIPE = "Swipe";
+    private static final String MODE_UPDATE = "Update Code";
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 
@@ -35,54 +36,67 @@ public class ScanPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
+        add(UiTheme.createHeader("Scan Console", "Simulate badge swipe or run update flow"), BorderLayout.NORTH);
 
-        JLabel titleLabel = new JLabel("刷卡模拟", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        add(titleLabel, BorderLayout.NORTH);
-
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(new JLabel("徽章ID:"), gbc);
-
-        gbc.gridx = 1;
-        badgeIdField = new JTextField(20);
-        inputPanel.add(badgeIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(new JLabel("资源ID:"), gbc);
-
-        gbc.gridx = 1;
-        resourceIdField = new JTextField(20);
-        inputPanel.add(resourceIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        inputPanel.add(new JLabel("模式:"), gbc);
-
-        gbc.gridx = 1;
+        JPanel formPanel = new JPanel();
+        formPanel.setOpaque(false);
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+        formPanel.add(UiTheme.formRow("Badge ID", badgeIdField = new JTextField()));
+        formPanel.add(Box.createVerticalStrut(8));
+        formPanel.add(UiTheme.formRow("Resource ID", resourceIdField = new JTextField()));
+        formPanel.add(Box.createVerticalStrut(8));
         modeComboBox = new JComboBox<>(new String[]{MODE_SWIPE, MODE_UPDATE});
-        inputPanel.add(modeComboBox, gbc);
+        formPanel.add(UiTheme.formRow("Mode", modeComboBox));
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JButton scanButton = new JButton("执行");
-        scanButton.addActionListener(e -> simulateScan());
-        inputPanel.add(scanButton, gbc);
+        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actionRow.setOpaque(false);
+        JButton runButton = UiTheme.primaryButton("Run");
+        runButton.addActionListener(e -> simulateScan());
+        JButton clearButton = UiTheme.secondaryButton("Clear");
+        clearButton.addActionListener(e -> resultArea.setText(""));
+        JButton sampleButton = UiTheme.secondaryButton("Fill Sample");
+        sampleButton.addActionListener(e -> {
+            badgeIdField.setText("BADGE001");
+            resourceIdField.setText("RES001");
+            modeComboBox.setSelectedItem(MODE_SWIPE);
+        });
+        actionRow.add(runButton);
+        actionRow.add(clearButton);
+        actionRow.add(sampleButton);
 
-        add(inputPanel, BorderLayout.CENTER);
+        JPanel leftCard = UiTheme.cardPanel();
+        JPanel leftContent = new JPanel();
+        leftContent.setOpaque(false);
+        leftContent.setLayout(new BoxLayout(leftContent, BoxLayout.Y_AXIS));
+        leftContent.add(formPanel);
+        leftContent.add(Box.createVerticalStrut(12));
+        leftContent.add(actionRow);
+        leftCard.add(leftContent, BorderLayout.NORTH);
 
-        resultArea = new JTextArea(10, 40);
+        resultArea = new JTextArea(16, 40);
         resultArea.setEditable(false);
-        resultArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        add(new JScrollPane(resultArea), BorderLayout.SOUTH);
+        resultArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        JScrollPane resultScroll = new JScrollPane(resultArea);
+
+        JButton copyButton = UiTheme.secondaryButton("Copy Result");
+        copyButton.addActionListener(e -> copyResult());
+        JPanel resultActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        resultActions.setOpaque(false);
+        resultActions.add(copyButton);
+
+        JPanel rightCard = UiTheme.cardPanel();
+        rightCard.add(resultActions, BorderLayout.NORTH);
+        rightCard.add(resultScroll, BorderLayout.CENTER);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+            UiTheme.wrapContent(leftCard),
+            UiTheme.wrapContent(rightCard));
+        splitPane.setDividerLocation(360);
+        splitPane.setDividerSize(1);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        splitPane.setContinuousLayout(true);
+
+        add(splitPane, BorderLayout.CENTER);
     }
 
     private void simulateScan() {
@@ -91,71 +105,65 @@ public class ScanPanel extends JPanel {
         String selectedMode = (String) modeComboBox.getSelectedItem();
 
         if (badgeId.isEmpty()) {
-            resultArea.setText("错误: 请输入徽章ID");
+            resultArea.setText("Error: enter badge ID");
             return;
         }
 
         if (MODE_SWIPE.equals(selectedMode) && resourceId.isEmpty()) {
-            resultArea.setText("错误: 请输入资源ID");
+            resultArea.setText("Error: swipe mode requires resource ID");
             return;
         }
 
         try {
             StringBuilder sb = new StringBuilder();
-            sb.append("操作结果:\n");
-            if (clockService.isSimulated()) {
-                sb.append("时间来源: 模拟时间\n");
-            } else {
-                sb.append("时间来源: 系统时间\n");
-            }
-            sb.append("徽章ID: ").append(badgeId).append("\n");
-            sb.append("模式: ").append(selectedMode).append("\n");
+            sb.append("Result\n");
+            sb.append("Time Source: ").append(clockService.isSimulated() ? "Simulated Time" : "System Time").append("\n");
+            sb.append("Badge ID: ").append(badgeId).append("\n");
+            sb.append("Mode: ").append(selectedMode).append("\n");
 
             if (MODE_SWIPE.equals(selectedMode)) {
                 AccessRequest request = new AccessRequest(badgeId, resourceId, clockService.localNow());
                 AccessResult result = accessControlService.processAccess(request);
 
                 String timeStr = java.time.LocalDateTime.ofInstant(request.getTimestamp(), ZONE_ID).format(TIME_FORMATTER);
-                sb.append("日志: 时间: ").append(timeStr)
-                    .append(" | 徽章: ").append(badgeId)
-                    .append(" | 模式: ").append(selectedMode)
-                    .append(" | 资源: ").append(resourceId)
-                    .append(" | 决策: ").append(result.getDecision())
-                    .append(" | 原因码: ").append(result.getReasonCode())
-                    .append(" | 信息: ").append(result.getMessage()).append("\n");
-
-                sb.append("资源ID: ").append(resourceId).append("\n");
-                sb.append("决策: ").append(result.getDecision()).append("\n");
-                sb.append("原因码: ").append(result.getReasonCode()).append("\n");
-                sb.append("信息: ").append(result.getMessage()).append("\n");
-                sb.append("时间: ").append(timeStr).append("\n");
+                sb.append("Decision: ").append(result.getDecision()).append("\n");
+                sb.append("Reason: ").append(result.getReasonCode()).append("\n");
+                sb.append("Message: ").append(result.getMessage()).append("\n");
+                sb.append("Resource ID: ").append(resourceId).append("\n");
+                sb.append("Time: ").append(timeStr).append("\n");
             } else {
-                sb.append("码更新流程:\n");
+                sb.append("Badge Update Flow\n");
 
                 boolean needsUpdate = badgeCodeUpdateService.checkBadgeNeedsUpdate(badgeId);
                 if (!needsUpdate) {
-                    sb.append("状态: 无需更新\n");
-                    sb.append("说明: 当前码仍然有效\n");
+                    sb.append("Status: No update needed\n");
+                    sb.append("Note: Current badge code is valid\n");
                 } else {
-                    sb.append("状态: 需要更新，开始更新...\n");
+                    sb.append("Status: Update required\n");
                     Badge updatedBadge = badgeCodeUpdateService.updateBadgeCode(badgeId);
                     if (updatedBadge != null) {
-                        sb.append("状态: 更新成功\n");
-                        sb.append("新徽章码: ").append(updatedBadge.getBadgeCode()).append("\n");
-                        sb.append("过期时间: ").append(updatedBadge.getExpirationDate()).append("\n");
-                        sb.append("更新时间: ").append(updatedBadge.getLastCodeUpdate()).append("\n");
-                        sb.append("说明: 徽章码已更新\n");
+                        sb.append("Status: Updated\n");
+                        sb.append("New Badge Code: ").append(updatedBadge.getBadgeCode()).append("\n");
+                        sb.append("Expires At: ").append(updatedBadge.getExpirationDate()).append("\n");
+                        sb.append("Updated At: ").append(updatedBadge.getLastCodeUpdate()).append("\n");
                     } else {
-                        sb.append("状态: 更新失败\n");
-                        sb.append("说明: 未能更新徽章码\n");
+                        sb.append("Status: Update failed\n");
                     }
                 }
             }
 
             resultArea.setText(sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("执行失败: " + ex.getMessage());
+            resultArea.setText("Execution failed: " + ex.getMessage());
             ex.printStackTrace();
         }
+    }
+
+    private void copyResult() {
+        String text = resultArea.getText();
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);
     }
 }

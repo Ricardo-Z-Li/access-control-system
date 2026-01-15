@@ -77,18 +77,15 @@ public class MonitorPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-
-        JLabel titleLabel = new JLabel("系统监控", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        add(titleLabel, BorderLayout.NORTH);
+        add(UiTheme.createHeader("System Monitor", "Real-time events, log search, and health"), BorderLayout.NORTH);
 
         tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("实时监控", createRealTimePanel());
-        tabbedPane.addTab("日志查询", createLogSearchPanel());
-        tabbedPane.addTab("系统状态", createSystemStatusPanel());
+        tabbedPane.addTab("Real-time", createRealTimePanel());
+        tabbedPane.addTab("Logs", createLogSearchPanel());
+        tabbedPane.addTab("System Status", createSystemStatusPanel());
 
         if (siteMapPanel != null) {
-            tabbedPane.addTab("站点地图", siteMapPanel);
+            tabbedPane.addTab("Site Map", siteMapPanel);
         }
 
         add(tabbedPane, BorderLayout.CENTER);
@@ -97,158 +94,121 @@ public class MonitorPanel extends JPanel {
     private JPanel createRealTimePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        String[] columns = {"时间", "徽章ID", "员工", "资源ID", "决策", "原因码"};
+        String[] columns = {"Time", "Badge ID", "Employee", "Resource ID", "Decision", "Reason"};
         realTimeTableModel = new DefaultTableModel(columns, 0);
         realTimeTable = new JTable(realTimeTableModel);
         realTimeTable.setAutoCreateRowSorter(true);
+        UiTheme.styleTable(realTimeTable);
 
         JScrollPane scrollPane = new JScrollPane(realTimeTable);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton clearButton = new JButton("清空");
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JButton simulateButton = UiTheme.primaryButton("Simulate Access");
+        simulateButton.addActionListener(e -> simulateAccess());
+        JButton clearButton = UiTheme.secondaryButton("Clear Table");
         clearButton.addActionListener(e -> realTimeTableModel.setRowCount(0));
+        controlPanel.add(simulateButton);
         controlPanel.add(clearButton);
 
-        JButton simulateButton = new JButton("模拟访问");
-        simulateButton.addActionListener(e -> simulateAccess());
-        controlPanel.add(simulateButton);
-
-        panel.add(controlPanel, BorderLayout.NORTH);
+        panel.add(UiTheme.wrapContent(controlPanel), BorderLayout.NORTH);
 
         return panel;
     }
 
     private JPanel createLogSearchPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel filters = new JPanel();
+        filters.setOpaque(false);
+        filters.setLayout(new BoxLayout(filters, BoxLayout.Y_AXIS));
 
-        JPanel queryPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        queryPanel.add(new JLabel("徽章ID:"), gbc);
-        gbc.gridx = 1;
-        badgeIdField = new JTextField(15);
-        queryPanel.add(badgeIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        queryPanel.add(new JLabel("员工ID:"), gbc);
-        gbc.gridx = 1;
-        employeeIdField = new JTextField(15);
-        queryPanel.add(employeeIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        queryPanel.add(new JLabel("资源ID:"), gbc);
-        gbc.gridx = 1;
-        resourceIdField = new JTextField(15);
-        queryPanel.add(resourceIdField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        queryPanel.add(new JLabel("开始时间(yyyy-MM-dd HH:mm):"), gbc);
-        gbc.gridx = 1;
-        startTimeField = new JTextField(15);
-        queryPanel.add(startTimeField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        queryPanel.add(new JLabel("结束时间(yyyy-MM-dd HH:mm):"), gbc);
-        gbc.gridx = 1;
-        endTimeField = new JTextField(15);
-        queryPanel.add(endTimeField, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        queryPanel.add(new JLabel("决策:"), gbc);
-        gbc.gridx = 1;
+        badgeIdField = new JTextField(16);
+        employeeIdField = new JTextField(16);
+        resourceIdField = new JTextField(16);
+        startTimeField = new JTextField(16);
+        endTimeField = new JTextField(16);
         decisionCombo = new JComboBox<>(new String[]{"", "ALLOW", "DENY"});
-        queryPanel.add(decisionCombo, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        filters.add(UiTheme.formRow("Badge ID", badgeIdField));
+        filters.add(Box.createVerticalStrut(6));
+        filters.add(UiTheme.formRow("Employee ID", employeeIdField));
+        filters.add(Box.createVerticalStrut(6));
+        filters.add(UiTheme.formRow("Resource ID", resourceIdField));
+        filters.add(Box.createVerticalStrut(6));
+        filters.add(UiTheme.formRow("Start Time (yyyy-MM-dd HH:mm)", startTimeField));
+        filters.add(Box.createVerticalStrut(6));
+        filters.add(UiTheme.formRow("End Time (yyyy-MM-dd HH:mm)", endTimeField));
+        filters.add(Box.createVerticalStrut(6));
+        filters.add(UiTheme.formRow("Decision", decisionCombo));
 
-        JButton queryButton = new JButton("查询");
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actionPanel.setOpaque(false);
+        JButton queryButton = UiTheme.primaryButton("Search");
         queryButton.addActionListener(e -> performAdvancedQuery());
-        buttonPanel.add(queryButton);
-
-        JButton exportButton = new JButton("导出CSV");
+        JButton refreshButton = UiTheme.secondaryButton("Refresh");
+        refreshButton.addActionListener(e -> refreshLogs());
+        JButton exportButton = UiTheme.secondaryButton("Export CSV");
         exportButton.addActionListener(e -> exportToCsv());
-        buttonPanel.add(exportButton);
-
-        JButton cleanupButton = new JButton("清理旧日志");
+        JButton cleanupButton = UiTheme.secondaryButton("Clean Logs");
         cleanupButton.addActionListener(e -> cleanupLogs());
-        buttonPanel.add(cleanupButton);
+        actionPanel.add(queryButton);
+        actionPanel.add(refreshButton);
+        actionPanel.add(exportButton);
+        actionPanel.add(cleanupButton);
 
-        JButton refreshAllButton = new JButton("刷新日志");
-        refreshAllButton.addActionListener(e -> refreshLogs());
-        buttonPanel.add(refreshAllButton);
+        filters.add(Box.createVerticalStrut(12));
+        filters.add(actionPanel);
 
-        queryPanel.add(buttonPanel, gbc);
-        panel.add(queryPanel, BorderLayout.NORTH);
+        JPanel leftCard = UiTheme.cardPanel();
+        leftCard.add(filters, BorderLayout.NORTH);
 
         logArea = new JTextArea(20, 60);
         logArea.setEditable(false);
-        logArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
+        logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        JPanel rightCard = UiTheme.cardPanel();
+        rightCard.add(new JScrollPane(logArea), BorderLayout.CENTER);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+            UiTheme.wrapContent(leftCard),
+            UiTheme.wrapContent(rightCard));
+        splitPane.setDividerLocation(360);
+        splitPane.setDividerSize(1);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        splitPane.setContinuousLayout(true);
 
         refreshLogs();
 
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(splitPane, BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createSystemStatusPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
+        JPanel panel = new JPanel(new BorderLayout());
 
-        panel.add(new JLabel("系统状态", SwingConstants.CENTER), gbc);
+        JPanel stats = new JPanel();
+        stats.setOpaque(false);
+        stats.setLayout(new BoxLayout(stats, BoxLayout.Y_AXIS));
 
-        gbc.gridy++;
-        panel.add(new JSeparator(), gbc);
+        cacheStatusLabel = UiTheme.statusPill("Unknown", new Color(229, 231, 235), new Color(55, 65, 81));
+        dbStatusLabel = UiTheme.statusPill("Unknown", new Color(229, 231, 235), new Color(55, 65, 81));
+        lastUpdateLabel = new JLabel("Unknown");
 
-        gbc.gridy++;
-        panel.add(new JLabel("缓存状态:"), gbc);
-        gbc.gridx = 1;
-        cacheStatusLabel = new JLabel("未知");
-        panel.add(cacheStatusLabel, gbc);
+        stats.add(UiTheme.formRow("Cache", cacheStatusLabel));
+        stats.add(Box.createVerticalStrut(8));
+        stats.add(UiTheme.formRow("Database", dbStatusLabel));
+        stats.add(Box.createVerticalStrut(8));
+        stats.add(UiTheme.formRow("Last Update", lastUpdateLabel));
 
-        gbc.gridx = 0;
-        gbc.gridy++;
-        panel.add(new JLabel("数据库状态:"), gbc);
-        gbc.gridx = 1;
-        dbStatusLabel = new JLabel("未知");
-        panel.add(dbStatusLabel, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy++;
-        panel.add(new JLabel("最后更新时间:"), gbc);
-        gbc.gridx = 1;
-        lastUpdateLabel = new JLabel("未知");
-        panel.add(lastUpdateLabel, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy++;
-        panel.add(new JSeparator(), gbc);
-
-        gbc.gridy++;
-        gbc.gridwidth = 2;
-        JButton refreshStatusButton = new JButton("刷新状态");
+        JButton refreshStatusButton = UiTheme.primaryButton("Refresh Status");
         refreshStatusButton.addActionListener(e -> refreshSystemStatus());
-        panel.add(refreshStatusButton, gbc);
+
+        JPanel card = UiTheme.cardPanel();
+        card.add(stats, BorderLayout.CENTER);
+        card.add(refreshStatusButton, BorderLayout.SOUTH);
+
+        panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
         refreshSystemStatus();
-
         return panel;
     }
 
@@ -261,20 +221,20 @@ public class MonitorPanel extends JPanel {
 
     private void refreshLogs() {
         if (logQueryService == null) {
-            logArea.setText("LogQueryService 未配置");
+            logArea.setText("Log query service unavailable.");
             return;
         }
 
         try {
             List<acs.domain.LogEntry> logs = logQueryService.findAll();
             StringBuilder sb = new StringBuilder();
-            sb.append("最近日志(最多100条):\n");
+            sb.append("Recent Logs (up to 100)\n");
             sb.append("========================================\n");
 
             int count = 0;
             for (acs.domain.LogEntry log : logs) {
                 if (count >= 100) break;
-                sb.append(String.format("时间: %s | 徽章: %s | 资源: %s | 决策: %s | 原因码: %s\n",
+                sb.append(String.format("Time: %s | Badge: %s | Resource: %s | Decision: %s | Reason: %s\n",
                     formatTimestamp(log.getTimestamp()),
                     log.getBadge() != null ? log.getBadge().getBadgeId() : "N/A",
                     log.getResource() != null ? log.getResource().getResourceId() : "N/A",
@@ -284,16 +244,16 @@ public class MonitorPanel extends JPanel {
             }
 
             sb.append("========================================\n");
-            sb.append("数量: ").append(count).append(" 条");
+            sb.append("Count: ").append(count);
             logArea.setText(sb.toString());
         } catch (Exception ex) {
-            logArea.setText("加载日志失败: " + ex.getMessage());
+            logArea.setText("Failed to load logs: " + ex.getMessage());
         }
     }
 
     private void simulateAccess() {
         if (accessControlService == null) {
-            JOptionPane.showMessageDialog(this, "访问控制服务不可用，无法模拟访问。", "错误", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Access control service unavailable.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -304,7 +264,7 @@ public class MonitorPanel extends JPanel {
         String resourceId = resources[(int) (Math.random() * resources.length)];
         Instant timestamp = Instant.now();
 
-        String employeeInfo = "未知";
+        String employeeInfo = "Unknown";
         if (cacheManager != null) {
             Badge badge = cacheManager.getBadge(badgeId);
             if (badge != null && badge.getEmployee() != null) {
@@ -319,8 +279,6 @@ public class MonitorPanel extends JPanel {
                     employeeInfo = employeeName;
                 }
             }
-        } else {
-            employeeInfo = "员工" + badgeId.substring(2);
         }
 
         AccessRequest request = new AccessRequest(badgeId, resourceId, timestamp);
@@ -337,8 +295,12 @@ public class MonitorPanel extends JPanel {
     }
 
     private void refreshSystemStatus() {
-        cacheStatusLabel.setText("正常");
-        dbStatusLabel.setText("正常");
+        cacheStatusLabel.setText("OK");
+        cacheStatusLabel.setBackground(new Color(220, 252, 231));
+        cacheStatusLabel.setForeground(new Color(21, 128, 61));
+        dbStatusLabel.setText("OK");
+        dbStatusLabel.setBackground(new Color(219, 234, 254));
+        dbStatusLabel.setForeground(new Color(30, 64, 175));
         lastUpdateLabel.setText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 
@@ -349,7 +311,7 @@ public class MonitorPanel extends JPanel {
 
     private void performAdvancedQuery() {
         if (logQueryService == null) {
-            logArea.setText("LogQueryService 未配置");
+            logArea.setText("Log query service unavailable.");
             return;
         }
 
@@ -370,7 +332,7 @@ public class MonitorPanel extends JPanel {
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
                     from = startLdt.atZone(java.time.ZoneId.systemDefault()).toInstant();
                 } catch (Exception e) {
-                    logArea.setText("时间格式错误，请使用 yyyy-MM-dd HH:mm");
+                    logArea.setText("Invalid time format, use yyyy-MM-dd HH:mm");
                     return;
                 }
             }
@@ -380,7 +342,7 @@ public class MonitorPanel extends JPanel {
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
                     to = endLdt.atZone(java.time.ZoneId.systemDefault()).toInstant();
                 } catch (Exception e) {
-                    logArea.setText("时间格式错误，请使用 yyyy-MM-dd HH:mm");
+                    logArea.setText("Invalid time format, use yyyy-MM-dd HH:mm");
                     return;
                 }
             }
@@ -423,11 +385,11 @@ public class MonitorPanel extends JPanel {
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("查询结果 (").append(logs.size()).append(" 条):\n");
+            sb.append("Results (").append(logs.size()).append(")\n");
             sb.append("========================================\n");
 
             for (acs.domain.LogEntry log : logs) {
-                sb.append(String.format("时间: %s | 徽章: %s | 员工: %s | 资源: %s | 决策: %s | 原因码: %s\n",
+                sb.append(String.format("Time: %s | Badge: %s | Employee: %s | Resource: %s | Decision: %s | Reason: %s\n",
                     formatTimestamp(log.getTimestamp()),
                     log.getBadge() != null ? log.getBadge().getBadgeId() : "N/A",
                     log.getEmployee() != null ? log.getEmployee().getEmployeeId() : "N/A",
@@ -439,20 +401,19 @@ public class MonitorPanel extends JPanel {
             sb.append("========================================\n");
             logArea.setText(sb.toString());
         } catch (Exception ex) {
-            logArea.setText("查询失败: " + ex.getMessage());
+            logArea.setText("Query failed: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
     private void exportToCsv() {
         if (csvLogExporter == null) {
-            logArea.setText("CSV 导出服务不可用");
+            logArea.setText("CSV export service unavailable.");
             return;
         }
 
         try {
             List<acs.domain.LogEntry> logs = logQueryService.findAll();
-            String csvContent = csvLogExporter.exportToString(logs);
 
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setSelectedFile(new java.io.File("access_logs_" +
@@ -462,29 +423,29 @@ public class MonitorPanel extends JPanel {
                 java.io.File file = fileChooser.getSelectedFile();
                 java.nio.file.Path path = file.toPath();
                 csvLogExporter.exportToFile(logs, path);
-                logArea.setText("CSV 导出成功: " + path.toString());
+                logArea.setText("CSV exported: " + path.toString());
             }
         } catch (Exception ex) {
-            logArea.setText("导出失败: " + ex.getMessage());
+            logArea.setText("Export failed: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
     private void cleanupLogs() {
         if (logCleanupService == null) {
-            logArea.setText("日志清理服务不可用");
+            logArea.setText("Log cleanup service unavailable.");
             return;
         }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-            "确定清理过期日志吗？",
-            "确认", JOptionPane.YES_NO_OPTION);
+            "Clean expired logs?",
+            "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 logCleanupService.cleanExpiredLogs();
-                logArea.setText("日志已清理");
+                logArea.setText("Log cleanup completed.");
             } catch (Exception ex) {
-                logArea.setText("清理失败: " + ex.getMessage());
+                logArea.setText("Cleanup failed: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }
