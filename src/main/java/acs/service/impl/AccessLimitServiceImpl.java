@@ -1,6 +1,7 @@
 package acs.service.impl;
 
 import acs.service.AccessLimitService;
+import acs.service.ClockService;
 import acs.domain.Employee;
 import acs.domain.Profile;
 import acs.domain.ProfileResourceLimit;
@@ -19,8 +20,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * 访问次数限制服务实现
@@ -32,37 +35,20 @@ public class AccessLimitServiceImpl implements AccessLimitService {
     private final AccessLogRepository accessLogRepository;
     private final ProfileRepository profileRepository;
     private final ProfileResourceLimitRepository profileResourceLimitRepository;
+    private final ClockService clockService;
 
     @Autowired
     public AccessLimitServiceImpl(AccessLogRepository accessLogRepository,
                                   ProfileRepository profileRepository,
-                                  ProfileResourceLimitRepository profileResourceLimitRepository) {
+                                  ProfileResourceLimitRepository profileResourceLimitRepository,
+                                  ClockService clockService) {
         this.accessLogRepository = accessLogRepository;
         this.profileRepository = profileRepository;
         this.profileResourceLimitRepository = profileResourceLimitRepository;
+        this.clockService = clockService;
     }
 
-    @Override
-    public boolean checkDailyLimit(Employee employee, Profile profile) {
-        if (profile == null || profile.getMaxDailyAccess() == null || profile.getMaxDailyAccess() <= 0) {
-            // 无限制
-            return true;
-        }
-        
-        int todayCount = getTodayAccessCount(employee);
-        return todayCount < profile.getMaxDailyAccess();
-    }
 
-    @Override
-    public boolean checkWeeklyLimit(Employee employee, Profile profile) {
-        if (profile == null || profile.getMaxWeeklyAccess() == null || profile.getMaxWeeklyAccess() <= 0) {
-            // 无限制
-            return true;
-        }
-        
-        int weekCount = getWeekAccessCount(employee);
-        return weekCount < profile.getMaxWeeklyAccess();
-    }
 
     @Override
     public void recordAccess(Employee employee, Resource resource, Instant timestamp) {
@@ -73,26 +59,26 @@ public class AccessLimitServiceImpl implements AccessLimitService {
     @Override
     @Transactional(readOnly = true)
     public int getTodayAccessCount(Employee employee) {
-        return getTodayAccessCount(employee, Instant.now());
+        return getTodayAccessCount(employee, clockService.now());
     }
 
 
     @Override
     @Transactional(readOnly = true)
     public int getWeekAccessCount(Employee employee) {
-        return getWeekAccessCount(employee, Instant.now());
+        return getWeekAccessCount(employee, clockService.now());
     }
 
     @Override
     @Transactional(readOnly = true)
     public int getTodayAccessCount(Employee employee, Resource resource) {
-        return getTodayAccessCount(employee, resource, Instant.now());
+        return getTodayAccessCount(employee, resource, clockService.now());
     }
 
     @Override
     @Transactional(readOnly = true)
     public int getWeekAccessCount(Employee employee, Resource resource) {
-        return getWeekAccessCount(employee, resource, Instant.now());
+        return getWeekAccessCount(employee, resource, clockService.now());
     }
 
     /**
@@ -143,7 +129,7 @@ public class AccessLimitServiceImpl implements AccessLimitService {
      */
     @Transactional(readOnly = true)
     public boolean checkAllLimits(Employee employee) {
-        return checkAllLimits(employee, Instant.now());
+        return checkAllLimits(employee, clockService.now());
     }
 
     @Override
@@ -152,29 +138,50 @@ public class AccessLimitServiceImpl implements AccessLimitService {
         if (employee == null || timestamp == null) {
             return true;
         }
-        
-        // 收集员工所属组关联的所有激活配置文件（去重）
         List<Profile> activeProfiles = getActiveProfiles(employee);
-        
         if (activeProfiles.isEmpty()) {
             return true;
         }
-        
+
         Profile highestPriorityProfile = getHighestPriorityProfile(activeProfiles);
-        // 检查限制（仅检查最高优先级配置文件）
-        if (highestPriorityProfile.getMaxDailyAccess() != null && highestPriorityProfile.getMaxDailyAccess() > 0) {
-            int todayCount = getTodayAccessCount(employee, timestamp);
-            if (todayCount >= highestPriorityProfile.getMaxDailyAccess()) {
-                return false;
+        if (highestPriorityProfile == null) {
+            return true;
+        }
+
+        List<ProfileResourceLimit> limits = profileResourceLimitRepository
+                .findByProfileAndIsActiveTrue(highestPriorityProfile);
+        if (limits.isEmpty()) {
+            return true;
+        }
+
+        Map<String, Integer> todayCounts = new HashMap<>();
+        Map<String, Integer> weekCounts = new HashMap<>();
+
+        for (ProfileResourceLimit limit : limits) {
+            if (limit == null || limit.getResource() == null) {
+                continue;
+            }
+            String resourceId = limit.getResource().getResourceId();
+            
+            Integer dailyLimit = limit.getDailyLimit();
+            if (dailyLimit != null && dailyLimit > 0) {
+                int todayCount = todayCounts.computeIfAbsent(resourceId, 
+                    id -> getTodayAccessCount(employee, limit.getResource(), timestamp));
+                if (todayCount >= dailyLimit) {
+                    return false;
+                }
+            }
+
+            Integer weeklyLimit = limit.getWeeklyLimit();
+            if (weeklyLimit != null && weeklyLimit > 0) {
+                int weekCount = weekCounts.computeIfAbsent(resourceId,
+                    id -> getWeekAccessCount(employee, limit.getResource(), timestamp));
+                if (weekCount >= weeklyLimit) {
+                    return false;
+                }
             }
         }
-        if (highestPriorityProfile.getMaxWeeklyAccess() != null && highestPriorityProfile.getMaxWeeklyAccess() > 0) {
-            int weekCount = getWeekAccessCount(employee, timestamp);
-            if (weekCount >= highestPriorityProfile.getMaxWeeklyAccess()) {
-                return false;
-            }
-        }
-        
+
         return true;
     }
 

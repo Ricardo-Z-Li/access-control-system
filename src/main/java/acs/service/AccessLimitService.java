@@ -6,14 +6,9 @@ import acs.domain.Resource;
 
 import java.time.Instant;
 
-/**
- * ??????????
- */
 public interface AccessLimitService {
 
-    boolean checkDailyLimit(Employee employee, Profile profile);
 
-    boolean checkWeeklyLimit(Employee employee, Profile profile);
 
     void recordAccess(Employee employee, Resource resource, Instant timestamp);
 
@@ -21,14 +16,8 @@ public interface AccessLimitService {
 
     int getWeekAccessCount(Employee employee);
 
-    /**
-     * ????????????????
-     */
     int getTodayAccessCount(Employee employee, Resource resource);
 
-    /**
-     * ????????????????
-     */
     int getWeekAccessCount(Employee employee, Resource resource);
 
     boolean checkAllLimits(Employee employee);

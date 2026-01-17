@@ -314,7 +314,7 @@ public class AccessControlServiceImplTest {
 
         assertEquals(AccessDecision.DENY, result.getDecision());
         assertEquals(ReasonCode.NO_PERMISSION, result.getReasonCode());
-        assertTrue(result.getMessage().contains("当前时间不允许访问"));
+        assertTrue(result.getMessage().contains("Access not allowed at this time"));
         // 验证日志记录
         verify(logService).record(any(LogEntry.class));
     }

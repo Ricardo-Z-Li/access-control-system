@@ -1,8 +1,4 @@
--- Active: 1766819106838@@127.0.0.1@3306@access_control_db
--- init-test-data.sql
--- Test data for Access Control System
--- All names in English, person names in "John White" format
-
+-- Active: 1767078462975@@127.0.0.1@3306@access_control_db
 -- Clear existing data (if any) - delete in reverse order to respect foreign key constraints
 DELETE FROM access_logs;
 DELETE FROM resource_dependencies;
@@ -59,16 +55,16 @@ UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 1580, coord_y 
 UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 980, coord_y = 180, location = 'Guest WiFi' WHERE resource_id = 'RES010';
 UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 260, coord_y = 260, location = 'Parking Gate' WHERE resource_id = 'RES011';
 UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 720, coord_y = 720, location = 'Cafeteria' WHERE resource_id = 'RES012';
--- 3. Insert badges (badges table) - simple insert, only required fields
-INSERT INTO badges (badge_id, status) VALUES
-('BADGE001', 'ACTIVE'),
-('BADGE002', 'ACTIVE'),
-('BADGE003', 'ACTIVE'),
-('BADGE004', 'DISABLED'),
-('BADGE005', 'LOST'),
-('BADGE006', 'ACTIVE'),
-('BADGE007', 'ACTIVE'),
-('BADGE008', 'ACTIVE');
+-- 3. Insert badges (badges table) - with expiration dates and badge codes
+INSERT INTO badges (badge_id, status, expiration_date, badge_code, last_updated, last_code_update, code_expiration_date, needs_update, update_due_date) VALUES
+('BADGE001', 'ACTIVE', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'ABC123XYZ', NOW(), DATE_SUB(NOW(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), FALSE, NULL),
+('BADGE002', 'ACTIVE', DATE_ADD(CURDATE(), INTERVAL 6 MONTH), 'DEF456UVW', NOW(), DATE_SUB(NOW(), INTERVAL 45 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), TRUE, DATE_ADD(CURDATE(), INTERVAL 7 DAY)),
+('BADGE003', 'ACTIVE', DATE_ADD(CURDATE(), INTERVAL 2 YEAR), 'GHI789RST', NOW(), DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_ADD(CURDATE(), INTERVAL 180 DAY), FALSE, NULL),
+('BADGE004', 'DISABLED', DATE_SUB(CURDATE(), INTERVAL 1 MONTH), 'JKL012MNO', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 90 DAY), DATE_SUB(CURDATE(), INTERVAL 30 DAY), FALSE, NULL),
+('BADGE005', 'LOST', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'PQR345STU', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 60 DAY), DATE_ADD(CURDATE(), INTERVAL 120 DAY), TRUE, DATE_SUB(CURDATE(), INTERVAL 14 DAY)),
+('BADGE006', 'ACTIVE', DATE_ADD(CURDATE(), INTERVAL 3 MONTH), 'VWX678YZA', NOW(), DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_ADD(CURDATE(), INTERVAL 30 DAY), FALSE, NULL),
+('BADGE007', 'ACTIVE', DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'BCD901EFG', NOW(), DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), FALSE, NULL),
+('BADGE008', 'ACTIVE', DATE_ADD(CURDATE(), INTERVAL 6 MONTH), 'HIJ234KLM', NOW(), DATE_SUB(NOW(), INTERVAL 25 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY), TRUE, DATE_ADD(CURDATE(), INTERVAL 3 DAY));
 
 -- 4. Insert employees (employees table) - depends on badges
 INSERT INTO employees (employee_id, employee_name, badge_id) VALUES
@@ -162,12 +158,12 @@ INSERT INTO badge_readers (reader_id, reader_name, location, status, resource_id
 ('READER006', 'Cafeteria Reader', 'Cafeteria Entrance', 'MAINTENANCE', 'RES012', DATE_SUB(NOW(), INTERVAL 2 DAY), 9, 'SWIPE');
 
 -- 8. Insert profiles (profiles table)
-INSERT INTO profiles (profile_id, profile_name, description, max_daily_access, max_weekly_access, priority_level, is_active, created_at, updated_at) VALUES
-('PROFILE001', 'Standard Employee Profile', 'Default profile for regular employees', 10, 50, 5, TRUE, NOW(), NOW()),
-('PROFILE002', 'Admin Full Access', 'Administrators with full system access', NULL, NULL, 1, TRUE, NOW(), NOW()),
-('PROFILE003', 'Time Restricted Access', 'Access limited to business hours', 5, 25, 10, TRUE, NOW(), NOW()),
-('PROFILE004', 'Guest Limited Access', 'Limited access for visitors and guests', 3, 15, 20, TRUE, NOW(), NOW()),
-('PROFILE005', 'After Hours Access', 'Access permitted outside normal hours', 2, 10, 15, TRUE, NOW(), NOW());
+INSERT INTO profiles (profile_id, profile_name, description, priority_level, is_active, created_at, updated_at) VALUES
+('PROFILE001', 'Standard Employee Profile', 'Default profile for regular employees', 5, TRUE, NOW(), NOW()),
+('PROFILE002', 'Admin Full Access', 'Administrators with full system access', 1, TRUE, NOW(), NOW()),
+('PROFILE003', 'Time Restricted Access', 'Access limited to business hours', 10, TRUE, NOW(), NOW()),
+('PROFILE004', 'Guest Limited Access', 'Limited access for visitors and guests', 20, TRUE, NOW(), NOW()),
+('PROFILE005', 'After Hours Access', 'Access permitted outside normal hours', 15, TRUE, NOW(), NOW());
 
 -- 9. Insert time filters (time_filters table)
 INSERT INTO time_filters (time_filter_id, filter_name, raw_rule, year, months, days_of_month, days_of_week, start_time, end_time, time_ranges, excluded_months, excluded_days_of_week, excluded_time_ranges, is_recurring, description) VALUES
@@ -199,7 +195,49 @@ INSERT INTO profile_groups (profile_id, group_id) VALUES
 ('PROFILE005', 'GROUP001'),
 ('PROFILE005', 'GROUP006');
 
--- 12. Insert access logs (access_logs table)
+-- 12. Insert profile-employee associations (profile_employees table)
+INSERT INTO profile_employees (profile_id, employee_id) VALUES
+('PROFILE001', 'EMP002'),  -- Sarah Johnson (Engineering) has standard profile
+('PROFILE001', 'EMP003'),  -- Michael Brown (Engineering) has standard profile
+('PROFILE001', 'EMP004'),  -- Emily Davis (Finance) has standard profile
+('PROFILE001', 'EMP006'),  -- Jennifer Lee (HR) has standard profile
+('PROFILE002', 'EMP001'),  -- John White (Admin) has admin profile
+('PROFILE002', 'EMP007'),  -- Robert Taylor (Security) has admin profile
+('PROFILE004', 'EMP008');  -- Jessica Miller (Guest) has guest profile
+
+-- 13. Insert profile-badge associations (profile_badges table)
+INSERT INTO profile_badges (profile_id, badge_id) VALUES
+('PROFILE001', 'BADGE002'),  -- Sarah Johnson's badge
+('PROFILE001', 'BADGE003'),  -- Michael Brown's badge
+('PROFILE001', 'BADGE004'),  -- Emily Davis's badge (disabled)
+('PROFILE001', 'BADGE006'),  -- Jennifer Lee's badge
+('PROFILE002', 'BADGE001'),  -- John White's badge
+('PROFILE002', 'BADGE007'),  -- Robert Taylor's badge
+('PROFILE004', 'BADGE008');  -- Jessica Miller's badge
+
+-- 14. Insert profile resource limits (profile_resource_limits table)
+INSERT INTO profile_resource_limits (profile_id, resource_id, daily_limit, weekly_limit, is_active) VALUES
+-- Standard Employee Profile: limited access to common resources
+('PROFILE001', 'RES001', 10, 50, TRUE),   -- Main entrance: max 10/day, 50/week
+('PROFILE001', 'RES004', 5, 20, TRUE),    -- Printer: max 5/day, 20/week
+('PROFILE001', 'RES006', 3, 15, TRUE),    -- Conference room: max 3/day, 15/week
+-- Admin Full Access: higher limits or unlimited
+('PROFILE002', 'RES002', 20, 100, TRUE),  -- Server room: max 20/day, 100/week
+('PROFILE002', 'RES007', 10, 50, TRUE),   -- Executive office: max 10/day, 50/week
+-- Time Restricted Access: stricter limits
+('PROFILE003', 'RES001', 5, 25, TRUE),    -- Main entrance: max 5/day, 25/week
+('PROFILE003', 'RES005', 2, 10, TRUE),    -- Engineering lab: max 2/day, 10/week
+-- Guest Limited Access: very strict limits
+('PROFILE004', 'RES001', 2, 10, TRUE),    -- Main entrance: max 2/day, 10/week
+('PROFILE004', 'RES006', 1, 5, TRUE),     -- Conference room: max 1/day, 5/week
+('PROFILE004', 'RES010', 5, 20, TRUE),    -- Guest WiFi: max 5/day, 20/week
+('PROFILE004', 'RES012', 3, 15, TRUE),    -- Cafeteria: max 3/day, 15/week
+-- After Hours Access: moderate limits for after-hours resources
+('PROFILE005', 'RES001', 5, 30, TRUE),    -- Main entrance: max 5/day, 30/week
+('PROFILE005', 'RES002', 3, 15, TRUE),    -- Server room: max 3/day, 15/week
+('PROFILE005', 'RES008', 2, 10, TRUE);    -- Security room: max 2/day, 10/week
+
+-- 15. Insert access logs (access_logs table)
 INSERT INTO access_logs (timestamp, badge_id, employee_id, resource_id, decision, reason_code) VALUES
 (DATE_SUB(NOW(), INTERVAL 2 HOUR), 'BADGE001', 'EMP001', 'RES001', 'ALLOW', 'ALLOW'),
 (DATE_SUB(NOW(), INTERVAL 3 HOUR), 'BADGE002', 'EMP002', 'RES002', 'DENY', 'NO_PERMISSION'),
@@ -214,7 +252,7 @@ INSERT INTO access_logs (timestamp, badge_id, employee_id, resource_id, decision
 (DATE_SUB(NOW(), INTERVAL 12 HOUR), 'BADGE008', 'EMP008', 'RES010', 'ALLOW', 'ALLOW'),
 (DATE_SUB(NOW(), INTERVAL 13 HOUR), 'BADGE008', 'EMP008', 'RES002', 'DENY', 'NO_PERMISSION');
 
--- 13. Insert resource dependencies (resource_dependencies table)
+-- 16. Insert resource dependencies (resource_dependencies table)
 INSERT INTO resource_dependencies (resource_id, required_resource_id, time_window_minutes, description) VALUES
 ('RES002', 'RES001', 5, 'Must access main entrance within 5 minutes before server room'),
 ('RES007', 'RES001', 10, 'Executive office requires main entrance access within 10 minutes'),

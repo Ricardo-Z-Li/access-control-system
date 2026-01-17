@@ -359,12 +359,7 @@ public class AccessLimitPanel extends JPanel {
                 for (Profile profile : profiles) {
                     sb.append("  - ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");
-                    sb.append("    Daily Limit: ")
-                        .append(profile.getMaxDailyAccess() != null ? profile.getMaxDailyAccess() : "Unlimited")
-                        .append("\n");
-                    sb.append("    Weekly Limit: ")
-                        .append(profile.getMaxWeeklyAccess() != null ? profile.getMaxWeeklyAccess() : "Unlimited")
-                        .append("\n");
+
                 }
             }
 
@@ -463,8 +458,8 @@ public class AccessLimitPanel extends JPanel {
                 Integer strictestWeeklyLimit = null;
 
                 for (Profile profile : profiles) {
-                    Integer dailyLimit = profile.getMaxDailyAccess();
-                    Integer weeklyLimit = profile.getMaxWeeklyAccess();
+                    Integer dailyLimit = null;
+                    Integer weeklyLimit = null;
                     if (dailyLimit != null && dailyLimit > 0) {
                         if (strictestDailyLimit == null || dailyLimit < strictestDailyLimit) {
                             strictestDailyLimit = dailyLimit;
@@ -558,8 +553,8 @@ public class AccessLimitPanel extends JPanel {
                             status = "Exceeded";
                         } else if (!profiles.isEmpty()) {
                             for (Profile profile : profiles) {
-                                Integer dailyLimit = profile.getMaxDailyAccess();
-                                Integer weeklyLimit = profile.getMaxWeeklyAccess();
+                                Integer dailyLimit = null;
+                                Integer weeklyLimit = null;
 
                                 if (dailyLimit != null && dailyLimit > 0 && todayCount >= dailyLimit * 0.8) {
                                     status = "Near Limit";

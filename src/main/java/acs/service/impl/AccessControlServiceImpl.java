@@ -200,19 +200,15 @@ public class AccessControlServiceImpl implements AccessControlService {
                 // 如果没有激活的配置文件，则跳过时间检查
             }
 
-            // 9. 访问次数限制检查（仅当资源受控时检查）
+
+
+            // 9. 资源访问次数限制检查（仅当资源受控时检查）
             if (resource.getIsControlled() != null && resource.getIsControlled()) {
-                if (!accessLimitService.checkAllLimits(employee, request.getTimestamp())) {
-                    AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Daily/weekly access limit exceeded");
-                    recordLog(badge, employee, resource, result, request);
-                    return result;
-                }
                 if (!accessLimitService.checkResourceLimits(employee, resource, request.getTimestamp())) {
                     AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Resource access count limit exceeded");
                     recordLog(badge, employee, resource, result, request);
                     return result;
                 }
-
             }
 
             // 10. 优先级规则检查（资源依赖关系）- 仅当资源受控时检查

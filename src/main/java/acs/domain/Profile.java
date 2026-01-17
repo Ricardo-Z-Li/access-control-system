@@ -3,6 +3,7 @@ package acs.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -28,11 +29,7 @@ public class Profile {
     @Column(name = "description", length = 500)
     private String description;
 
-    @Column(name = "max_daily_access")
-    private Integer maxDailyAccess;
 
-    @Column(name = "max_weekly_access")
-    private Integer maxWeeklyAccess;
 
     @Column(name = "priority_level")
     private Integer priorityLevel;
@@ -120,21 +117,7 @@ public class Profile {
         this.description = description;
     }
 
-    public Integer getMaxDailyAccess() {
-        return maxDailyAccess;
-    }
 
-    public void setMaxDailyAccess(Integer maxDailyAccess) {
-        this.maxDailyAccess = maxDailyAccess;
-    }
-
-    public Integer getMaxWeeklyAccess() {
-        return maxWeeklyAccess;
-    }
-
-    public void setMaxWeeklyAccess(Integer maxWeeklyAccess) {
-        this.maxWeeklyAccess = maxWeeklyAccess;
-    }
 
     public Integer getPriorityLevel() {
         return priorityLevel;
@@ -198,5 +181,27 @@ public class Profile {
 
     public void setBadges(Set<Badge> badges) {
         this.badges = badges;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Profile profile = (Profile) o;
+        return Objects.equals(profileId, profile.profileId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(profileId);
+    }
+
+    @Override
+    public String toString() {
+        return "Profile{" +
+                "profileId='" + profileId + '\'' +
+                ", profileName='" + profileName + '\'' +
+                ", priorityLevel=" + priorityLevel +
+                '}';
     }
 }

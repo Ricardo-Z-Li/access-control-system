@@ -2,6 +2,7 @@ package acs.simulator;
 
 import acs.domain.*;
 import acs.repository.BadgeReaderRepository;
+import acs.repository.BadgeRepository;
 import acs.service.AccessControlService;
 import acs.service.ClockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
     private final RouterSystem routerSystem;
     private final ResourceController resourceController;
     private final BadgeReaderRepository badgeReaderRepository;
+    private final BadgeRepository badgeRepository;
     private final ClockService clockService;
     
     // 模拟延迟配置（毫秒）
@@ -40,11 +42,13 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
                                     RouterSystem routerSystem,
                                     ResourceController resourceController,
                                     BadgeReaderRepository badgeReaderRepository,
+                                    BadgeRepository badgeRepository,
                                     ClockService clockService) {
         this.accessControlService = accessControlService;
         this.routerSystem = routerSystem;
         this.resourceController = resourceController;
         this.badgeReaderRepository = badgeReaderRepository;
+        this.badgeRepository = badgeRepository;
         this.clockService = clockService;
     }
 
@@ -153,9 +157,10 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         // 模拟读卡延迟
         Thread.sleep(BADGE_READ_DELAY_MS);
         
-        // 在实际系统中，这里会从硬件读取徽章代码
-        // 我们模拟返回一个合成的徽章代码
-        return "SIM_" + badgeId + "_" + clockService.now().toEpochMilli();
+        // 从数据库查询徽章代码
+        return badgeRepository.findById(badgeId)
+                .map(Badge::getBadgeCode)
+                .orElse(null);
     }
 
     @Override

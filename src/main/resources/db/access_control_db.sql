@@ -1,4 +1,4 @@
--- Active: 1766819106838@@127.0.0.1@3306@mysql
+-- Active: 1767078462975@@127.0.0.1@3306@mysql
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS access_control_db;
 
@@ -114,8 +114,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     profile_id VARCHAR(50) NOT NULL PRIMARY KEY,
     profile_name VARCHAR(100) NOT NULL,
     description VARCHAR(500),
-    max_daily_access INT,
-    max_weekly_access INT,
+
     priority_level INT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at DATETIME NOT NULL,

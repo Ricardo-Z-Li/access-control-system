@@ -2,6 +2,7 @@ package acs.simulator;
 
 import acs.domain.*;
 import acs.repository.BadgeReaderRepository;
+import acs.repository.BadgeRepository;
 import acs.service.AccessControlService;
 import acs.service.ClockService;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,9 @@ public class BadgeReaderSimulatorImplTest {
     private BadgeReaderRepository badgeReaderRepository;
 
     @Mock
+    private BadgeRepository badgeRepository;
+
+    @Mock
     private ClockService clockService;
 
     @InjectMocks
@@ -42,7 +46,7 @@ public class BadgeReaderSimulatorImplTest {
 
     @BeforeEach
     void setUp() {
-        when(clockService.now()).thenReturn(java.time.Instant.parse("2026-01-12T23:15:00Z"));
+        // 如果需要，可以在此设置通用模拟
     }
 
 
@@ -54,8 +58,11 @@ public class BadgeReaderSimulatorImplTest {
         Instant now = Instant.parse("2026-01-12T23:15:00Z");
 
         BadgeReader badgeReader = new BadgeReader(readerId, "Test Reader", "Location", "ONLINE", resourceId);
+        Badge badge = new Badge(badgeId, BadgeStatus.ACTIVE);
+        badge.setBadgeCode("ABC123XYZ");
         AccessResult expectedResult = new AccessResult(AccessDecision.ALLOW, ReasonCode.ALLOW, "Access granted");
 
+        when(badgeRepository.findById(badgeId)).thenReturn(Optional.of(badge));
         when(badgeReaderRepository.findByReaderId(readerId)).thenReturn(Optional.of(badgeReader));
         when(clockService.now()).thenReturn(now);
         when(routerSystem.routeRequest(any(AccessRequest.class), anyString(), anyString(), anyString(), anyString(), anyString()))
@@ -77,6 +84,9 @@ public class BadgeReaderSimulatorImplTest {
         String readerId = "NON_EXISTENT_READER";
         String badgeId = "BADGE001";
 
+        Badge badge = new Badge(badgeId, BadgeStatus.ACTIVE);
+        badge.setBadgeCode("ABC123XYZ");
+        when(badgeRepository.findById(badgeId)).thenReturn(Optional.of(badge));
         when(badgeReaderRepository.findByReaderId(readerId)).thenReturn(Optional.empty());
 
         AccessResult actualResult = badgeReaderSimulator.simulateBadgeSwipe(readerId, badgeId);
@@ -98,8 +108,11 @@ public class BadgeReaderSimulatorImplTest {
         Instant now = Instant.parse("2026-01-12T23:15:00Z");
 
         BadgeReader badgeReader = new BadgeReader(readerId, "Test Reader", "Location", "ONLINE", resourceId);
+        Badge badge = new Badge(badgeId, BadgeStatus.ACTIVE);
+        badge.setBadgeCode("ABC123XYZ");
         AccessResult expectedResult = new AccessResult(AccessDecision.DENY, ReasonCode.NO_PERMISSION, "Access denied");
 
+        when(badgeRepository.findById(badgeId)).thenReturn(Optional.of(badge));
         when(badgeReaderRepository.findByReaderId(readerId)).thenReturn(Optional.of(badgeReader));
         when(clockService.now()).thenReturn(now);
         when(routerSystem.routeRequest(any(AccessRequest.class), anyString(), anyString(), anyString(), anyString(), anyString()))
@@ -118,13 +131,14 @@ public class BadgeReaderSimulatorImplTest {
     public void readBadgeCode_validInput_shouldReturnCode() throws InterruptedException {
         String readerId = "READER001";
         String badgeId = "BADGE001";
-        when(clockService.now()).thenReturn(Instant.parse("2026-01-12T23:15:00Z"));
+        Badge badge = new Badge(badgeId, BadgeStatus.ACTIVE);
+        badge.setBadgeCode("ABC123XYZ");
+        when(badgeRepository.findById(badgeId)).thenReturn(Optional.of(badge));
 
         String badgeCode = badgeReaderSimulator.readBadgeCode(readerId, badgeId);
 
         assertNotNull(badgeCode);
-        assertTrue(badgeCode.startsWith("SIM_"));
-        assertTrue(badgeCode.contains(badgeId));
+        assertEquals("ABC123XYZ", badgeCode);
     }
 
     @Test
