@@ -34,8 +34,7 @@ public class SimulatorPanel extends JPanel {
     private JTextField badgeIdField;
     private JTextPane simulatorLogArea;
     private JTextPane routerLogArea;
-    private JTable eventTable;
-    private DefaultTableModel eventTableModel;
+
     private JLabel simulationStatusLabel;
     private JLabel systemHealthLabel;
     private JLabel loadBalanceLabel;
@@ -283,13 +282,6 @@ public class SimulatorPanel extends JPanel {
         
         panel.add(controlPanel, BorderLayout.NORTH);
         
-        String[] columns = {"Time", "Event", "Reader", "Badge", "Resource", "Result"};
-        eventTableModel = new DefaultTableModel(columns, 0);
-        eventTable = new JTable(eventTableModel);
-        eventTable.setAutoCreateRowSorter(true);
-        
-        JScrollPane scrollPane = new JScrollPane(eventTable);
-        
         JPanel logPanel = new JPanel(new BorderLayout());
         JTextPane eventLogArea = UiTheme.createLogPane(true);
         eventLogArea.setDocument(simulatorLogArea.getDocument());
@@ -299,10 +291,7 @@ public class SimulatorPanel extends JPanel {
         statusPanel.add(simulationStatusLabel);
         logPanel.add(statusPanel, BorderLayout.SOUTH);
         
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, logPanel);
-        splitPane.setResizeWeight(0.6);
-        splitPane.setDividerLocation(0.6);
-        panel.add(splitPane, BorderLayout.CENTER);
+        panel.add(logPanel, BorderLayout.CENTER);
         
         return panel;
     }

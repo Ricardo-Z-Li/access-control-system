@@ -25,7 +25,6 @@ public class ProfileFileServiceImpl implements ProfileFileService {
     private final TimeFilterRepository timeFilterRepository;
     private final ObjectMapper objectMapper;
 
-    @Autowired
     public ProfileFileServiceImpl(ProfileRepository profileRepository,
                                   TimeFilterRepository timeFilterRepository) {
         this.profileRepository = profileRepository;
