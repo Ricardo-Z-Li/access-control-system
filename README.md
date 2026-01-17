@@ -1,8 +1,8 @@
 
 ```
 access-control-system
+├─ .editorconfig
 ├─ pom.xml
-├─ Project.pdf
 └─ src
    ├─ main
    │  ├─ java
@@ -17,10 +17,12 @@ access-control-system
    │  │     │  ├─ Badge.java
    │  │     │  ├─ BadgeReader.java
    │  │     │  ├─ BadgeStatus.java
+   │  │     │  ├─ BadgeUpdateStatus.java
    │  │     │  ├─ Employee.java
    │  │     │  ├─ Group.java
    │  │     │  ├─ LogEntry.java
    │  │     │  ├─ Profile.java
+   │  │     │  ├─ ProfileResourceLimit.java
    │  │     │  ├─ ReasonCode.java
    │  │     │  ├─ Resource.java
    │  │     │  ├─ ResourceDependency.java
@@ -42,6 +44,7 @@ access-control-system
    │  │     │  ├─ EmployeeRepository.java
    │  │     │  ├─ GroupRepository.java
    │  │     │  ├─ ProfileRepository.java
+   │  │     │  ├─ ProfileResourceLimitRepository.java
    │  │     │  ├─ ResourceDependencyRepository.java
    │  │     │  ├─ ResourceRepository.java
    │  │     │  └─ TimeFilterRepository.java
@@ -81,8 +84,12 @@ access-control-system
    │  │     │  ├─ RouterSystem.java
    │  │     │  ├─ RouterSystemImpl.java
    │  │     │  ├─ SimulationListener.java
+   │  │     │  ├─ SimulationPath.java
+   │  │     │  ├─ SimulationScenarioConfig.java
    │  │     │  ├─ SimulationStatus.java
    │  │     │  └─ SystemHealth.java
+   │  │     ├─ tools
+   │  │     │  └─ DbInitRunner.java
    │  │     └─ ui
    │  │        ├─ AccessLimitPanel.java
    │  │        ├─ AdminPanel.java
@@ -94,11 +101,16 @@ access-control-system
    │  │        ├─ SimulatorPanel.java
    │  │        ├─ SiteMapPanel.java
    │  │        ├─ TimeFilterPanel.java
-   │  │        └─ UIStarter.java
+   │  │        ├─ UIStarter.java
+   │  │        └─ UiTheme.java
    │  └─ resources
    │     ├─ application.properties
-   │     └─ db
-   │        └─ access_control_db.sql
+   │     ├─ db
+   │     │  └─ access_control_db.sql
+   │     ├─ office-layout.png
+   │     ├─ simulator
+   │     │  └─ scenarios.json
+   │     └─ site-layout.png
    └─ test
       ├─ java
       │  └─ acs
@@ -119,9 +131,11 @@ access-control-system
       │     │     ├─ EmergencyControlServiceImplTest.java
       │     │     ├─ LogQueryServiceImplTest.java
       │     │     └─ TimeFilterServiceImplTest.java
-      │     └─ simulator
-      │        ├─ BadgeCodeUpdateServiceImplTest.java
-      │        └─ BadgeReaderSimulatorImplTest.java
+      │     ├─ simulator
+      │     │  ├─ BadgeCodeUpdateServiceImplTest.java
+      │     │  └─ BadgeReaderSimulatorImplTest.java
+      │     └─ tools
+      │        └─ TestDataInitRunner.java
       └─ resources
          ├─ application-test.properties
          └─ db
