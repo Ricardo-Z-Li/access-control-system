@@ -207,8 +207,8 @@ public class BadgeCodeUpdateServiceImplTest {
         String stats = badgeCodeUpdateService.getUpdateStats();
 
         // 则：统计信息包含预期数据
-        assertThat(stats).contains("总检查次数=2");
-        assertThat(stats).contains("触发更新=0"); // 未触发更新
-        assertThat(stats).contains("发送通知=2"); // 两次检查都发送了通知
+        assertThat(stats).contains("total checks=2");
+        assertThat(stats).contains("updates triggered=0"); // 未触发更新
+        assertThat(stats).contains("notifications sent=2"); // 两次检查都发送了通知
     }
 }

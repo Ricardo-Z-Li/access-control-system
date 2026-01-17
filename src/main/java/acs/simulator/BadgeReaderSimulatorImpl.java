@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,6 +37,9 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
     
     // 读卡器统计信息
     private final ConcurrentHashMap<String, ReaderStats> readerStats = new ConcurrentHashMap<>();
+    
+    // 最后读取状态（ThreadLocal用于线程安全）
+    private final ThreadLocal<String> lastReadStatus = ThreadLocal.withInitial(() -> null);
     
     @Autowired
     public BadgeReaderSimulatorImpl(AccessControlService accessControlService,
@@ -157,10 +161,59 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         // 模拟读卡延迟
         Thread.sleep(BADGE_READ_DELAY_MS);
         
-        // 从数据库查询徽章代码
-        return badgeRepository.findById(badgeId)
-                .map(Badge::getBadgeCode)
-                .orElse(null);
+        // 从数据库查询徽章
+        Optional<Badge> badgeOpt = badgeRepository.findById(badgeId);
+        if (badgeOpt.isEmpty()) {
+            String status = "Badge not found: " + badgeId;
+            System.out.println(status);
+            lastReadStatus.set(status);
+            return null;
+        }
+        
+        Badge badge = badgeOpt.get();
+        String badgeCode = badge.getBadgeCode();
+        StringBuilder statusBuilder = new StringBuilder();
+        
+        // 检查徽章状态
+        if (badge.getStatus() != BadgeStatus.ACTIVE) {
+            String status = "Badge is inactive (disabled or reported lost): " + badgeId;
+            System.out.println(status);
+            statusBuilder.append(status);
+            lastReadStatus.set(statusBuilder.toString());
+            return badgeCode;
+        }
+        
+        // 检查徽章过期日期
+        if (badge.getExpirationDate() != null && badge.getExpirationDate().isBefore(java.time.LocalDate.now())) {
+            String status = "Badge expired: " + badgeId + ", expiration date: " + badge.getExpirationDate();
+            System.out.println(status);
+            statusBuilder.append(status);
+            lastReadStatus.set(statusBuilder.toString());
+            return badgeCode;
+        }
+        
+        // 检查徽章代码更新状态
+        if (badge.getCodeExpirationDate() != null && badge.getCodeExpirationDate().isBefore(java.time.LocalDate.now())) {
+            String status = "Badge code expired: " + badgeId + ", code expiration date: " + badge.getCodeExpirationDate();
+            System.out.println(status);
+            statusBuilder.append(status);
+            lastReadStatus.set(statusBuilder.toString());
+            return badgeCode;
+        }
+        
+        if (badge.isNeedsUpdate()) {
+            String status = "Badge update required: " + badgeId;
+            System.out.println(status);
+            statusBuilder.append(status);
+            lastReadStatus.set(statusBuilder.toString());
+            return badgeCode;
+        }
+        
+        // 徽章代码有效，不需要更新
+        String status = "Status: No update needed. Note: Current badge code is valid";
+        System.out.println(status);
+        lastReadStatus.set(status);
+        return badgeCode;
     }
 
     @Override
@@ -243,5 +296,12 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
             int total = totalSwipes.get();
             return total > 0 ? (double) totalProcessingTime.get() / total : 0.0;
         }
+    }
+    
+    @Override
+    public String getLastReadStatus() {
+        String status = lastReadStatus.get();
+        lastReadStatus.remove(); // 清除当前线程的状态
+        return status;
     }
 }

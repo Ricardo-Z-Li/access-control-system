@@ -223,8 +223,8 @@ public class SimulatedTimeAccessControlIntegrationTest {
         assertEquals(AccessDecision.DENY, result.getDecision(),
             "当模拟时间不匹配时间过滤器时，应拒绝访问。实际结果: " + result.getDecision());
         assertEquals(ReasonCode.NO_PERMISSION, result.getReasonCode());
-        assertTrue(result.getMessage().contains("当前时间不允许访问"),
-            "拒绝消息应包含'当前时间不允许访问'。实际消息: " + result.getMessage());
+         assertTrue(result.getMessage().contains("Access not allowed at this time"),
+             "拒绝消息应包含'Access not allowed at this time'。实际消息: " + result.getMessage());
     }
 
     /**

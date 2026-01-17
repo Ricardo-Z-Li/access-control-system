@@ -118,7 +118,7 @@ public class EmergencyControlServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> emergencyControlService.setResourcesControlled(Arrays.asList("NONEXISTENT"), false));
         
-        assertEquals("资源不存在: NONEXISTENT", exception.getMessage());
+        assertEquals("Resource not found: NONEXISTENT", exception.getMessage());
         verify(resourceRepository, never()).save(any(Resource.class));
         verify(cacheManager, never()).updateResource(any(Resource.class));
     }
@@ -163,7 +163,7 @@ public class EmergencyControlServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> emergencyControlService.setGroupResourcesControlled("NONEXISTENT", false));
         
-        assertEquals("组不存在: NONEXISTENT", exception.getMessage());
+        assertEquals("Group not found: NONEXISTENT", exception.getMessage());
         verify(resourceRepository, never()).save(any(Resource.class));
         verify(cacheManager, never()).updateResource(any(Resource.class));
     }

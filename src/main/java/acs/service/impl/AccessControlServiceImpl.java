@@ -100,6 +100,7 @@ public class AccessControlServiceImpl implements AccessControlService {
             // 3.1 Badge expiration check
             LocalDate requestDate = LocalDate.ofInstant(request.getTimestamp(), ZoneId.systemDefault());
             if (badge.getExpirationDate() != null && requestDate.isAfter(badge.getExpirationDate())) {
+
                 AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_EXPIRED, "Badge expired");
                 recordLog(badge, null, null, result, request);
                 return result;

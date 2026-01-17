@@ -52,4 +52,10 @@ public interface BadgeReaderSimulator {
      * @return 统计信息字符串
      */
     String getSimulationStats(String readerId);
+    
+    /**
+     * 获取最后一次读取徽章的状态信息
+     * @return 状态信息字符串，如果没有读取记录返回null
+     */
+    String getLastReadStatus();
 }

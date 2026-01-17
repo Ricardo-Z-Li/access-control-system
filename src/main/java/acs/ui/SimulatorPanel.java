@@ -477,6 +477,12 @@ public class SimulatorPanel extends JPanel {
                 logMessage("Starting read simulation: reader=" + readerId + ", badge=" + badgeId);
                 var code = badgeReaderSimulator.readBadgeCode(readerId, badgeId);
                 logMessage("Read result: badge code=" + (code != null ? code : "Read failed"));
+                
+                // 获取并显示徽章读取状态信息
+                String status = badgeReaderSimulator.getLastReadStatus();
+                if (status != null) {
+                    logMessage("Badge status: " + status);
+                }
             } catch (InterruptedException ex) {
                 logMessage("Simulation interrupted: " + ex.getMessage());
             } catch (Exception ex) {
