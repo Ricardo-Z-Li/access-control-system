@@ -1,4 +1,4 @@
--- Active: 1767078462975@@127.0.0.1@3306@access_control_db
+-- Active: 1766819106838@@127.0.0.1@3306@access_control_db
 -- Clear existing data (if any) - delete in reverse order to respect foreign key constraints
 DELETE FROM access_logs;
 DELETE FROM resource_dependencies;
@@ -43,18 +43,18 @@ INSERT INTO resources (resource_id, resource_name, resource_type, resource_state
 ('RES012', 'Cafeteria Entrance', 'DOOR', 'AVAILABLE', TRUE);
 
 -- Set resource locations (building/floor/coord)
-UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 180, coord_y = 140, location = 'Main Gate' WHERE resource_id = 'RES001';
-UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 1760, coord_y = 210, location = 'Server Room' WHERE resource_id = 'RES002';
-UPDATE resources SET building = 'OFFICE', floor = '2F', coord_x = 1460, coord_y = 560, location = 'Finance Office' WHERE resource_id = 'RES003';
-UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 1180, coord_y = 230, location = 'Printer Area' WHERE resource_id = 'RES004';
-UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 680, coord_y = 220, location = 'Engineering Lab' WHERE resource_id = 'RES005';
-UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 740, coord_y = 610, location = 'Conference Room A' WHERE resource_id = 'RES006';
-UPDATE resources SET building = 'OFFICE', floor = '2F', coord_x = 1240, coord_y = 540, location = 'Executive Office' WHERE resource_id = 'RES007';
-UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 420, coord_y = 720, location = 'Security Room' WHERE resource_id = 'RES008';
-UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 1580, coord_y = 700, location = 'Document Printer' WHERE resource_id = 'RES009';
-UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 980, coord_y = 180, location = 'Guest WiFi' WHERE resource_id = 'RES010';
-UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 260, coord_y = 260, location = 'Parking Gate' WHERE resource_id = 'RES011';
-UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 720, coord_y = 720, location = 'Cafeteria' WHERE resource_id = 'RES012';
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 386, coord_y = 450, location = 'Main Gate' WHERE resource_id = 'RES001';
+UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 287, coord_y = 450, location = 'Server Room' WHERE resource_id = 'RES002';
+UPDATE resources SET building = 'OFFICE', floor = '2F', coord_x = 693, coord_y = 450, location = 'Finance Office' WHERE resource_id = 'RES003';
+UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 1208, coord_y = 206, location = 'Printer Area' WHERE resource_id = 'RES004';
+UPDATE resources SET building = 'OFFICE', floor = '3F', coord_x = 1042, coord_y = 204, location = 'Engineering Lab' WHERE resource_id = 'RES005';
+UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 639, coord_y = 730, location = 'Conference Room A' WHERE resource_id = 'RES006';
+UPDATE resources SET building = 'OFFICE', floor = '2F', coord_x = 221, coord_y = 747, location = 'Executive Office' WHERE resource_id = 'RES007';
+UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 1679, coord_y = 1152, location = 'Security Room' WHERE resource_id = 'RES008';
+UPDATE resources SET building = 'OFFICE', floor = '1F', coord_x = 1736, coord_y = 196, location = 'Document Printer' WHERE resource_id = 'RES009';
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 1368, coord_y = 1138, location = 'Guest WiFi' WHERE resource_id = 'RES010';
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 1847, coord_y = 980, location = 'Parking Gate' WHERE resource_id = 'RES011';
+UPDATE resources SET building = 'SITE', floor = 'G', coord_x = 718, coord_y = 1146, location = 'Cafeteria' WHERE resource_id = 'RES012';
 -- 3. Insert badges (badges table) - with expiration dates and badge codes
 INSERT INTO badges (badge_id, status, badge_code, last_updated, last_code_update, code_expiration_date, needs_update, update_due_date) VALUES
 ('BADGE001', 'ACTIVE', 'ABC123XYZ', NOW(), DATE_SUB(NOW(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY), FALSE, NULL),
