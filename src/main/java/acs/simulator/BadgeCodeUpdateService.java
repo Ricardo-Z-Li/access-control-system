@@ -55,6 +55,13 @@ public interface BadgeCodeUpdateService {
     void simulateUpdateNotification(String badgeId, int daysUntilExpiry);
 
     /**
+     * 获取徽章信息
+     * @param badgeId 徽章ID
+     * @return 徽章对象，如果不存在返回null
+     */
+    Badge getBadge(String badgeId);
+
+    /**
      * 获取徽章更新统计信息
      * @return 统计信息字符串
      */

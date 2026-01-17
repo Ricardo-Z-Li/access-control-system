@@ -183,16 +183,7 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
             return badgeCode;
         }
         
-        // 检查徽章过期日期
-        if (badge.getExpirationDate() != null && badge.getExpirationDate().isBefore(java.time.LocalDate.now())) {
-            String status = "Badge expired: " + badgeId + ", expiration date: " + badge.getExpirationDate();
-            System.out.println(status);
-            statusBuilder.append(status);
-            lastReadStatus.set(statusBuilder.toString());
-            return badgeCode;
-        }
-        
-        // 检查徽章代码更新状态
+        // 检查徽章代码过期日期
         if (badge.getCodeExpirationDate() != null && badge.getCodeExpirationDate().isBefore(java.time.LocalDate.now())) {
             String status = "Badge code expired: " + badgeId + ", code expiration date: " + badge.getCodeExpirationDate();
             System.out.println(status);

@@ -195,7 +195,6 @@ CREATE INDEX idx_profile_resource_limits_resource ON profile_resource_limits (re
 
 -- 为badges表添加新字段
 ALTER TABLE badges
-ADD COLUMN expiration_date DATE,
 ADD COLUMN badge_code VARCHAR(100),
 ADD COLUMN last_updated DATETIME,
 ADD COLUMN last_code_update DATETIME,

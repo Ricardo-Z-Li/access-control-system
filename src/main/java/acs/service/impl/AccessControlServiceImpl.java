@@ -97,11 +97,11 @@ public class AccessControlServiceImpl implements AccessControlService {
                 return result;
             }
 
-            // 3.1 Badge expiration check
+            // 3.1 Badge code expiration check
             LocalDate requestDate = LocalDate.ofInstant(request.getTimestamp(), ZoneId.systemDefault());
-            if (badge.getExpirationDate() != null && requestDate.isAfter(badge.getExpirationDate())) {
+            if (badge.getCodeExpirationDate() != null && requestDate.isAfter(badge.getCodeExpirationDate())) {
 
-                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_EXPIRED, "Badge expired");
+                AccessResult result = new AccessResult(AccessDecision.DENY, ReasonCode.BADGE_EXPIRED, "Badge code expired");
                 recordLog(badge, null, null, result, request);
                 return result;
             }

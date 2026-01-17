@@ -1,5 +1,6 @@
 package acs.simulator;
 
+import acs.service.ClockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -15,12 +16,14 @@ import java.time.format.DateTimeFormatter;
 public class BadgeUpdateScheduler {
 
     private final BadgeCodeUpdateService badgeCodeUpdateService;
+    private final ClockService clockService;
     
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
-    public BadgeUpdateScheduler(BadgeCodeUpdateService badgeCodeUpdateService) {
+    public BadgeUpdateScheduler(BadgeCodeUpdateService badgeCodeUpdateService, ClockService clockService) {
         this.badgeCodeUpdateService = badgeCodeUpdateService;
+        this.clockService = clockService;
     }
 
     /**
@@ -28,21 +31,21 @@ public class BadgeUpdateScheduler {
      */
     @Scheduled(cron = "0 0 2 * * ?")
     public void dailyBadgeUpdateCheck() {
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Starting daily badge update check...");
+        System.out.println("[" + clockService.localNow().format(formatter) + "] Starting daily badge update check...");
         
         long startTime = System.currentTimeMillis();
         var badgesNeedingUpdate = badgeCodeUpdateService.checkAllBadgesForUpdate();
         long endTime = System.currentTimeMillis();
         
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Daily badge update check completed, elapsed " + (endTime - startTime) + " ms");
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Badges needing update: " + badgesNeedingUpdate.size());
+        System.out.println("[" + clockService.localNow().format(formatter) + "] Daily badge update check completed, elapsed " + (endTime - startTime) + " ms");
+        System.out.println("[" + clockService.localNow().format(formatter) + "] Badges needing update: " + badgesNeedingUpdate.size());
         
         if (!badgesNeedingUpdate.isEmpty()) {
-            System.out.println("[" + LocalDateTime.now().format(formatter) + "] Badge IDs needing update: " + badgesNeedingUpdate);
+            System.out.println("[" + clockService.localNow().format(formatter) + "] Badge IDs needing update: " + badgesNeedingUpdate);
         }
         
         // 打印统计信息
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] " + badgeCodeUpdateService.getUpdateStats());
+        System.out.println("[" + clockService.localNow().format(formatter) + "] " + badgeCodeUpdateService.getUpdateStats());
     }
 
     /**
@@ -50,7 +53,7 @@ public class BadgeUpdateScheduler {
      */
     @Scheduled(cron = "0 0 * * * ?")
     public void hourlyUpdateNotificationCheck() {
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Hourly badge update notification check...");
+        System.out.println("[" + clockService.localNow().format(formatter) + "] Hourly badge update notification check...");
         
         // 这里可以添加更精细的通知逻辑
         // 目前依赖checkAllBadgesForUpdate中的通知机制
@@ -62,7 +65,7 @@ public class BadgeUpdateScheduler {
      */
     @Scheduled(cron = "0 */30 * * * ?")
     public void monitorUpdateWindow() {
-        System.out.println("[" + LocalDateTime.now().format(formatter) + "] Checking update window expiry...");
+        System.out.println("[" + clockService.localNow().format(formatter) + "] Checking update window expiry...");
         
         // 依赖checkAllBadgesForUpdate中的过期禁用逻辑
         badgeCodeUpdateService.checkAllBadgesForUpdate();

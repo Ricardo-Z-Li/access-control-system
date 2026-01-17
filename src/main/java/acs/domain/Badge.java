@@ -25,8 +25,7 @@ public class Badge {
     @Column(name = "status", nullable = false)
     private BadgeStatus status;
 
-    @Column(name = "expiration_date")
-    private LocalDate expirationDate;
+
 
     @Column(name = "badge_code", length = 100)
     private String badgeCode;
@@ -63,14 +62,13 @@ public class Badge {
     }
 
     // 扩展构造器（包含新字段）
-    public Badge(String badgeId, BadgeStatus status, LocalDate expirationDate, String badgeCode) {
+    public Badge(String badgeId, BadgeStatus status, LocalDate codeExpirationDate, String badgeCode) {
         this.badgeId = badgeId;
         this.status = status;
-        this.expirationDate = expirationDate;
         this.badgeCode = badgeCode;
         this.lastUpdated = Instant.now();
         this.lastCodeUpdate = Instant.now();
-        this.codeExpirationDate = expirationDate;
+        this.codeExpirationDate = codeExpirationDate;
         this.needsUpdate = false;
         this.updateDueDate = null;
     }
@@ -100,13 +98,7 @@ public class Badge {
         this.employee = employee;
     }
 
-    public LocalDate getExpirationDate() {
-        return expirationDate;
-    }
 
-    public void setExpirationDate(LocalDate expirationDate) {
-        this.expirationDate = expirationDate;
-    }
 
     public String getBadgeCode() {
         return badgeCode;

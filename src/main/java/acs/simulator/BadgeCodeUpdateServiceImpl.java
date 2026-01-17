@@ -3,8 +3,11 @@ package acs.simulator;
 import acs.domain.Badge;
 import acs.domain.BadgeUpdateStatus;
 import acs.repository.BadgeRepository;
+import acs.service.ClockService;
+import acs.cache.LocalCacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,9 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Includes expiry checks, new code generation, and update notifications.
  */
 @Service
+@Transactional
 public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
 
     private final BadgeRepository badgeRepository;
+    private final ClockService clockService;
+    private final LocalCacheManager cacheManager;
     private final Random random = new Random();
     
     // Update statistics
@@ -35,11 +41,13 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
     // Configuration parameters
     private static final int DAYS_BEFORE_EXPIRY_TO_NOTIFY = 30; // Start notifying 30 days before expiry
     private static final int UPDATE_WINDOW_DAYS = 14; // Update window in days
-    private static final int BADGE_CODE_LENGTH = 16; // New badge code length
+    private static final int BADGE_CODE_LENGTH = 9; // New badge code length (matches existing format e.g., ABC123XYZ)
     
     @Autowired
-    public BadgeCodeUpdateServiceImpl(BadgeRepository badgeRepository) {
+    public BadgeCodeUpdateServiceImpl(BadgeRepository badgeRepository, ClockService clockService, LocalCacheManager cacheManager) {
         this.badgeRepository = badgeRepository;
+        this.clockService = clockService;
+        this.cacheManager = cacheManager;
     }
 
     @Override
@@ -47,7 +55,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
         totalChecks.incrementAndGet();
 
         return badgeRepository.findById(badgeId)
-                .map(badge -> evaluateBadgeUpdateStatusInternal(badge, LocalDate.now(), true)
+                .map(badge -> evaluateBadgeUpdateStatusInternal(badge, getCurrentLocalDate(), true)
                         == BadgeUpdateStatus.UPDATE_REQUIRED)
                 .orElse(false);
     }
@@ -65,7 +73,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
 
     @Override
     public String generateNewBadgeCode(String badgeId) {
-        // Generate a random badge code (simulating a real system)
+        // Generate a random badge code matching existing format (9 uppercase alphanumeric chars)
         StringBuilder code = new StringBuilder();
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         
@@ -73,8 +81,7 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
             code.append(chars.charAt(random.nextInt(chars.length())));
         }
         
-        // Add prefix/suffix to increase uniqueness
-        return "UPD_" + code.toString() + "_" + System.currentTimeMillis();
+        return code.toString();
     }
 
     @Override
@@ -93,24 +100,22 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
                     
                     // Update badge
                     badge.setBadgeCode(newCode);
-                    badge.setLastUpdated(java.time.Instant.now());
-                    badge.setLastCodeUpdate(java.time.Instant.now());
+                    badge.setLastUpdated(getCurrentInstant());
+                    badge.setLastCodeUpdate(getCurrentInstant());
                     
-                    // Extend expiry date (simulate: +1 year)
-                    LocalDate newExpiryDate = LocalDate.now().plusYears(1);
-                    badge.setExpirationDate(newExpiryDate);
-                    // Extend code expiry date as well
-                    badge.setCodeExpirationDate(newExpiryDate);
+                     // Extend code expiry date (simulate: +1 year)
+                     LocalDate newExpiryDate = getCurrentLocalDate().plusYears(1);
+                     badge.setCodeExpirationDate(newExpiryDate);
                     
                     // Reset update flag and due date
                     badge.setNeedsUpdate(false);
                     badge.setUpdateDueDate(null);
                     
-                    // Save update
-                    Badge updatedBadge = badgeRepository.save(badge);
+                    // Save update via cache manager (ensures cache consistency)
+                    cacheManager.updateBadge(badge);
                     updatesTriggered.incrementAndGet();
                     
-                    return updatedBadge;
+                    return badge;
                 })
                 .orElse(null);
     }
@@ -162,41 +167,43 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
             return BadgeUpdateStatus.OK;
         }
 
-        LocalDate codeExpiryDate = badge.getCodeExpirationDate();
-        if (codeExpiryDate == null) {
-            codeExpiryDate = badge.getExpirationDate();
-        }
-        if (codeExpiryDate == null) {
-            return BadgeUpdateStatus.OK;
-        }
+         LocalDate codeExpiryDate = badge.getCodeExpirationDate();
+         if (codeExpiryDate == null) {
+             return BadgeUpdateStatus.OK;
+         }
 
         long daysUntilCodeExpiry = ChronoUnit.DAYS.between(today, codeExpiryDate);
         LocalDate updateDue = badge.getUpdateDueDate();
 
         if (updateDue != null && today.isAfter(updateDue)) {
             badge.setStatus(acs.domain.BadgeStatus.DISABLED);
-            badgeRepository.save(badge);
+            cacheManager.updateBadge(badge);
             if (notify) {
                 simulateUpdateNotification(badge.getBadgeId(), (int) daysUntilCodeExpiry);
             }
             return BadgeUpdateStatus.UPDATE_OVERDUE;
         }
 
-        if (daysUntilCodeExpiry <= DAYS_BEFORE_EXPIRY_TO_NOTIFY) {
+        if (today.isAfter(codeExpiryDate)) {
             badge.setNeedsUpdate(true);
-            if (updateDue == null) {
-                badge.setUpdateDueDate(today.plusDays(UPDATE_WINDOW_DAYS));
+            if (updateDue == null || updateDue.isBefore(codeExpiryDate.plusDays(UPDATE_WINDOW_DAYS))) {
+                badge.setUpdateDueDate(codeExpiryDate.plusDays(UPDATE_WINDOW_DAYS));
             }
-            badgeRepository.save(badge);
+            cacheManager.updateBadge(badge);
             if (notify) {
                 simulateUpdateNotification(badge.getBadgeId(), (int) daysUntilCodeExpiry);
             }
             return BadgeUpdateStatus.UPDATE_REQUIRED;
         }
 
+        if (daysUntilCodeExpiry <= DAYS_BEFORE_EXPIRY_TO_NOTIFY) {
+            if (notify) {
+                simulateUpdateNotification(badge.getBadgeId(), (int) daysUntilCodeExpiry);
+            }
+        }
+
         if (badge.isNeedsUpdate()) {
-            badge.setNeedsUpdate(false);
-            badgeRepository.save(badge);
+            return BadgeUpdateStatus.UPDATE_REQUIRED;
         }
 
         return BadgeUpdateStatus.OK;
@@ -212,10 +219,23 @@ public class BadgeCodeUpdateServiceImpl implements BadgeCodeUpdateService {
         updateAttempts.clear();
     }
     
+    private LocalDate getCurrentLocalDate() {
+        return clockService.localNow().toLocalDate();
+    }
+    
+    private Instant getCurrentInstant() {
+        return clockService.now();
+    }
+    
     /**
      * Get update attempt count for a badge.
      */
     public int getUpdateAttempts(String badgeId) {
         return updateAttempts.getOrDefault(badgeId, 0);
+    }
+
+    @Override
+    public Badge getBadge(String badgeId) {
+        return badgeRepository.findById(badgeId).orElse(null);
     }
 }

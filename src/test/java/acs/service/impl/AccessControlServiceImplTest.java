@@ -118,7 +118,7 @@ public class AccessControlServiceImplTest {
     @Test
     void processAccess_badgeExpired_shouldDeny() {
         Badge badge = new Badge("BADGEXP001", BadgeStatus.ACTIVE);
-        badge.setExpirationDate(LocalDate.of(2024, 4, 30));
+        badge.setCodeExpirationDate(LocalDate.of(2024, 4, 30));
         when(cacheManager.getBadge("BADGEXP001")).thenReturn(badge);
 
         AccessRequest request = createAccessRequest("BADGEXP001", "RES001");
@@ -131,7 +131,7 @@ public class AccessControlServiceImplTest {
     @Test
     void processAccess_badgeUpdateRequired_shouldDeny() {
         Badge badge = new Badge("BADGEUPD001", BadgeStatus.ACTIVE);
-        badge.setExpirationDate(LocalDate.of(2024, 12, 31));
+        badge.setCodeExpirationDate(LocalDate.of(2024, 12, 31));
         when(cacheManager.getBadge("BADGEUPD001")).thenReturn(badge);
         when(badgeCodeUpdateService.evaluateBadgeUpdateStatus(eq("BADGEUPD001"), any(Instant.class)))
                 .thenReturn(BadgeUpdateStatus.UPDATE_REQUIRED);
@@ -146,7 +146,7 @@ public class AccessControlServiceImplTest {
     @Test
     void processAccess_badgeUpdateOverdue_shouldDeny() {
         Badge badge = new Badge("BADGEUPD002", BadgeStatus.ACTIVE);
-        badge.setExpirationDate(LocalDate.of(2024, 12, 31));
+        badge.setCodeExpirationDate(LocalDate.of(2024, 12, 31));
         when(cacheManager.getBadge("BADGEUPD002")).thenReturn(badge);
         when(badgeCodeUpdateService.evaluateBadgeUpdateStatus(eq("BADGEUPD002"), any(Instant.class)))
                 .thenReturn(BadgeUpdateStatus.UPDATE_OVERDUE);

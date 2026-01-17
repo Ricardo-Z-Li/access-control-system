@@ -9,6 +9,8 @@ import acs.domain.AccessRequest;
 import acs.domain.AccessResult;
 import acs.simulator.BadgeCodeUpdateService;
 import acs.domain.Badge;
+import acs.domain.BadgeStatus;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
 
@@ -17,11 +19,7 @@ public class ScanPanel extends JPanel {
     private final BadgeCodeUpdateService badgeCodeUpdateService;
     private final ClockService clockService;
     private JTextField badgeIdField;
-    private JTextField resourceIdField;
-    private JComboBox<String> modeComboBox;
     private JTextArea resultArea;
-    private static final String MODE_SWIPE = "Swipe";
-    private static final String MODE_UPDATE = "Update Code";
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 
@@ -36,17 +34,12 @@ public class ScanPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
-        add(UiTheme.createHeader("Scan Console", "Simulate badge swipe or run update flow"), BorderLayout.NORTH);
+        add(UiTheme.createHeader("Badge Update Console", "Update badge codes and check status"), BorderLayout.NORTH);
 
         JPanel formPanel = new JPanel();
         formPanel.setOpaque(false);
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.add(UiTheme.formRow("Badge ID", badgeIdField = new JTextField()));
-        formPanel.add(Box.createVerticalStrut(8));
-        formPanel.add(UiTheme.formRow("Resource ID", resourceIdField = new JTextField()));
-        formPanel.add(Box.createVerticalStrut(8));
-        modeComboBox = new JComboBox<>(new String[]{MODE_SWIPE, MODE_UPDATE});
-        formPanel.add(UiTheme.formRow("Mode", modeComboBox));
 
         JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         actionRow.setOpaque(false);
@@ -57,8 +50,6 @@ public class ScanPanel extends JPanel {
         JButton sampleButton = UiTheme.secondaryButton("Fill Sample");
         sampleButton.addActionListener(e -> {
             badgeIdField.setText("BADGE001");
-            resourceIdField.setText("RES001");
-            modeComboBox.setSelectedItem(MODE_SWIPE);
         });
         actionRow.add(runButton);
         actionRow.add(clearButton);
@@ -103,54 +94,54 @@ public class ScanPanel extends JPanel {
 
     private void simulateScan() {
         String badgeId = badgeIdField.getText().trim();
-        String resourceId = resourceIdField.getText().trim();
-        String selectedMode = (String) modeComboBox.getSelectedItem();
 
         if (badgeId.isEmpty()) {
             resultArea.setText("Error: enter badge ID");
             return;
         }
 
-        if (MODE_SWIPE.equals(selectedMode) && resourceId.isEmpty()) {
-            resultArea.setText("Error: swipe mode requires resource ID");
-            return;
-        }
-
         try {
             StringBuilder sb = new StringBuilder();
-            sb.append("Result\n");
+            sb.append("Badge Update Service\n");
             sb.append("Time Source: ").append(clockService.isSimulated() ? "Simulated Time" : "System Time").append("\n");
-            sb.append("Badge ID: ").append(badgeId).append("\n");
-            sb.append("Mode: ").append(selectedMode).append("\n");
+            sb.append("Badge ID: ").append(badgeId).append("\n\n");
 
-            if (MODE_SWIPE.equals(selectedMode)) {
-                AccessRequest request = new AccessRequest(badgeId, resourceId, clockService.localNow());
-                AccessResult result = accessControlService.processAccess(request);
+            Badge badge = badgeCodeUpdateService.getBadge(badgeId);
+            if (badge == null) {
+                sb.append("invalid badge");
+                resultArea.setText(sb.toString());
+                return;
+            }
 
-                String timeStr = java.time.LocalDateTime.ofInstant(request.getTimestamp(), ZONE_ID).format(TIME_FORMATTER);
-                sb.append("Decision: ").append(result.getDecision()).append("\n");
-                sb.append("Reason: ").append(result.getReasonCode()).append("\n");
-                sb.append("Message: ").append(result.getMessage()).append("\n");
-                sb.append("Resource ID: ").append(resourceId).append("\n");
-                sb.append("Time: ").append(timeStr).append("\n");
+            String badgeCode = badge.getBadgeCode();
+            BadgeStatus status = badge.getStatus();
+             LocalDate codeExpirationDate = badge.getCodeExpirationDate();
+            LocalDate today = clockService.localNow().toLocalDate();
+
+            sb.append("Badge Code: ").append(badgeCode != null ? badgeCode : "N/A").append("\n");
+
+            if (status == BadgeStatus.LOST || status == BadgeStatus.DISABLED) {
+                sb.append("Status: ").append(status).append("\n");
+                sb.append("Note: Badge is ").append(status.toString().toLowerCase()).append("\n");
+                resultArea.setText(sb.toString());
+                return;
+            }
+
+             boolean isExpired = codeExpirationDate != null && today.isAfter(codeExpirationDate);
+            if (!isExpired) {
+                sb.append("Status: No update needed\n");
+                sb.append("Note: Current badge code is valid\n");
             } else {
-                sb.append("Badge Update Flow\n");
-
-                boolean needsUpdate = badgeCodeUpdateService.checkBadgeNeedsUpdate(badgeId);
-                if (!needsUpdate) {
-                    sb.append("Status: No update needed\n");
-                    sb.append("Note: Current badge code is valid\n");
+                sb.append("Status: Expired\n");
+                sb.append("Note: Badge expired, updating...\n\n");
+                Badge updatedBadge = badgeCodeUpdateService.updateBadgeCode(badgeId);
+                if (updatedBadge != null) {
+                    sb.append("Badge updated successfully\n");
+                    sb.append("New Badge Code: ").append(updatedBadge.getBadgeCode()).append("\n");
+                     sb.append("New Code Expiration Date: ").append(updatedBadge.getCodeExpirationDate()).append("\n");
+                    sb.append("Updated At: ").append(updatedBadge.getLastCodeUpdate()).append("\n");
                 } else {
-                    sb.append("Status: Update required\n");
-                    Badge updatedBadge = badgeCodeUpdateService.updateBadgeCode(badgeId);
-                    if (updatedBadge != null) {
-                        sb.append("Status: Updated\n");
-                        sb.append("New Badge Code: ").append(updatedBadge.getBadgeCode()).append("\n");
-                        sb.append("Expires At: ").append(updatedBadge.getExpirationDate()).append("\n");
-                        sb.append("Updated At: ").append(updatedBadge.getLastCodeUpdate()).append("\n");
-                    } else {
-                        sb.append("Status: Update failed\n");
-                    }
+                    sb.append("Status: Update failed\n");
                 }
             }
 
