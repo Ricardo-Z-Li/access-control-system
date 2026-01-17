@@ -19,7 +19,7 @@ public class ScanPanel extends JPanel {
     private final BadgeCodeUpdateService badgeCodeUpdateService;
     private final ClockService clockService;
     private JTextField badgeIdField;
-    private JTextArea resultArea;
+    private JTextPane resultArea;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 
@@ -46,7 +46,7 @@ public class ScanPanel extends JPanel {
         JButton runButton = UiTheme.primaryButton("Run");
         runButton.addActionListener(e -> simulateScan());
         JButton clearButton = UiTheme.secondaryButton("Clear");
-        clearButton.addActionListener(e -> resultArea.setText(""));
+        clearButton.addActionListener(e -> UiTheme.setStatusText(resultArea, ""));
         JButton sampleButton = UiTheme.secondaryButton("Fill Sample");
         sampleButton.addActionListener(e -> {
             badgeIdField.setText("BADGE001");
@@ -64,10 +64,7 @@ public class ScanPanel extends JPanel {
         leftContent.add(actionRow);
         leftCard.add(leftContent, BorderLayout.NORTH);
 
-        resultArea = new JTextArea(16, 40);
-        resultArea.setEditable(false);
-        resultArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        resultArea.setBackground(UiTheme.surface());
+        resultArea = UiTheme.createLogPane(true);
         JScrollPane resultScroll = new JScrollPane(resultArea);
 
         JButton copyButton = UiTheme.secondaryButton("Copy Result");
@@ -96,7 +93,7 @@ public class ScanPanel extends JPanel {
         String badgeId = badgeIdField.getText().trim();
 
         if (badgeId.isEmpty()) {
-            resultArea.setText("Error: enter badge ID");
+            UiTheme.setStatusText(resultArea, "Error: enter badge ID");
             return;
         }
 
@@ -109,7 +106,7 @@ public class ScanPanel extends JPanel {
             Badge badge = badgeCodeUpdateService.getBadge(badgeId);
             if (badge == null) {
                 sb.append("invalid badge");
-                resultArea.setText(sb.toString());
+                UiTheme.setStatusText(resultArea, sb.toString());
                 return;
             }
 
@@ -123,7 +120,7 @@ public class ScanPanel extends JPanel {
             if (status == BadgeStatus.LOST || status == BadgeStatus.DISABLED) {
                 sb.append("Status: ").append(status).append("\n");
                 sb.append("Note: Badge is ").append(status.toString().toLowerCase()).append("\n");
-                resultArea.setText(sb.toString());
+                UiTheme.setStatusText(resultArea, sb.toString());
                 return;
             }
 
@@ -145,9 +142,9 @@ public class ScanPanel extends JPanel {
                 }
             }
 
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("Execution failed: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Execution failed: " + ex.getMessage());
             ex.printStackTrace();
         }
     }

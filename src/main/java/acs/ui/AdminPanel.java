@@ -76,9 +76,7 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        JTextArea logArea = new JTextArea(8, 50);
-        logArea.setEditable(false);
-        logArea.setBackground(UiTheme.surface());
+        JTextPane logArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
 
         return panel;
@@ -140,9 +138,7 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        JTextArea logArea = new JTextArea(8, 50);
-        logArea.setEditable(false);
-        logArea.setBackground(UiTheme.surface());
+        JTextPane logArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
@@ -243,9 +239,7 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        JTextArea logArea = new JTextArea(8, 50);
-        logArea.setEditable(false);
-        logArea.setBackground(UiTheme.surface());
+        JTextPane logArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
@@ -339,9 +333,7 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        JTextArea logArea = new JTextArea(8, 50);
-        logArea.setEditable(false);
-        logArea.setBackground(UiTheme.surface());
+        JTextPane logArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
@@ -399,9 +391,7 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
-        JTextArea logArea = new JTextArea(8, 50);
-        logArea.setEditable(false);
-        logArea.setBackground(UiTheme.surface());
+        JTextPane logArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
         return panel;
     }
@@ -456,9 +446,7 @@ public class AdminPanel extends JPanel {
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
-        JTextArea profileArea = new JTextArea(16, 60);
-        profileArea.setEditable(false);
-        profileArea.setBackground(UiTheme.surface());
+        JTextPane profileArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(profileArea), BorderLayout.CENTER);
         return panel;
     }
@@ -553,9 +541,7 @@ public class AdminPanel extends JPanel {
         card.add(buttonPanel, BorderLayout.SOUTH);
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
-        JTextArea resultArea = new JTextArea(12, 60);
-        resultArea.setEditable(false);
-        resultArea.setBackground(UiTheme.surface());
+        JTextPane resultArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -574,9 +560,9 @@ public class AdminPanel extends JPanel {
                     sb.append("- ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");
                 }
-                resultArea.setText(sb.toString());
+                UiTheme.setStatusText(resultArea, sb.toString());
             } catch (Exception ex) {
-                resultArea.setText("Query failed: " + ex.getMessage());
+                UiTheme.setStatusText(resultArea, "Query failed: " + ex.getMessage());
             }
         });
         viewPanel.add(viewEmployeeProfiles);
@@ -596,9 +582,9 @@ public class AdminPanel extends JPanel {
                     sb.append("- ").append(profile.getProfileId())
                         .append(" (").append(profile.getProfileName()).append(")\n");
                 }
-                resultArea.setText(sb.toString());
+                UiTheme.setStatusText(resultArea, sb.toString());
             } catch (Exception ex) {
-                resultArea.setText("Query failed: " + ex.getMessage());
+                UiTheme.setStatusText(resultArea, "Query failed: " + ex.getMessage());
             }
         });
         viewPanel.add(viewBadgeProfiles);

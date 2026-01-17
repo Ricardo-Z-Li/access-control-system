@@ -33,7 +33,7 @@ public class AccessLimitPanel extends JPanel {
     private DefaultTableModel limitTableModel;
     private JTextField employeeIdField;
     private JTextField resourceIdCheckField;
-    private JTextArea resultArea;
+    private JTextPane resultArea;
 
     private JTable resourceLimitTable;
     private DefaultTableModel resourceLimitTableModel;
@@ -101,10 +101,7 @@ public class AccessLimitPanel extends JPanel {
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
-        resultArea = new JTextArea(15, 60);
-        resultArea.setEditable(false);
-        resultArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        resultArea.setBackground(UiTheme.surface());
+        resultArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         return panel;
@@ -316,14 +313,14 @@ public class AccessLimitPanel extends JPanel {
     private void checkAllLimits() {
         String employeeId = employeeIdField.getText().trim();
         if (employeeId.isEmpty()) {
-            resultArea.setText("Error: enter employee ID");
+            UiTheme.setStatusText(resultArea, "Error: enter employee ID");
             return;
         }
 
         try {
             Employee employeeWithGroups = employeeRepository.findByIdWithGroups(employeeId).orElse(null);
             if (employeeWithGroups == null) {
-                resultArea.setText("Error: employee not found - " + employeeId);
+                UiTheme.setStatusText(resultArea, "Error: employee not found - " + employeeId);
                 return;
             }
 
@@ -333,7 +330,7 @@ public class AccessLimitPanel extends JPanel {
             if (hasResource) {
                 resource = resourceRepository.findById(resourceId).orElse(null);
                 if (resource == null) {
-                    resultArea.setText("Error: resource not found - " + resourceId);
+                    UiTheme.setStatusText(resultArea, "Error: resource not found - " + resourceId);
                     return;
                 }
             }
@@ -399,9 +396,9 @@ public class AccessLimitPanel extends JPanel {
             } else {
                 sb.append("\nResource Limits: None\n");
             }
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("Query failed: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Query failed: " + ex.getMessage());
         }
     }
 
@@ -409,14 +406,14 @@ public class AccessLimitPanel extends JPanel {
         String employeeId = employeeIdField.getText().trim();
         String resourceId = resourceIdCheckField == null ? "" : resourceIdCheckField.getText().trim();
         if (employeeId.isEmpty()) {
-            resultArea.setText("Error: enter employee ID");
+            UiTheme.setStatusText(resultArea, "Error: enter employee ID");
             return;
         }
 
         try {
             Employee employeeWithGroups = employeeRepository.findByIdWithGroups(employeeId).orElse(null);
             if (employeeWithGroups == null) {
-                resultArea.setText("Error: employee not found - " + employeeId);
+                UiTheme.setStatusText(resultArea, "Error: employee not found - " + employeeId);
                 return;
             }
 
@@ -429,7 +426,7 @@ public class AccessLimitPanel extends JPanel {
             if (!resourceId.isEmpty()) {
                 resource = resourceRepository.findById(resourceId).orElse(null);
                 if (resource == null) {
-                    resultArea.setText("Error: resource not found - " + resourceId);
+                    UiTheme.setStatusText(resultArea, "Error: resource not found - " + resourceId);
                     return;
                 }
                 todayResourceCount = accessLimitService.getTodayAccessCount(employeeWithGroups, resource);
@@ -523,9 +520,9 @@ public class AccessLimitPanel extends JPanel {
             } else {
                 sb.append("\nResource Limits: None\n");
             }
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("Query failed: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Query failed: " + ex.getMessage());
         }
     }
 
@@ -577,10 +574,10 @@ public class AccessLimitPanel extends JPanel {
                         });
                     }
 
-                    resultArea.setText("Employees: " + employees.size());
+                    UiTheme.setStatusText(resultArea, "Employees: " + employees.size());
                 });
             } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> resultArea.setText("Refresh failed: " + ex.getMessage()));
+                SwingUtilities.invokeLater(() -> UiTheme.setStatusText(resultArea, "Refresh failed: " + ex.getMessage()));
             }
         }).start();
     }

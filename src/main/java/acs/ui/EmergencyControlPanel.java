@@ -7,7 +7,7 @@ import acs.domain.ResourceType;
 
 public class EmergencyControlPanel extends JPanel {
     private final EmergencyControlService emergencyControlService;
-    private JTextArea logArea;
+    private JTextPane logArea;
 
     public EmergencyControlPanel(EmergencyControlService emergencyControlService) {
         this.emergencyControlService = emergencyControlService;
@@ -21,10 +21,7 @@ public class EmergencyControlPanel extends JPanel {
         JPanel controlPanel = createControlPanel();
         add(controlPanel, BorderLayout.CENTER);
 
-        logArea = new JTextArea(10, 60);
-        logArea.setEditable(false);
-        logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        logArea.setBackground(UiTheme.surface());
+        logArea = UiTheme.createLogPane(true);
         JScrollPane scrollPane = new JScrollPane(logArea);
         scrollPane.setBorder(BorderFactory.createTitledBorder(UiTheme.subtleBorder(), "Activity Log"));
         add(scrollPane, BorderLayout.SOUTH);
@@ -183,7 +180,7 @@ public class EmergencyControlPanel extends JPanel {
 
     private void log(String message) {
         String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
-        logArea.append("[" + timestamp + "] " + message + "\n");
+        UiTheme.appendStatusLine(logArea, "[" + timestamp + "] " + message);
         logArea.setCaretPosition(logArea.getDocument().getLength());
     }
 }

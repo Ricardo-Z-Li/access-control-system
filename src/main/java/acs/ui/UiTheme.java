@@ -7,6 +7,10 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 
 public final class UiTheme {
     private static final Color COLOR_BG = new Color(240, 243, 247);
@@ -94,6 +98,57 @@ public final class UiTheme {
 
     public static Color accentSoft() {
         return COLOR_ACCENT_SOFT;
+    }
+
+    public static JTextPane createLogPane(boolean monospace) {
+        JTextPane pane = new JTextPane();
+        pane.setEditable(false);
+        pane.setOpaque(true);
+        pane.setBackground(COLOR_SURFACE);
+        if (monospace) {
+            Font font = new Font("Consolas", Font.PLAIN, 12);
+            pane.setFont(font);
+        }
+        ensureTextStyles(pane);
+        return pane;
+    }
+
+    public static void setStatusText(JTextPane pane, String text) {
+        if (pane == null) {
+            return;
+        }
+        pane.setText("");
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        appendStatusText(pane, text);
+    }
+
+    public static void appendStatusText(JTextPane pane, String text) {
+        if (pane == null || text == null) {
+            return;
+        }
+        if (text.isEmpty()) {
+            return;
+        }
+        ensureTextStyles(pane);
+        String[] lines = text.split("\\r?\\n");
+        for (String line : lines) {
+            appendStatusLine(pane, line);
+        }
+    }
+
+    public static void appendStatusLine(JTextPane pane, String line) {
+        if (pane == null || line == null) {
+            return;
+        }
+        ensureTextStyles(pane);
+        StyledDocument doc = pane.getStyledDocument();
+        Style style = getStyleForLine(pane, line);
+        try {
+            doc.insertString(doc.getLength(), line + "\n", style);
+        } catch (BadLocationException ignored) {
+        }
     }
 
     public static JPanel wrapContent(JComponent content) {
@@ -266,5 +321,62 @@ public final class UiTheme {
 
     private static Border buttonBorder(Color outline) {
         return new CompoundBorder(new LineBorder(outline, 1, true), new EmptyBorder(8, 14, 8, 14));
+    }
+
+    private static void ensureTextStyles(JTextPane pane) {
+        if (pane.getStyle("status-default") != null) {
+            return;
+        }
+        Style defaultStyle = pane.addStyle("status-default", null);
+        StyleConstants.setForeground(defaultStyle, COLOR_TEXT);
+        Style successStyle = pane.addStyle("status-success", null);
+        StyleConstants.setForeground(successStyle, new Color(22, 124, 78));
+        Style errorStyle = pane.addStyle("status-error", null);
+        StyleConstants.setForeground(errorStyle, new Color(190, 46, 46));
+        Style warnStyle = pane.addStyle("status-warn", null);
+        StyleConstants.setForeground(warnStyle, new Color(161, 98, 7));
+        Style infoStyle = pane.addStyle("status-info", null);
+        StyleConstants.setForeground(infoStyle, new Color(30, 64, 175));
+    }
+
+    private static Style getStyleForLine(JTextPane pane, String line) {
+        String normalized = line.toLowerCase();
+        if (normalized.contains("error")
+            || normalized.contains("failed")
+            || normalized.contains("fail")
+            || normalized.contains("deny")
+            || normalized.contains("denied")
+            || normalized.contains("invalid")
+            || normalized.contains("unavailable")
+            || normalized.contains("not found")
+            || normalized.contains("missing")
+            || normalized.contains("exception")) {
+            return pane.getStyle("status-error");
+        }
+        if (normalized.contains("success")
+            || normalized.contains("completed")
+            || normalized.contains("ok")
+            || normalized.contains("available")
+            || normalized.contains("passed")
+            || normalized.contains("restored")
+            || normalized.contains("updated")
+            || normalized.contains("saved")
+            || normalized.contains("refreshed")
+            || normalized.contains("allow")
+            || normalized.contains("granted")) {
+            return pane.getStyle("status-success");
+        }
+        if (normalized.contains("warning")
+            || normalized.contains("warn")
+            || normalized.contains("near limit")) {
+            return pane.getStyle("status-warn");
+        }
+        if (normalized.contains("info")
+            || normalized.contains("ready")
+            || normalized.contains("started")
+            || normalized.contains("loading")) {
+            return pane.getStyle("status-info");
+        }
+        return pane.getStyle("status-default");
     }
 }

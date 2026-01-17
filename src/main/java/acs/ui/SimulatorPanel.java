@@ -32,7 +32,7 @@ public class SimulatorPanel extends JPanel {
     private JTabbedPane tabbedPane;
     private JTextField readerIdField;
     private JTextField badgeIdField;
-    private JTextArea simulatorLogArea;
+    private JTextPane simulatorLogArea;
     private JTable eventTable;
     private DefaultTableModel eventTableModel;
     private JLabel simulationStatusLabel;
@@ -44,7 +44,7 @@ public class SimulatorPanel extends JPanel {
     private JLabel currentTimeLabel;
     
     // Execution chain tracking
-    private JTextArea executionChainArea;
+    private JTextPane executionChainArea;
     private JTable executionChainTable;
     private DefaultTableModel executionChainTableModel;
 
@@ -152,9 +152,7 @@ public class SimulatorPanel extends JPanel {
         
         panel.add(inputPanel, BorderLayout.NORTH);
         
-        simulatorLogArea = new JTextArea(15, 60);
-        simulatorLogArea.setEditable(false);
-        simulatorLogArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        simulatorLogArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(simulatorLogArea), BorderLayout.CENTER);
         
         return panel;
@@ -368,9 +366,7 @@ public class SimulatorPanel extends JPanel {
         
         panel.add(controlPanel, BorderLayout.NORTH);
         
-        JTextArea routerInfoArea = new JTextArea(15, 60);
-        routerInfoArea.setEditable(false);
-        routerInfoArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        JTextPane routerInfoArea = UiTheme.createLogPane(true);
         
         updateRouterInfo();
         
@@ -690,7 +686,7 @@ public class SimulatorPanel extends JPanel {
         String logEntry = "[" + timestamp + "] " + message + "\n";
         
         SwingUtilities.invokeLater(() -> {
-            simulatorLogArea.append(logEntry);
+            UiTheme.appendStatusLine(simulatorLogArea, logEntry.trim());
             simulatorLogArea.setCaretPosition(simulatorLogArea.getDocument().getLength());
         });
     }
@@ -780,9 +776,7 @@ public class SimulatorPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
         
         // Execution chain detail area
-        executionChainArea = new JTextArea(10, 60);
-        executionChainArea.setEditable(false);
-        executionChainArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        executionChainArea = UiTheme.createLogPane(true);
         JPanel areaPanel = new JPanel(new BorderLayout());
         areaPanel.add(new JLabel("Execution Chain Details:"), BorderLayout.NORTH);
         areaPanel.add(new JScrollPane(executionChainArea), BorderLayout.CENTER);
@@ -800,7 +794,7 @@ public class SimulatorPanel extends JPanel {
     private void clearExecutionChains() {
         SwingUtilities.invokeLater(() -> {
             executionChainTableModel.setRowCount(0);
-            executionChainArea.setText("");
+            UiTheme.setStatusText(executionChainArea, "");
             ExecutionChainTracker.getInstance().clearAllChains();
             logMessage("Execution chains cleared");
         });
@@ -812,7 +806,7 @@ public class SimulatorPanel extends JPanel {
     private void refreshExecutionChains() {
         SwingUtilities.invokeLater(() -> {
             executionChainTableModel.setRowCount(0);
-            executionChainArea.setText("");
+            UiTheme.setStatusText(executionChainArea, "");
             
             List<ExecutionChainTracker.ExecutionChain> chains = 
                     ExecutionChainTracker.getInstance().getAllChains();
@@ -865,7 +859,7 @@ public class SimulatorPanel extends JPanel {
                 sb.append("  ").append(step.toString()).append("\n");
             }
             
-            executionChainArea.setText(sb.toString());
+            UiTheme.setStatusText(executionChainArea, sb.toString());
         });
     }
     

@@ -16,7 +16,7 @@ public class GroupFilePanel extends JPanel {
     private JTable groupTable;
     private DefaultTableModel groupTableModel;
     private JTextField filePathField;
-    private JTextArea resultArea;
+    private JTextPane resultArea;
 
     public GroupFilePanel(GroupFileService groupFileService,
                           GroupRepository groupRepository) {
@@ -68,10 +68,7 @@ public class GroupFilePanel extends JPanel {
 
         panel.add(UiTheme.wrapContent(card), BorderLayout.NORTH);
 
-        resultArea = new JTextArea(20, 60);
-        resultArea.setEditable(false);
-        resultArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        resultArea.setBackground(UiTheme.surface());
+        resultArea = UiTheme.createLogPane(true);
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         return panel;
@@ -114,7 +111,7 @@ public class GroupFilePanel extends JPanel {
         String filePath = filePathField.getText().trim();
 
         if (filePath.isEmpty()) {
-            resultArea.setText("Error: enter file path");
+            UiTheme.setStatusText(resultArea, "Error: enter file path");
             return;
         }
 
@@ -135,10 +132,10 @@ public class GroupFilePanel extends JPanel {
                 sb.append("------------------------------\n");
             }
 
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
             refreshGroupTable();
         } catch (Exception ex) {
-            resultArea.setText("Load failed: " + ex.getMessage() +
+            UiTheme.setStatusText(resultArea, "Load failed: " + ex.getMessage() +
                 "\n\nExample:\nGROUP001:Administrators:RES001,RES002,RES003");
         }
     }
@@ -147,7 +144,7 @@ public class GroupFilePanel extends JPanel {
         String filePath = filePathField.getText().trim();
 
         if (filePath.isEmpty()) {
-            resultArea.setText("Error: enter file path");
+            UiTheme.setStatusText(resultArea, "Error: enter file path");
             return;
         }
 
@@ -155,13 +152,13 @@ public class GroupFilePanel extends JPanel {
             boolean valid = groupFileService.validateGroupFile(filePath);
 
             if (valid) {
-                resultArea.setText("Validation passed: " + filePath + "\n\nFile format looks valid");
+                UiTheme.setStatusText(resultArea, "Validation passed: " + filePath + "\n\nFile format looks valid");
             } else {
-                resultArea.setText("Validation failed: " + filePath +
+                UiTheme.setStatusText(resultArea, "Validation failed: " + filePath +
                     "\n\nFile format may be invalid\n\nExample:\nGROUP001:Administrators:RES001,RES002,RES003");
             }
         } catch (Exception ex) {
-            resultArea.setText("Validation failed: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Validation failed: " + ex.getMessage());
         }
     }
 
@@ -169,7 +166,7 @@ public class GroupFilePanel extends JPanel {
         String filePath = filePathField.getText().trim();
 
         if (filePath.isEmpty()) {
-            resultArea.setText("Error: enter file path");
+            UiTheme.setStatusText(resultArea, "Error: enter file path");
             return;
         }
 
@@ -199,9 +196,9 @@ public class GroupFilePanel extends JPanel {
                 sb.append("------------------------------\n");
             }
 
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("Failed to load mapping: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Failed to load mapping: " + ex.getMessage());
         }
     }
 
@@ -240,10 +237,10 @@ public class GroupFilePanel extends JPanel {
                         });
                     }
 
-                    resultArea.setText("Loaded groups: " + groups.size());
+                    UiTheme.setStatusText(resultArea, "Loaded groups: " + groups.size());
                 });
             } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> resultArea.setText("Refresh failed: " + ex.getMessage()));
+                SwingUtilities.invokeLater(() -> UiTheme.setStatusText(resultArea, "Refresh failed: " + ex.getMessage()));
             }
         }).start();
     }
@@ -256,7 +253,7 @@ public class GroupFilePanel extends JPanel {
         int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File selectedFile = fileChooser.getSelectedFile();
-            resultArea.setText("Ready to export: " + selectedFile.getAbsolutePath() +
+            UiTheme.setStatusText(resultArea, "Ready to export: " + selectedFile.getAbsolutePath() +
                              "\nTime: " + java.time.LocalDateTime.now() +
                              "\nRecords: " + groupTableModel.getRowCount());
         }
@@ -265,7 +262,7 @@ public class GroupFilePanel extends JPanel {
     private void showGroupDetails() {
         int selectedRow = groupTable.getSelectedRow();
         if (selectedRow == -1) {
-            resultArea.setText("Error: select a group");
+            UiTheme.setStatusText(resultArea, "Error: select a group");
             return;
         }
 
@@ -275,7 +272,7 @@ public class GroupFilePanel extends JPanel {
         try {
             Group group = groupRepository.findByIdWithEmployeesAndResources(groupId).orElse(null);
             if (group == null) {
-                resultArea.setText("Error: group not found - " + groupId);
+                UiTheme.setStatusText(resultArea, "Error: group not found - " + groupId);
                 return;
             }
 
@@ -315,9 +312,9 @@ public class GroupFilePanel extends JPanel {
                 sb.append("  None\n");
             }
 
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("Query failed: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Query failed: " + ex.getMessage());
         }
     }
 }

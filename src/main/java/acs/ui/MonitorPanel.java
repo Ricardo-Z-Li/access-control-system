@@ -24,7 +24,7 @@ public class MonitorPanel extends JPanel {
     private final acs.log.csv.CsvLogExporter csvLogExporter;
     private final acs.service.LogCleanupService logCleanupService;
     private JTabbedPane tabbedPane;
-    private JTextArea logArea;
+    private JTextPane logArea;
     private JTable realTimeTable;
     private DefaultTableModel realTimeTableModel;
     private JLabel cacheStatusLabel;
@@ -161,10 +161,7 @@ public class MonitorPanel extends JPanel {
         JPanel leftCard = UiTheme.cardPanel();
         leftCard.add(filters, BorderLayout.NORTH);
 
-        logArea = new JTextArea(20, 60);
-        logArea.setEditable(false);
-        logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        logArea.setBackground(UiTheme.surface());
+        logArea = UiTheme.createLogPane(true);
         JPanel rightCard = UiTheme.cardPanel();
         rightCard.add(new JScrollPane(logArea), BorderLayout.CENTER);
 
@@ -223,7 +220,7 @@ public class MonitorPanel extends JPanel {
 
     private void refreshLogs() {
         if (logQueryService == null) {
-            logArea.setText("Log query service unavailable.");
+            UiTheme.setStatusText(logArea, "Log query service unavailable.");
             return;
         }
 
@@ -247,9 +244,9 @@ public class MonitorPanel extends JPanel {
 
             sb.append("========================================\n");
             sb.append("Count: ").append(count);
-            logArea.setText(sb.toString());
+            UiTheme.setStatusText(logArea, sb.toString());
         } catch (Exception ex) {
-            logArea.setText("Failed to load logs: " + ex.getMessage());
+            UiTheme.setStatusText(logArea, "Failed to load logs: " + ex.getMessage());
         }
     }
 
@@ -313,7 +310,7 @@ public class MonitorPanel extends JPanel {
 
     private void performAdvancedQuery() {
         if (logQueryService == null) {
-            logArea.setText("Log query service unavailable.");
+            UiTheme.setStatusText(logArea, "Log query service unavailable.");
             return;
         }
 
@@ -334,7 +331,7 @@ public class MonitorPanel extends JPanel {
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
                     from = startLdt.atZone(java.time.ZoneId.systemDefault()).toInstant();
                 } catch (Exception e) {
-                    logArea.setText("Invalid time format, use yyyy-MM-dd HH:mm");
+                    UiTheme.setStatusText(logArea, "Invalid time format, use yyyy-MM-dd HH:mm");
                     return;
                 }
             }
@@ -344,7 +341,7 @@ public class MonitorPanel extends JPanel {
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
                     to = endLdt.atZone(java.time.ZoneId.systemDefault()).toInstant();
                 } catch (Exception e) {
-                    logArea.setText("Invalid time format, use yyyy-MM-dd HH:mm");
+                    UiTheme.setStatusText(logArea, "Invalid time format, use yyyy-MM-dd HH:mm");
                     return;
                 }
             }
@@ -401,16 +398,16 @@ public class MonitorPanel extends JPanel {
             }
 
             sb.append("========================================\n");
-            logArea.setText(sb.toString());
+            UiTheme.setStatusText(logArea, sb.toString());
         } catch (Exception ex) {
-            logArea.setText("Query failed: " + ex.getMessage());
+            UiTheme.setStatusText(logArea, "Query failed: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
     private void exportToCsv() {
         if (csvLogExporter == null) {
-            logArea.setText("CSV export service unavailable.");
+            UiTheme.setStatusText(logArea, "CSV export service unavailable.");
             return;
         }
 
@@ -425,17 +422,17 @@ public class MonitorPanel extends JPanel {
                 java.io.File file = fileChooser.getSelectedFile();
                 java.nio.file.Path path = file.toPath();
                 csvLogExporter.exportToFile(logs, path);
-                logArea.setText("CSV exported: " + path.toString());
+                UiTheme.setStatusText(logArea, "CSV exported: " + path.toString());
             }
         } catch (Exception ex) {
-            logArea.setText("Export failed: " + ex.getMessage());
+            UiTheme.setStatusText(logArea, "Export failed: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
     private void cleanupLogs() {
         if (logCleanupService == null) {
-            logArea.setText("Log cleanup service unavailable.");
+            UiTheme.setStatusText(logArea, "Log cleanup service unavailable.");
             return;
         }
 
@@ -445,9 +442,9 @@ public class MonitorPanel extends JPanel {
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 logCleanupService.cleanExpiredLogs();
-                logArea.setText("Log cleanup completed.");
+                UiTheme.setStatusText(logArea, "Log cleanup completed.");
             } catch (Exception ex) {
-                logArea.setText("Cleanup failed: " + ex.getMessage());
+                UiTheme.setStatusText(logArea, "Cleanup failed: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }

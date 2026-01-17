@@ -17,7 +17,7 @@ public class TimeFilterPanel extends JPanel {
     private DefaultTableModel filterTableModel;
     private JTextField ruleField;
     private JTextField testTimeField;
-    private JTextArea resultArea;
+    private JTextPane resultArea;
 
     public TimeFilterPanel(TimeFilterService timeFilterService,
                            TimeFilterRepository timeFilterRepository) {
@@ -114,10 +114,7 @@ public class TimeFilterPanel extends JPanel {
         inputPanel.add(Box.createVerticalStrut(8));
         inputPanel.add(buttonPanel);
 
-        resultArea = new JTextArea(20, 60);
-        resultArea.setEditable(false);
-        resultArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        resultArea.setBackground(UiTheme.surface());
+        resultArea = UiTheme.createLogPane(true);
 
         JPanel card = UiTheme.cardPanel();
         card.add(inputPanel, BorderLayout.NORTH);
@@ -152,10 +149,10 @@ public class TimeFilterPanel extends JPanel {
             sb.append("End Time: ").append(timeFilter.getEndTime() != null ? timeFilter.getEndTime() : "Unspecified").append("\n");
             sb.append("Recurring: ").append(timeFilter.getIsRecurring() != null && timeFilter.getIsRecurring() ? "Yes" : "No").append("\n");
 
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
             refreshFilterTable();
         } catch (Exception ex) {
-            resultArea.setText("Parse failed: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Parse failed: " + ex.getMessage());
         }
     }
 
@@ -171,12 +168,12 @@ public class TimeFilterPanel extends JPanel {
             boolean valid = timeFilterService.validateTimeRule(rawRule);
 
             if (valid) {
-                resultArea.setText("Validation passed: " + rawRule + "\n\nRule format is valid");
+                UiTheme.setStatusText(resultArea, "Validation passed: " + rawRule + "\n\nRule format is valid");
             } else {
-                resultArea.setText("Validation failed: " + rawRule + "\n\nRule format may be invalid");
+                UiTheme.setStatusText(resultArea, "Validation failed: " + rawRule + "\n\nRule format may be invalid");
             }
         } catch (Exception ex) {
-            resultArea.setText("Validation failed: " + ex.getMessage());
+            UiTheme.setStatusText(resultArea, "Validation failed: " + ex.getMessage());
         }
     }
 
@@ -184,7 +181,7 @@ public class TimeFilterPanel extends JPanel {
         String timeStr = testTimeField.getText().trim();
 
         if (rawRule.isEmpty() || timeStr.isEmpty()) {
-            resultArea.setText("Error: enter rule and test time");
+            UiTheme.setStatusText(resultArea, "Error: enter rule and test time");
             return;
         }
 
@@ -217,9 +214,9 @@ public class TimeFilterPanel extends JPanel {
             sb.append("Weekday: ").append(testTime.getDayOfWeek()).append("\n");
             sb.append("Time: ").append(String.format("%02d:%02d", testTime.getHour(), testTime.getMinute())).append("\n");
 
-            resultArea.setText(sb.toString());
+            UiTheme.setStatusText(resultArea, sb.toString());
         } catch (Exception ex) {
-            resultArea.setText("Test failed: " + ex.getMessage() + "\n\nTime format: yyyy-MM-ddTHH:mm:ss");
+            UiTheme.setStatusText(resultArea, "Test failed: " + ex.getMessage() + "\n\nTime format: yyyy-MM-ddTHH:mm:ss");
         }
     }
 
@@ -244,7 +241,7 @@ public class TimeFilterPanel extends JPanel {
         sb.append("   Month/Day/Weekday can be comma-separated\n");
         sb.append("   Time ranges can be comma-separated\n");
 
-        resultArea.setText(sb.toString());
+        UiTheme.setStatusText(resultArea, sb.toString());
     }
 
     private void refreshFilterTable() {
@@ -273,10 +270,10 @@ public class TimeFilterPanel extends JPanel {
                         });
                     }
 
-                    resultArea.setText("Loaded time rules: " + filters.size());
+                    UiTheme.setStatusText(resultArea, "Loaded time rules: " + filters.size());
                 });
             } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> resultArea.setText("Refresh failed: " + ex.getMessage()));
+                SwingUtilities.invokeLater(() -> UiTheme.setStatusText(resultArea, "Refresh failed: " + ex.getMessage()));
             }
         }).start();
     }
