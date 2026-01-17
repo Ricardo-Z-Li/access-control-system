@@ -185,11 +185,19 @@ public class ExecutionChainTracker {
      * 开始新的执行链
      */
     public ExecutionChain startChain(String eventId, String readerId, String badgeId) {
+        return startChain(eventId, readerId, badgeId, null, null);
+    }
+    
+    /**
+     * 开始新的执行链（带资源ID和节点ID）
+     */
+    public ExecutionChain startChain(String eventId, String readerId, String badgeId, 
+                                   String resourceId, String nodeId) {
         String chainId = "CHAIN_" + System.currentTimeMillis() + "_" + eventId;
         ExecutionChain chain = new ExecutionChain(chainId, eventId);
         
         ChainStep firstStep = new ChainStep(StepType.BADGE_READ_START, eventId, 
-                readerId, badgeId, null, null, "Chain started");
+                readerId, badgeId, resourceId, nodeId, "Chain started");
         chain.addStep(firstStep);
         
         chains.add(chain);

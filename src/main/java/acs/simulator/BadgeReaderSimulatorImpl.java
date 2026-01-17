@@ -72,33 +72,32 @@ public class BadgeReaderSimulatorImpl implements BadgeReaderSimulator {
         
         // 开始执行链跟踪
         ExecutionChainTracker tracker = ExecutionChainTracker.getInstance();
-        String chainId = "CHAIN_" + actualEventId;
-        tracker.startChain(actualEventId, readerId, badgeId);
+        // 获取资源ID用于执行链
+        String resourceId = getResourceForReader(readerId);
+        ExecutionChainTracker.ExecutionChain chain = tracker.startChain(actualEventId, readerId, badgeId, resourceId, null);
+        String chainId = chain.getChainId();
         
         // 1. 模拟读卡器读取徽章代码
-        tracker.addStep(chainId, ExecutionChainTracker.StepType.BADGE_READ_START, 
-                actualEventId, readerId, badgeId, null, null, "Start reading badge code");
         String badgeCode = readBadgeCode(readerId, badgeId);
         if (badgeCode == null) {
             stats.incrementFailedReads();
             tracker.addStep(chainId, ExecutionChainTracker.StepType.BADGE_READ_COMPLETE,
-                    actualEventId, readerId, badgeId, null, null, "Badge read failed");
+                    actualEventId, readerId, badgeId, resourceId, null, "Badge read failed");
             return createErrorResult("Unable to read badge code");
         }
         tracker.addStep(chainId, ExecutionChainTracker.StepType.BADGE_READ_COMPLETE,
-                actualEventId, readerId, badgeId, null, null, "Badge code: " + badgeCode);
+                actualEventId, readerId, badgeId, resourceId, null, "Badge code: " + badgeCode);
         
         // 2. 模拟网络延迟（发送请求）
         Thread.sleep(NETWORK_DELAY_MS);
         tracker.addStep(chainId, ExecutionChainTracker.StepType.REQUEST_TO_ROUTER,
-                actualEventId, readerId, badgeId, null, null, "Request sent to router");
+                actualEventId, readerId, badgeId, resourceId, null, "Request sent to router");
         
-        // 3. 获取读卡器关联的资源ID
-        String resourceId = getResourceForReader(readerId);
+        // 3. 使用已获取的资源ID
         if (resourceId == null) {
             stats.incrementFailedRequests();
             tracker.addStep(chainId, ExecutionChainTracker.StepType.CHAIN_COMPLETE,
-                    actualEventId, readerId, badgeId, null, null, "Reader has no resource mapped, chain stopped");
+                    actualEventId, readerId, badgeId, resourceId, null, "Reader has no resource mapped, chain stopped");
             return createErrorResult("Reader has no resource mapped");
         }
         

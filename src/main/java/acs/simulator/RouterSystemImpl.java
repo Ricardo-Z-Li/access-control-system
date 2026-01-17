@@ -106,6 +106,14 @@ public class RouterSystemImpl implements RouterSystem {
                             "Forwarded request to node: " + selectedNode + " (attempt: " + attempt + ")");
                 }
                 
+                // 记录执行链步骤：访问控制处理中
+                if (chainId != null && eventId != null) {
+                    ExecutionChainTracker.getInstance().addStep(chainId, 
+                            ExecutionChainTracker.StepType.ACCESS_CONTROL_PROCESSING,
+                            eventId, readerId, badgeId, resourceId, selectedNode, 
+                            "Processing access request");
+                }
+                
                 // 调用真实服务（所有节点共享同一个服务实例，但模拟分布式环境）
                 result = accessControlService.processAccess(request);
                 

@@ -45,8 +45,6 @@ public class SimulatorPanel extends JPanel {
     
     // Execution chain tracking
     private JTextPane executionChainArea;
-    private JTable executionChainTable;
-    private DefaultTableModel executionChainTableModel;
 
     private JTextField scenarioStepDelayField;
     private JCheckBox scenarioEnabledCheck;
@@ -766,21 +764,12 @@ public class SimulatorPanel extends JPanel {
         
         panel.add(controlPanel, BorderLayout.NORTH);
         
-        // Execution chain table
-        String[] columns = {"Time", "Step", "Reader", "Badge", "Resource", "Node", "Details"};
-        executionChainTableModel = new DefaultTableModel(columns, 0);
-        executionChainTable = new JTable(executionChainTableModel);
-        executionChainTable.setAutoCreateRowSorter(true);
-        
-        JScrollPane scrollPane = new JScrollPane(executionChainTable);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
         // Execution chain detail area
         executionChainArea = UiTheme.createLogPane(true);
         JPanel areaPanel = new JPanel(new BorderLayout());
         areaPanel.add(new JLabel("Execution Chain Details:"), BorderLayout.NORTH);
         areaPanel.add(new JScrollPane(executionChainArea), BorderLayout.CENTER);
-        panel.add(areaPanel, BorderLayout.SOUTH);
+        panel.add(areaPanel, BorderLayout.CENTER);
         
         // Register execution chain listener
         ExecutionChainTracker.getInstance().addListener(new ExecutionChainListenerImpl());
@@ -793,7 +782,6 @@ public class SimulatorPanel extends JPanel {
      */
     private void clearExecutionChains() {
         SwingUtilities.invokeLater(() -> {
-            executionChainTableModel.setRowCount(0);
             UiTheme.setStatusText(executionChainArea, "");
             ExecutionChainTracker.getInstance().clearAllChains();
             logMessage("Execution chains cleared");
@@ -805,43 +793,35 @@ public class SimulatorPanel extends JPanel {
      */
     private void refreshExecutionChains() {
         SwingUtilities.invokeLater(() -> {
-            executionChainTableModel.setRowCount(0);
             UiTheme.setStatusText(executionChainArea, "");
             
             List<ExecutionChainTracker.ExecutionChain> chains = 
                     ExecutionChainTracker.getInstance().getAllChains();
             
+            StringBuilder sb = new StringBuilder();
             for (ExecutionChainTracker.ExecutionChain chain : chains) {
+                sb.append("Chain: ").append(chain.getChainId()).append("\n");
+                sb.append("Event ID: ").append(chain.getEventId()).append("\n");
+                sb.append("Status: ").append(chain.isCompleted() ? "Completed" : "In Progress").append("\n");
+                sb.append("Steps: ").append(chain.getSteps().size()).append("\n");
+                sb.append("Step Details:\n");
+                
                 for (ExecutionChainTracker.ChainStep step : chain.getSteps()) {
-                    addExecutionChainStepToTable(step);
+                    sb.append("  ").append(step.toString()).append("\n");
                 }
+                sb.append("\n");
             }
             
+            if (chains.isEmpty()) {
+                sb.append("No execution chains available.\n");
+            }
+            
+            UiTheme.setStatusText(executionChainArea, sb.toString());
             logMessage("Execution chains refreshed: " + chains.size());
         });
     }
     
-    /**
-     * Add chain step to the table.
-     */
-    private void addExecutionChainStepToTable(ExecutionChainTracker.ChainStep step) {
-        SwingUtilities.invokeLater(() -> {
-            executionChainTableModel.addRow(new Object[]{
-                step.getFormattedTimestamp(),
-                step.getStepType().getDescription(),
-                step.getReaderId() != null ? step.getReaderId() : "",
-                step.getBadgeId() != null ? step.getBadgeId() : "",
-                step.getResourceId() != null ? step.getResourceId() : "",
-                step.getNodeId() != null ? step.getNodeId() : "",
-                step.getAdditionalInfo() != null ? step.getAdditionalInfo() : ""
-            });
-            
-            // Auto-scroll to the last row.
-            executionChainTable.scrollRectToVisible(
-                executionChainTable.getCellRect(executionChainTableModel.getRowCount()-1, 0, true)
-            );
-        });
-    }
+
     
     /**
      * Update execution chain text area.
@@ -876,7 +856,6 @@ public class SimulatorPanel extends JPanel {
         @Override
         public void onStepAdded(ExecutionChainTracker.ExecutionChain chain, 
                                ExecutionChainTracker.ChainStep step) {
-            addExecutionChainStepToTable(step);
             updateExecutionChainArea(chain);
         }
         
