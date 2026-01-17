@@ -33,6 +33,7 @@ public class SimulatorPanel extends JPanel {
     private JTextField readerIdField;
     private JTextField badgeIdField;
     private JTextPane simulatorLogArea;
+    private JTextPane routerLogArea;
     private JTable eventTable;
     private DefaultTableModel eventTableModel;
     private JLabel simulationStatusLabel;
@@ -288,12 +289,20 @@ public class SimulatorPanel extends JPanel {
         eventTable.setAutoCreateRowSorter(true);
         
         JScrollPane scrollPane = new JScrollPane(eventTable);
-        panel.add(scrollPane, BorderLayout.CENTER);
         
+        JPanel logPanel = new JPanel(new BorderLayout());
+        JTextPane eventLogArea = UiTheme.createLogPane(true);
+        eventLogArea.setDocument(simulatorLogArea.getDocument());
+        logPanel.add(new JScrollPane(eventLogArea), BorderLayout.CENTER);
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         simulationStatusLabel = new JLabel("Status: Not Started");
         statusPanel.add(simulationStatusLabel);
-        panel.add(statusPanel, BorderLayout.SOUTH);
+        logPanel.add(statusPanel, BorderLayout.SOUTH);
+        
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, logPanel);
+        splitPane.setResizeWeight(0.6);
+        splitPane.setDividerLocation(0.6);
+        panel.add(splitPane, BorderLayout.CENTER);
         
         return panel;
     }
@@ -364,11 +373,11 @@ public class SimulatorPanel extends JPanel {
         
         panel.add(controlPanel, BorderLayout.NORTH);
         
-        JTextPane routerInfoArea = UiTheme.createLogPane(true);
+        routerLogArea = UiTheme.createLogPane(true);
         
         updateRouterInfo();
         
-        panel.add(new JScrollPane(routerInfoArea), BorderLayout.CENTER);
+        panel.add(new JScrollPane(routerLogArea), BorderLayout.CENTER);
         
         return panel;
     }
@@ -572,37 +581,37 @@ public class SimulatorPanel extends JPanel {
     
     private void markNodeAsFailed(String nodeId) {
         if (routerSystem == null) {
-            logMessage("Error: router system unavailable");
+            logRouterMessage("Error: router system unavailable");
             return;
         }
         
         try {
             routerSystem.markNodeAsFailed(nodeId);
-            logMessage("Node marked failed: " + nodeId);
+            logRouterMessage("Node marked failed: " + nodeId);
             updateRouterInfo();
         } catch (Exception ex) {
-            logMessage("Failed to mark node failed: " + ex.getMessage());
+            logRouterMessage("Failed to mark node failed: " + ex.getMessage());
         }
     }
     
     private void recoverNode(String nodeId) {
         if (routerSystem == null) {
-            logMessage("Error: router system unavailable");
+            logRouterMessage("Error: router system unavailable");
             return;
         }
         
         try {
             routerSystem.recoverNode(nodeId);
-            logMessage("Node recovered: " + nodeId);
+            logRouterMessage("Node recovered: " + nodeId);
             updateRouterInfo();
         } catch (Exception ex) {
-            logMessage("Failed to recover node: " + ex.getMessage());
+            logRouterMessage("Failed to recover node: " + ex.getMessage());
         }
     }
     
     private void getLoadBalanceStats() {
         if (routerSystem == null) {
-            logMessage("Error: router system unavailable");
+            logRouterMessage("Error: router system unavailable");
             return;
         }
         
@@ -615,35 +624,34 @@ public class SimulatorPanel extends JPanel {
                 sb.append("  Rerouted Requests: ").append(stats.getReroutedRequests()).append("\n");
                 sb.append("  Failure Rate: ").append(String.format("%.2f%%", stats.getFailureRate() * 100)).append("\n");
                 sb.append("  Request Distribution: ").append(stats.getRequestsDistribution()).append("\n");
-            logMessage(sb.toString());
+            logRouterMessage(sb.toString());
         } catch (Exception ex) {
-                logMessage("Failed to get load stats: " + ex.getMessage());
+                logRouterMessage("Failed to get load stats: " + ex.getMessage());
         }
     }
     
     private void setLoadBalanceStrategy(String strategy) {
         if (routerSystem == null) {
-            logMessage("Error: router system unavailable");
+            logRouterMessage("Error: router system unavailable");
             return;
         }
         
         try {
             routerSystem.setLoadBalanceStrategy(strategy);
-            logMessage("Load balance strategy set to: " + strategy);
+            logRouterMessage("Load balance strategy set to: " + strategy);
         } catch (Exception ex) {
-            logMessage("Failed to set strategy: " + ex.getMessage());
+            logRouterMessage("Failed to set strategy: " + ex.getMessage());
         }
     }
     
     private void updateRouterInfo() {
-        // This method needs routerSystem to read the current nodes.
-        // routerInfoArea is not in scope here, so we log the info instead.
+        // Update router information in the router log area.
         if (routerSystem != null) {
             try {
                 var nodes = routerSystem.getAvailableNodes();
-                logMessage("Available nodes: " + String.join(", ", nodes));
+                logRouterMessage("Available nodes: " + String.join(", ", nodes));
             } catch (Exception ex) {
-                logMessage("Failed to get node info: " + ex.getMessage());
+                logRouterMessage("Failed to get node info: " + ex.getMessage());
             }
         }
     }
@@ -686,6 +694,18 @@ public class SimulatorPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             UiTheme.appendStatusLine(simulatorLogArea, logEntry.trim());
             simulatorLogArea.setCaretPosition(simulatorLogArea.getDocument().getLength());
+        });
+    }
+
+    private void logRouterMessage(String message) {
+        String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
+        String logEntry = "[" + timestamp + "] " + message + "\n";
+        
+        SwingUtilities.invokeLater(() -> {
+            if (routerLogArea != null) {
+                UiTheme.appendStatusLine(routerLogArea, logEntry.trim());
+                routerLogArea.setCaretPosition(routerLogArea.getDocument().getLength());
+            }
         });
     }
     
